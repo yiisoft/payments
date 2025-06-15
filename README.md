@@ -33,7 +33,7 @@ composer require yiisoft/payments
 
 ```mermaid
 graph TD
-    A[Application] -->|Uses| B[PaymentsInterface]
+    A[Application] -->|Uses| B[PaymentGatewayInterface]
     B -->|Implemented by| C[StripeGateway]
     B -->|Implemented by| D[PayPalGateway]
     B -->|Can be extended to| E[CustomGateway]
@@ -58,9 +58,9 @@ graph TD
     style K fill:#9f9,stroke:#333,stroke-width:2px
 ```
 
-The library provides a unified interface for multiple payment gateways, with each gateway implementing the `PaymentsInterface`. The main components are:
+The library provides a unified interface for multiple payment gateways, with each gateway implementing the `PaymentGatewayInterface`. The main components are:
 
-- **PaymentsInterface**: Defines the common API for all payment gateways
+- **PaymentGatewayInterface**: Defines the common API for all payment gateways
 - **AbstractGateway**: Base class with shared functionality
 - **Gateway-specific implementations**: Classes like `StripeGateway` and `PayPalGateway`
 - **Data Models**: `Customer`, `PaymentIntent`, `PaymentMethod` for type-safe operations
@@ -405,7 +405,7 @@ Support for PayPal's REST API including:
 
 To add a new payment gateway, follow these steps:
 
-1. Create a new class that implements `PaymentsInterface`
+1. Create a new class that implements `PaymentGatewayInterface`
 2. Extend `AbstractGateway` for common functionality
 3. Implement the required methods for your gateway
 
