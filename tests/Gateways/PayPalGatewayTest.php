@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Gateways;
 
+use Yiisoft\Payments\Enums\PaymentMethodType;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
@@ -52,7 +53,7 @@ final class PayPalGatewayTest extends TestCase
     public function testCreateCustomer(): void
     {
         $this->mockTokenRequest();
-        
+
         $testCustomer = new Customer(
             id: null,
             email: 'test@example.com',
@@ -89,7 +90,7 @@ final class PayPalGatewayTest extends TestCase
         $this->assertSame('Test User', $result->name);
         $this->assertSame('+1234567890', $result->phone);
         $this->assertSame('Test Customer', $result->description);
-        
+
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('/customer/partner-referrals', $lastRequest['uri']);
@@ -98,7 +99,7 @@ final class PayPalGatewayTest extends TestCase
     public function testCreatePaymentIntent(): void
     {
         $this->mockTokenRequest();
-        
+
         $paymentIntent = new PaymentIntent(
             id: null,
             amount: 1000,
@@ -147,7 +148,7 @@ final class PayPalGatewayTest extends TestCase
         $this->assertSame('paypal', $result->paymentMethodId);
         $this->assertSame('12345', $result->metadata['order_id']);
         $this->assertSame('test@example.com', $result->receiptEmail);
-        
+
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('/payments/payment', $lastRequest['uri']);
@@ -156,10 +157,10 @@ final class PayPalGatewayTest extends TestCase
     public function testCreatePaymentMethod(): void
     {
         $this->mockTokenRequest();
-        
+
         $paymentMethod = new PaymentMethod(
             id: null,
-            type: 'paypal',
+            type: PaymentMethodType::PayPal,
             details: ['email' => 'test@example.com'],
             customerId: 'CUST-123',
             billingDetails: [
@@ -174,7 +175,7 @@ final class PayPalGatewayTest extends TestCase
 
         $this->assertSame('paypal', $result->type);
         $this->assertSame('CUST-123', $result->customerId);
-        
+
         // Since PayPal handles payment methods differently, we don't expect an API call here
         // The method should just return the payment method with the customer ID set
     }
@@ -182,7 +183,7 @@ final class PayPalGatewayTest extends TestCase
     public function testCreateRefund(): void
     {
         $this->mockTokenRequest();
-        
+
         $this->withResponse([
             'id' => 'REF-123',
             'state' => 'completed',
@@ -207,7 +208,7 @@ final class PayPalGatewayTest extends TestCase
         $this->assertSame('completed', $result['state']);
         $this->assertSame('10.00', $result['amount']['total']);
         $this->assertSame('USD', $result['amount']['currency']);
-        
+
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('/payments/capture/CAPTURE-123/refund', $lastRequest['uri']);
