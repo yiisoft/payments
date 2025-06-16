@@ -10,15 +10,13 @@ use Yiisoft\Payments\Models\PaymentMethod;
 
 /**
  * Payment Gateway Interface
- * 
+ *
  * This interface defines the standard contract that all payment gateway implementations must follow.
  * It provides a consistent API for processing payments, managing customers, and handling payment methods
  * across different payment service providers.
  *
  * Implementations of this interface should handle the communication with specific payment gateways
  * (like Stripe, PayPal, etc.) while providing a unified interface to the application.
- *
- * @package Yiisoft\\Payments\\Core
  */
 interface PaymentGatewayInterface
 {
@@ -51,7 +49,7 @@ interface PaymentGatewayInterface
      * Attaches a payment method to a customer
      */
     public function attachPaymentMethod(
-        string $paymentMethodId, 
+        string $paymentMethodId,
         string $customerId
     ): PaymentMethod;
 

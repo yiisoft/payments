@@ -19,7 +19,7 @@ A modern PHP 8.4+ library providing a unified interface for multiple payment gat
 
 ## Requirements
 
-- PHP 8.1 or higher.
+- PHP 8.2 or higher.
 
 ## Installation
 
