@@ -227,9 +227,17 @@ class PayPalGateway extends AbstractGateway
             }
         }
 
+        // Map PayPal state to PaymentIntentStatus
+        $status = match (strtolower($response['state'] ?? '')) {
+            'created' => PaymentIntentStatus::RequiresPaymentMethod,
+            'approved' => PaymentIntentStatus::Succeeded,
+            'failed' => PaymentIntentStatus::Canceled,
+            default => PaymentIntentStatus::RequiresPaymentMethod,
+        };
+
         return new PaymentIntent(
             id: $response['id'],
-            status: PaymentIntentStatus::tryFrom(strtolower($response['state'] ?? 'created')),
+            status: $status,
             amount: $intent->amount,
             currency: strtolower($response['transactions'][0]['amount']['currency'] ?? 'usd'),
             customerId: $intent->customerId,

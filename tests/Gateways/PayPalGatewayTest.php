@@ -8,6 +8,7 @@ use Yiisoft\Payments\Enums\PaymentMethodType;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Enums\PaymentIntentStatus;
 use Yiisoft\Payments\Gateways\PayPalGateway;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
 use PHPUnit\Framework\TestCase;
@@ -141,7 +142,7 @@ final class PayPalGatewayTest extends TestCase
 
         $result = $this->gateway->createPaymentIntent($paymentIntent);
 
-        $this->assertSame('CREATED', $result->status);
+        $this->assertSame(PaymentIntentStatus::RequiresPaymentMethod, $result->status);
         $this->assertSame(1000, $result->amount);
         $this->assertSame('USD', $result->currency);
         $this->assertSame('CUST-123', $result->customerId);

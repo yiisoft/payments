@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Enums\PaymentIntentStatus;
 use Yiisoft\Payments\Gateways\StripeGateway;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -149,7 +150,7 @@ class StripeGatewayTest extends TestCase
         $result = $this->gateway->confirmPaymentIntent('pi_test123', ['return_url' => 'https://example.com/return']);
 
         $this->assertSame('pi_test123', $result->id);
-        $this->assertSame('succeeded', $result->status);
+        $this->assertSame(PaymentIntentStatus::Succeeded, $result->status);
         
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
