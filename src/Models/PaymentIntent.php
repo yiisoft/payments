@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Models;
 
-use Yiisoft\Payments\Constants\PaymentIntentStatus;
+use Yiisoft\Payments\Enums\PaymentIntentStatus;
 use Yiisoft\Payments\Exceptions\InvalidArgumentException;
 
 /**
@@ -25,17 +25,9 @@ readonly class PaymentIntent
         return strtoupper($currency);
     }
 
-    public const STATUS_REQUIRES_PAYMENT_METHOD = 'requires_payment_method';
-    public const STATUS_REQUIRES_CONFIRMATION = 'requires_confirmation';
-    public const STATUS_REQUIRES_ACTION = 'requires_action';
-    public const STATUS_PROCESSING = 'processing';
-    public const STATUS_REQUIRES_CAPTURE = 'requires_capture';
-    public const STATUS_CANCELED = 'canceled';
-    public const STATUS_SUCCEEDED = 'succeeded';
-
     /**
      * @param string|null $id The unique identifier for the payment intent.
-     * @param string|null $status The status of the payment intent.
+     * @param PaymentIntentStatus|null $status The status of the payment intent.
      * @param int|null $amount The amount to be collected by this payment intent.
      * @param string|null $currency Three-letter ISO currency code.
      * @param string|null $customerId ID of the customer this payment intent is for.
@@ -56,7 +48,7 @@ readonly class PaymentIntent
 
     public function __construct(
         public ?string $id = null,
-        public ?string $status = null,
+        public ?PaymentIntentStatus $status = null,
         public ?int $amount = null,
         ?string $currency = null,
         public ?string $customerId = null,
@@ -84,7 +76,7 @@ readonly class PaymentIntent
     {
         return [
             'id' => $this->id,
-            'status' => $this->status,
+            'status' => $this->status->value,
             'amount' => $this->amount,
             'currency' => $this->currency,
             'customer_id' => $this->customerId,
@@ -118,7 +110,7 @@ readonly class PaymentIntent
 
         return new self(
             id: $data['id'] ?? null,
-            status: $data['status'] ?? null,
+            status: PaymentIntentStatus::tryFrom($data['status']),
             amount: $data['amount'] ?? null,
             currency: $currency,
             customerId: $data['customer_id'] ?? $data['customerId'] ?? null,
