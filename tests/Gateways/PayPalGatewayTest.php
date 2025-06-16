@@ -173,7 +173,7 @@ final class PayPalGatewayTest extends TestCase
         // For PayPal, we're just testing that the method returns a PaymentMethod with the same customer ID
         $result = $this->gateway->createPaymentMethod($paymentMethod);
 
-        $this->assertSame('paypal', $result->type);
+        $this->assertSame(PaymentMethodType::PayPal, $result->type);
         $this->assertSame('CUST-123', $result->customerId);
 
         // Since PayPal handles payment methods differently, we don't expect an API call here
