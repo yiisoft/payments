@@ -99,19 +99,45 @@ Represents how a customer will pay (credit card, PayPal, etc.). Contains:
 - `type`: Payment method type (e.g., 'card', 'paypal')
 - `details`: Payment method specific data (last4, brand, etc.)
 - `customerId`: Reference to the customer
+- `billingDetails`: Billing details (name, email, address, etc.)
 
 ```php
+use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Models\PaymentMethodType;
+
 $paymentMethod = new PaymentMethod(
     id: 'pm_123',
-    type: PaymentMethodType::Card,
+    type: PaymentMethodType::CARD,
     details: [
         'last4' => '4242',
         'brand' => 'visa',
         'exp_month' => 12,
-        'exp_year' => 2025
+        'exp_year' => 2025,
     ],
-    customerId: 'cus_123'
+    customerId: 'cus_123',
+    billingDetails: [
+        'name' => 'John Doe',
+        'email' => 'john.doe@example.com',
+        'address' => [
+            'line1' => '123 Main St',
+            'city' => 'San Francisco',
+            'state' => 'CA',
+            'postal_code' => '94105',
+            'country' => 'US',
+        ],
+    ],
 );
+
+// Available payment method types:
+// - PaymentMethodType::CARD
+// - PaymentMethodType::PAYPAL
+// - PaymentMethodType::SEPA_DEBIT
+
+// Check if a payment method type is valid
+$isValid = PaymentMethodType::isValid('card'); // true
+
+// Get all available payment method types
+$allTypes = PaymentMethodType::all();
 ```
 
 #### Payment Intent
