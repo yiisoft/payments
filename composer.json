@@ -4,8 +4,8 @@
     "type": "library",
     "license": "BSD-3-Clause",
     "support": {
-        "issues": "https://github.com/yiisoft/_____/issues?state=open",
-        "source": "https://github.com/yiisoft/_____",
+        "issues": "https://github.com/yiisoft/payments/issues?state=open",
+        "source": "https://github.com/yiisoft/payments",
         "forum": "https://www.yiiframework.com/forum/",
         "wiki": "https://www.yiiframework.com/wiki/",
         "irc": "ircs://irc.libera.chat:6697/yii",
