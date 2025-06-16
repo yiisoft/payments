@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Gateways;
 
 use Yiisoft\Payments\Enums\PaymentIntentStatus;
-use Yiisoft\Payments\Enums\PaymentMethodType;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
@@ -13,6 +12,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use Yiisoft\Payments\Models\PaymentMethodType;
 
 class PayPalGateway extends AbstractGateway
 {
@@ -172,21 +172,21 @@ class PayPalGateway extends AbstractGateway
         $data = [
             'customer' => $paymentMethod->customerId,
             'type' => $paymentMethod->type,
-            $paymentMethod->type->value => $paymentMethod->details,
+            $paymentMethod->type => $paymentMethod->details,
             'billing_details' => $paymentMethod->billingDetails,
             'metadata' => $paymentMethod->metadata,
         ];
 
         // In PayPal, payment methods are typically associated with orders, not directly with customers
         // This is a simplified implementation
-        return new PaymentMethod($paymentMethod->id, PaymentMethodType::PayPal, [], $paymentMethod->customerId);
+        return new PaymentMethod($paymentMethod->id, PaymentMethodType::PAYPAL, [], $paymentMethod->customerId);
     }
 
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
         // In PayPal, payment methods are typically associated with orders, not directly with customers
         // This is a simplified implementation
-        return new PaymentMethod($paymentMethodId, PaymentMethodType::PayPal, [], $customerId);
+        return new PaymentMethod($paymentMethodId, PaymentMethodType::PAYPAL, [], $customerId);
     }
 
     public function createPaymentIntent(PaymentIntent $intent): PaymentIntent

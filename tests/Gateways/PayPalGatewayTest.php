@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Gateways;
 
-use Yiisoft\Payments\Enums\PaymentMethodType;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
 use Yiisoft\Payments\Enums\PaymentIntentStatus;
 use Yiisoft\Payments\Gateways\PayPalGateway;
+use Yiisoft\Payments\Models\PaymentMethodType;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
 use PHPUnit\Framework\TestCase;
 
@@ -161,7 +161,7 @@ final class PayPalGatewayTest extends TestCase
 
         $paymentMethod = new PaymentMethod(
             id: null,
-            type: PaymentMethodType::PayPal,
+            type: PaymentMethodType::PAYPAL,
             details: ['email' => 'test@example.com'],
             customerId: 'CUST-123',
             billingDetails: [
@@ -174,7 +174,7 @@ final class PayPalGatewayTest extends TestCase
         // For PayPal, we're just testing that the method returns a PaymentMethod with the same customer ID
         $result = $this->gateway->createPaymentMethod($paymentMethod);
 
-        $this->assertSame(PaymentMethodType::PayPal, $result->type);
+        $this->assertSame(PaymentMethodType::PAYPAL, $result->type);
         $this->assertSame('CUST-123', $result->customerId);
 
         // Since PayPal handles payment methods differently, we don't expect an API call here
