@@ -11,13 +11,11 @@ use Psr\Http\Message\ResponseInterface;
 
 class TestHttpClient implements ClientInterface
 {
-    private Psr17Factory $factory;
     private ?array $nextResponse = null;
     public array $lastRequest = [];
 
-    public function __construct(Psr17Factory $factory)
+    public function __construct(private Psr17Factory $factory)
     {
-        $this->factory = $factory;
     }
 
     public function setNextResponse(?array $response): void

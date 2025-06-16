@@ -16,24 +16,18 @@ class PayPalGateway extends AbstractGateway
 {
     private ?string $accessToken = null;
     private ?int $tokenExpires = null;
-    private const TOKEN_EXPIRY_BUFFER = 300; // 5 minutes in seconds
-    private string $clientId;
-    private string $clientSecret;
-    private bool $sandbox;
+    private const TOKEN_EXPIRY_BUFFER = 300;
 
     public function __construct(
-        string $clientId,
-        string $clientSecret,
-        bool $sandbox,
+        private string $clientId,
+        private string $clientSecret,
+        private bool $sandbox,
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-        $this->clientId = $clientId;
-        $this->clientSecret = $clientSecret;
-        $this->sandbox = $sandbox;
     }
 
     protected function getBaseUri(): string

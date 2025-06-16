@@ -14,18 +14,16 @@ use Psr\Log\LoggerInterface;
 
 class StripeGateway extends AbstractGateway
 {
-    private string $apiKey;
     private string $apiVersion = '2023-10-16';
 
     public function __construct(
-        string $apiKey,
+        private string $apiKey,
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-        $this->apiKey = $apiKey;
     }
 
     protected function getBaseUri(): string
