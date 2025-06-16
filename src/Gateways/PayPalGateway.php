@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Gateways;
 
+use Yiisoft\Payments\Enums\PaymentIntentStatus;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
@@ -32,7 +33,7 @@ class PayPalGateway extends AbstractGateway
 
     protected function getBaseUri(): string
     {
-        return $this->sandbox 
+        return $this->sandbox
             ? 'https://api-m.sandbox.paypal.com/v1'
             : 'https://api-m.paypal.com/v1';
     }
@@ -62,11 +63,11 @@ class PayPalGateway extends AbstractGateway
         );
 
         $data = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
-        
+
         if (!isset($data['access_token'])) {
             throw new \RuntimeException('Failed to get access token: ' . ($data['error'] ?? 'Unknown error'));
         }
-        
+
         $this->accessToken = $data['access_token'];
         $this->tokenExpires = time() + ($data['expires_in'] ?? 3600);
 
@@ -76,12 +77,12 @@ class PayPalGateway extends AbstractGateway
     protected function createRequest(string $method, string $endpoint, array $data = []): \Psr\Http\Message\RequestInterface
     {
         $request = parent::createRequest($method, $endpoint, $data);
-        
+
         // Skip adding auth header for token requests
         if (str_contains($endpoint, '/oauth2/token')) {
             return $request;
         }
-        
+
         return $request
             ->withHeader('Authorization', 'Bearer ' . $this->getAccessToken())
             ->withHeader('PayPal-Request-Id', uniqid('', true));
@@ -103,7 +104,7 @@ class PayPalGateway extends AbstractGateway
         ];
 
         $response = $this->sendRequest($this->createRequest('POST', '/customer/partner-referrals', $data));
-        
+
         // PayPal doesn't have a direct customer creation endpoint in the same way as Stripe
         // This is a simplified implementation
         return new Customer(
@@ -155,7 +156,7 @@ class PayPalGateway extends AbstractGateway
         ];
 
         $this->sendRequest($this->createRequest('PATCH', "/customer/partner-referrals/{$customer->id}", [$data]));
-        
+
         return $customer;
     }
 
@@ -224,10 +225,10 @@ class PayPalGateway extends AbstractGateway
                 break;
             }
         }
-        
+
         return new PaymentIntent(
             id: $response['id'],
-            status: strtoupper($response['state'] ?? 'created'),
+            status: PaymentIntentStatus::tryFrom(strtolower($response['state'] ?? 'created')),
             amount: $intent->amount,
             currency: strtolower($response['transactions'][0]['amount']['currency'] ?? 'usd'),
             customerId: $intent->customerId,
@@ -249,10 +250,10 @@ class PayPalGateway extends AbstractGateway
     public function capturePaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
         $response = $this->createRequest('POST', "/checkout/orders/{$intentId}/capture", $params);
-        
+
         return new PaymentIntent(
             $response['id'],
-            strtolower($response['status']),
+            PaymentIntentStatus::tryFrom(strtolower($response['status'])),
             (int) ((float) $response['purchase_units'][0]['payments']['captures'][0]['amount']['value'] * 100),
             strtolower($response['purchase_units'][0]['payments']['captures'][0]['amount']['currency_code']),
             null,
@@ -268,10 +269,10 @@ class PayPalGateway extends AbstractGateway
     {
         // In PayPal, we void the authorization
         $response = $this->createRequest('POST', "/checkout/orders/{$intentId}/void-authorization", $params);
-        
+
         return new PaymentIntent(
             $response['id'],
-            'canceled',
+            PaymentIntentStatus::Canceled,
             null,
             null,
             null,
@@ -295,7 +296,7 @@ class PayPalGateway extends AbstractGateway
         $response = $this->sendRequest(
             $this->createRequest('POST', "/v1/payments/capture/{$captureId}/refund", $data)
         );
-        
+
         return [
             'id' => $response['id'],
             'state' => $response['state'],
@@ -320,7 +321,7 @@ class PayPalGateway extends AbstractGateway
 
         return new PaymentIntent(
             id: $data['id'],
-            status: strtoupper($data['state']),
+            status: PaymentIntentStatus::tryFrom(strtoupper($data['state'])),
             amount: (int)($amount['total'] * 100) ?? 0,
             currency: $amount['currency'] ?? null,
             customerId: $data['payer']['payer_info']['customer_id'] ?? null,
