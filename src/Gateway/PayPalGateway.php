@@ -195,6 +195,16 @@ final class PayPalGateway extends AbstractGateway
         $out->status     = $resp['status']      ?? null;
         $out->createTime = $resp['create_time'] ?? null;
         $out->updateTime = $resp['update_time'] ?? null;
+
+        // Extract capture IDs from the first purchase unit (adjust if multiple) [web:125]
+        $captures = $resp['purchase_units'][0]['payments']['captures'] ?? [];
+        $out->captureIds = [];
+        foreach ($captures as $cap) {
+            if (!empty($cap['id'])) {
+                $out->captureIds[] = (string)$cap['id'];
+            }
+        }
+
         return $out;
     }
 

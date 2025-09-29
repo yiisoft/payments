@@ -30,3 +30,6 @@ composer.phar
 /phpunit.xml
 /.phpunit.cache
 /.phpunit.result.cache
+
+# Test configurations
+/tests/Config/PaypalSandbox.php

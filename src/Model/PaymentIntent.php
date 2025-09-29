@@ -75,6 +75,13 @@ final class PaymentIntent
     public ?string $updateTime = null;
 
     /**
+     * Capture IDs returned by the Orders v2 capture response.
+     *
+     * @var string[]|null
+     */
+    public ?array $captureIds = null;
+
+    /**
      * @param string                  $intent             CAPTURE or AUTHORIZE.
      * @param PurchaseUnit[]          $purchaseUnits      Purchase units list.
      * @param Customer|null           $customer           Payer info.

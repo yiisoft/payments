@@ -50,12 +50,14 @@ final class PayPalCardPaymentTest extends TestCase
         $purchaseUnit = new PurchaseUnit(
             new Amount(PaypalSandbox::ORDER_CURRENCY_CODE, PaypalSandbox::ORDER_AMOUNT_VALUE)
         );
-
+    
         $payerName = new PayerName(PaypalSandbox::PAYER_GIVEN_NAME, PaypalSandbox::PAYER_SURNAME);
         $customer = new Customer(
             name: $payerName,
             emailAddress: PaypalSandbox::PAYER_EMAIL ?: null,
-            phone: PaypalSandbox::PAYER_PHONE_NATIONAL ? new Phone(new PhoneNumber(PaypalSandbox::PAYER_PHONE_NATIONAL)) : null,
+            phone: PaypalSandbox::PAYER_PHONE_NATIONAL
+                ? new Phone(new PhoneNumber(PaypalSandbox::PAYER_PHONE_NATIONAL))
+                : null,
             address: new Address(
                 PaypalSandbox::ADDR_LINE1,
                 PaypalSandbox::ADDR_CITY,
@@ -65,7 +67,7 @@ final class PayPalCardPaymentTest extends TestCase
                 PaypalSandbox::ADDR_STATE
             )
         );
-
+    
         $appCtx = new ApplicationContext(
             returnUrl: PaypalSandbox::RETURN_URL,
             cancelUrl: PaypalSandbox::CANCEL_URL,
@@ -74,42 +76,59 @@ final class PayPalCardPaymentTest extends TestCase
             userAction: PaypalSandbox::USER_ACTION,
             shippingPreference: PaypalSandbox::SHIPPING_PREFERENCE
         );
-
+    
         $intent = new PaymentIntent(
             intent: PaypalSandbox::ORDER_INTENT,
             purchaseUnits: [$purchaseUnit],
             customer: $customer,
             applicationContext: $appCtx
         );
-
-        // 2) Create order
+    
+        // 2) Create order and show approval URL for manual browser approval if needed
         $created = $this->gateway->createPaymentIntent($intent);
         $this->assertNotEmpty($created->orderId, 'Order ID should be returned after creation');
-
-        // 3) Get approval URL (buyer approval is a browser/client step)
+    
         $approvalUrl = $this->gateway->getApprovalUrl($created->orderId ?? '');
         $this->assertNotEmpty($approvalUrl, 'Approval URL should be present for redirect-based approval');
-
-        // 4) Capture a pre-approved order ID from config (approval happened outside this test)
+    
         $approvedOrderId = PaypalSandbox::APPROVED_ORDER_ID ?? '';
         if (empty($approvedOrderId)) {
-            $this->markTestSkipped('Set PaypalSandbox::APPROVED_ORDER_ID with an already approved order id to run capture/refund steps.');
+            fwrite(STDOUT, PHP_EOL . '=== Manual approval required ===' . PHP_EOL);
+            fwrite(STDOUT, 'Order ID:    ' . ($created->orderId ?? '') . PHP_EOL);
+            fwrite(STDOUT, 'Approve URL: ' . $approvalUrl . PHP_EOL);
+            fwrite(STDOUT, 'Open the URL in a browser and approve the order, then set PaypalSandbox::APPROVED_ORDER_ID and re-run this test.' . PHP_EOL . PHP_EOL);
+            $this->markTestIncomplete('Waiting for manual browser approval; set APPROVED_ORDER_ID and re-run.');
         }
-
+    
+        // 3) Capture the pre-approved order
         $captured = $this->gateway->capturePaymentIntent($approvedOrderId);
         $this->assertNotEmpty($captured->status, 'Capture response should contain a status');
         $this->assertContains($captured->status, ['COMPLETED', 'APPROVED', 'PENDING'], 'Unexpected capture status');
-
-        // 5) Refund a known capture ID from config
+    
+        // 4) Determine CAPTURE_ID for refund: use config if set, otherwise print suggested ID and pause
         $captureId = PaypalSandbox::CAPTURE_ID ?? '';
         if (empty($captureId)) {
-            $this->markTestSkipped('Set PaypalSandbox::CAPTURE_ID from a previous capture to run the refund step.');
+            // Assumes PayPalGateway populates PaymentIntent->captureIds from the capture response
+            $suggested = $captured->captureIds[0] ?? null;
+            if ($suggested) {
+                fwrite(STDOUT, PHP_EOL . '=== Capture obtained ===' . PHP_EOL);
+                fwrite(STDOUT, 'Suggested CAPTURE_ID: ' . $suggested . PHP_EOL);
+                fwrite(STDOUT, 'Set PaypalSandbox::CAPTURE_ID to this value and re-run to execute refund in the same test.' . PHP_EOL . PHP_EOL);
+                $this->markTestIncomplete('CAPTURE_ID not set; printed suggested ID from capture. Set it and re-run to test refund.');
+            } else {
+                $this->fail('No capture id found in capture response; cannot proceed to refund.');
+            }
         }
-
-        $ok = $this->gateway->createRefund($captureId, (float) PaypalSandbox::REFUND_AMOUNT_VALUE, PaypalSandbox::ORDER_CURRENCY_CODE);
+    
+        // 5) Refund (partial or full) using configured CAPTURE_ID
+        $ok = $this->gateway->createRefund(
+            $captureId,
+            (float) PaypalSandbox::REFUND_AMOUNT_VALUE,
+            PaypalSandbox::ORDER_CURRENCY_CODE
+        );
         $this->assertTrue($ok, 'Refund should return true on success');
-
-        // 6) Retrieve an order for verification (either provided or just created)
+    
+        // 6) Optional: retrieve an order for verification (config or the created one)
         $retrieveOrderId = PaypalSandbox::RETRIEVE_ORDER_ID ?: ($created->orderId ?? '');
         if (!empty($retrieveOrderId)) {
             $fetched = $this->gateway->retrievePaymentIntent($retrieveOrderId);
@@ -117,4 +136,7 @@ final class PayPalCardPaymentTest extends TestCase
             $this->assertNotEmpty($fetched->status, 'Retrieved order should have a status');
         }
     }
+    
+
+
 }
