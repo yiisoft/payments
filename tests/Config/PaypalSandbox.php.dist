@@ -1,0 +1,49 @@
+<?php
+declare(strict_types=1);
+
+namespace YourNamespace\Tests\Config;
+
+/**
+ * Centralized Sandbox configuration for PayPal Orders v2 integration tests.
+ * Fill these from the PayPal Developer Dashboard (Sandbox) and known IDs from prior approvals/captures.
+ */
+final class PaypalSandbox
+{
+    // Credentials and environment
+    public const CLIENT_ID     = 'YOUR_SANDBOX_CLIENT_ID';
+    public const CLIENT_SECRET = 'YOUR_SANDBOX_CLIENT_SECRET';
+    public const SANDBOX       = true; // true = sandbox; false = live
+
+    // Order request parameters
+    public const ORDER_INTENT        = 'CAPTURE';   // or 'AUTHORIZE'
+    public const ORDER_CURRENCY_CODE = 'USD';
+    public const ORDER_AMOUNT_VALUE  = '7.00';
+
+    // Payer info (Orders v2 requires given_name/surname at payer.name)
+    public const PAYER_GIVEN_NAME = 'John';
+    public const PAYER_SURNAME    = 'Doe';
+    public const PAYER_EMAIL      = 'john@example.com';     // optional
+    public const PAYER_PHONE_NATIONAL = '1234567890';       // optional
+
+    // Optional payer/shipping address
+    public const ADDR_LINE1  = '123 Main St';
+    public const ADDR_LINE2  = null;
+    public const ADDR_CITY   = 'San Jose';
+    public const ADDR_STATE  = null;
+    public const ADDR_POSTAL = '95131';
+    public const ADDR_COUNTRY= 'US';
+
+    // Application context for redirect approval
+    public const RETURN_URL          = 'https://example.test/success';
+    public const CANCEL_URL          = 'https://example.test/cancel';
+    public const BRAND_NAME          = 'My Demo Shop';
+    public const LANDING_PAGE        = 'LOGIN';
+    public const USER_ACTION         = 'PAY_NOW';
+    public const SHIPPING_PREFERENCE = 'NO_SHIPPING';
+
+    // Known IDs supplied externally to exercise capture/refund/retrieve
+    public const APPROVED_ORDER_ID = '';   // set to an order id already approved by the buyer
+    public const CAPTURE_ID        = '';   // set to a capture id from a previous capture
+    public const REFUND_AMOUNT_VALUE = '2.00';
+    public const RETRIEVE_ORDER_ID = '';   // set to any known order id or leave empty to skip
+}
