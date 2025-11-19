@@ -156,7 +156,7 @@ final class PayPalGatewayTest extends TestCase
     public function testCreatePaymentMethod(): void
     {
         $this->mockTokenRequest();
-        
+
         $paymentMethod = new PaymentMethod(
             id: null,
             type: 'paypal',
@@ -174,7 +174,7 @@ final class PayPalGatewayTest extends TestCase
 
         $this->assertSame('paypal', $result->type);
         $this->assertSame('CUST-123', $result->customerId);
-        
+
         // Since PayPal handles payment methods differently, we don't expect an API call here
         // The method should just return the payment method with the customer ID set
     }

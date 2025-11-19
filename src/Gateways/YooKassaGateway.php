@@ -15,20 +15,15 @@ use Psr\Log\LoggerInterface;
 
 class YooKassaGateway extends AbstractGateway
 {
-    private string $shopId;
-    private string $secretKey;
-
     public function __construct(
-        string $shopId,
-        string $secretKey,
+        private string $shopId,
+        private string $secretKey,
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-        $this->shopId = $shopId;
-        $this->secretKey = $secretKey;
     }
 
     protected function getBaseUri(): string
