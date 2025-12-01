@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Yiisoft\Payments\Tests\Config;
+
+/**
+ * Holds real PayPal sandbox configuration used in CLI tests.
+ *
+ * Fill these constants from your PayPal Developer Dashboard.
+ */
+final class PaypalSandbox
+{
+    public const CLIENT_ID = 'YOUR_SANDBOX_CLIENT_ID';
+    public const CLIENT_SECRET = 'YOUR_SANDBOX_CLIENT_SECRET';
+
+    public const SANDBOX_URL = 'https://api-m.sandbox.paypal.com';
+    public const LIVE_URL = 'https://api-m.paypal.com';
+
+    public const RETURN_URL = 'https://your-test-app.example.com/paypal/return';
+    public const CANCEL_URL = 'https://your-test-app.example.com/paypal/cancel';
+
+    public const CURRENCY = 'USD';
+    public const AMOUNT = 10.00;
+}

@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Yiisoft\Payments\Tests\Config;
+
+/**
+ * Holds Robokassa test configuration values.
+ *
+ * Use the merchant login and two test passwords from your Robokassa account.
+ */
+final class RobokassaSandbox
+{
+    public const MERCHANT_LOGIN = 'YOUR_TEST_MERCHANT_LOGIN';
+    public const PASSWORD1 = 'YOUR_TEST_PASSWORD1';
+    public const PASSWORD2 = 'YOUR_TEST_PASSWORD2';
+
+    public const PAYMENT_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
+
+    public const RESULT_URL = 'https://your-test-app.example.com/robokassa/result';
+    public const SUCCESS_URL = 'https://your-test-app.example.com/robokassa/success';
+    public const FAIL_URL = 'https://your-test-app.example.com/robokassa/fail';
+
+    public const CURRENCY = 'RUB';
+    public const AMOUNT = 5.00;
+}

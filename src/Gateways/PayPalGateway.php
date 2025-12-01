@@ -20,6 +20,7 @@ class PayPalGateway extends AbstractGateway
     private string $clientId;
     private string $clientSecret;
     private bool $sandbox;
+    protected const API_VERSION = 'v2';
 
     public function __construct(
         string $clientId,
@@ -36,11 +37,11 @@ class PayPalGateway extends AbstractGateway
         $this->sandbox = $sandbox;
     }
 
-    protected function getBaseUri(): string
+    protected function getBaseUri(string $apiVersion = self::API_VERSION): string
     {
-        return $this->sandbox 
-            ? 'https://api-m.sandbox.paypal.com/v1'
-            : 'https://api-m.paypal.com/v1';
+        return $this->sandbox
+            ? 'https://api-m.sandbox.paypal.com/' . $apiVersion
+            : 'https://api-m.paypal.com/' . $apiVersion;
     }
 
     private function getAccessToken(): string
@@ -57,16 +58,15 @@ class PayPalGateway extends AbstractGateway
         $auth = base64_encode($this->clientId . ':' . $this->clientSecret);
         $request = $this->requestFactory->createRequest(
             'POST',
-            $this->getBaseUri() . '/v1/oauth2/token'
-        )->withHeader('Authorization', 'Basic ' . $auth)
-         ->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+            $this->getBaseUri('v1') . '/oauth2/token')
+            ->withHeader('Authorization', 'Basic ' . $auth)
+            ->withHeader('Content-Type', 'application/x-www-form-urlencoded');
 
         $response = $this->httpClient->sendRequest(
             $request->withBody(
                 $this->streamFactory->createStream('grant_type=client_credentials')
             )
         );
-
         $data = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
         
         if (!isset($data['access_token'])) {
@@ -126,6 +126,8 @@ class PayPalGateway extends AbstractGateway
     public function retrieveCustomer(string $customerId): Customer
     {
         $response = $this->createRequest('GET', "/customers/{$customerId}");
+
+var_dump((string)$response->getBody());exit(0);
         $data = $this->sendRequest($response);
 
         return new Customer(
@@ -219,7 +221,7 @@ class PayPalGateway extends AbstractGateway
         ];
 
         $response = $this->sendRequest(
-            $this->createRequest('POST', '/v1/payments/payment', $data)
+            $this->createRequest('POST', '/payments/payment', $data)
         );
 
         // Find the approval URL from the links
@@ -299,7 +301,7 @@ class PayPalGateway extends AbstractGateway
         ];
 
         $response = $this->sendRequest(
-            $this->createRequest('POST', "/v1/payments/capture/{$captureId}/refund", $data)
+            $this->createRequest('POST', "/payments/capture/{$captureId}/refund", $data)
         );
         
         return [
