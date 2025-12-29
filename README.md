@@ -32,6 +32,18 @@ composer require yiisoft/payments
 ## How it Works
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables": {
+  "background":"transparent",
+  "fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+  "primaryColor":"#0f172a",
+  "primaryTextColor":"#e2e8f0",
+  "primaryBorderColor":"#94a3b8",
+  "lineColor":"#94a3b8",
+  "secondaryColor":"#052e16",
+  "tertiaryColor":"#1e293b",
+  "clusterBkg":"#0b1220",
+  "clusterBorder":"#334155"
+}}}%%
 graph TD
     A[Application] -->|Uses| B[PaymentGatewayInterface]
     B -->|Implemented by| C[StripeGateway]
@@ -54,14 +66,20 @@ graph TD
         F -->|Uses| O[YooKassa API]
     end
 
-    style H fill:#f9f,stroke:#333,stroke-width:2px
-    style I fill:#f9f,stroke:#333,stroke-width:2px
-    style J fill:#f9f,stroke:#333,stroke-width:2px
-    style K fill:#f9f,stroke:#333,stroke-width:2px
-    style L fill:#9f9,stroke:#333,stroke-width:2px
-    style M fill:#9f9,stroke:#333,stroke-width:2px
-    style N fill:#9f9,stroke:#333,stroke-width:2px
-    style O fill:#9f9,stroke:#333,stroke-width:2px
+    %% High-contrast styling that stays readable on GitHub dark theme
+    classDef app fill:#111827,stroke:#cbd5e1,color:#f8fafc;
+    classDef iface fill:#1e293b,stroke:#38bdf8,color:#f8fafc;
+    classDef gateway fill:#0f172a,stroke:#60a5fa,color:#e2e8f0;
+    classDef model fill:#0b1220,stroke:#94a3b8,color:#e2e8f0;
+    classDef ex fill:#3b0a0a,stroke:#fb7185,color:#ffe4e6;
+    classDef api fill:#052e16,stroke:#34d399,color:#ecfdf5;
+
+    class A app;
+    class B iface;
+    class C,D,E,F,G gateway;
+    class H,I,J model;
+    class K ex;
+    class L,M,N,O api;
 ```
 
 The library provides a unified interface for multiple payment gateways, with each gateway implementing the `PaymentGatewayInterface`. The main components are:
