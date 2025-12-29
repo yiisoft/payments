@@ -1,0 +1,78 @@
+<?php
+
+/**
+ * PayPal integration test configuration.
+ *
+ * How to use:
+ * 1) Copy this file to tests/config/paypal.php
+ * 2) Fill in sandbox credentials (recommended) or live credentials.
+ * 3) Run tests.
+ *
+ * IMPORTANT:
+ * - Never commit tests/config/paypal.php (it is ignored by git).
+ * - The default (Variant A) tests create an order and verify API connectivity.
+ *   Capture/refund tests run only if you provide approved IDs in this config.
+ * - Variant B (advanced card payments) runs only if you explicitly enable it and supply card data.
+ *
+ * Variant A (default):
+ * - create order (v2) -> returns approval URL
+ * - (optional) capture an already-approved order if approved_order_id is provided
+ * - (optional) refund an already-captured payment if capture_id_for_refund is provided
+ *
+ * Variant B (optional):
+ * - create order (v2)
+ * - confirm payment source (card) via /confirm-payment-source
+ * - capture
+ *
+ * Variant B requires PayPal account capabilities (advanced card payments / appropriate product permissions).
+ * If your PayPal account is not enabled for this flow, keep enable_advanced_card_payments_flow = false.
+ */
+return [
+    // OAuth2
+    'client_id' => 'YOUR_PAYPAL_CLIENT_ID',
+    'client_secret' => 'YOUR_PAYPAL_CLIENT_SECRET',
+
+    // Use sandbox by default
+    'sandbox' => true,
+
+    // Optional URLs for web approval flows
+    'return_url' => 'https://example.com/paypal/return',
+    'cancel_url' => 'https://example.com/paypal/cancel',
+
+    // ---------------------------
+    // Variant A (default) options
+    // ---------------------------
+
+    // If you manually approve an order in PayPal sandbox, paste its ID here to enable capture test.
+    // Example: '5O190127TN364715T'
+    'approved_order_id' => null,
+
+    // If you have a capture ID (e.g. from a previous successful capture), paste it here to enable refund test.
+    // Example: '3C679366HH908993F'
+    'capture_id_for_refund' => null,
+
+    // ---------------------------
+    // Variant B (optional) options
+    // ---------------------------
+
+    // Enable only if your PayPal account is configured for advanced card payments flow.
+    'enable_advanced_card_payments_flow' => false,
+
+    // Payment source for /confirm-payment-source (sandbox test card data).
+    // Provide only if enable_advanced_card_payments_flow = true.
+    'payment_source' => [
+        'card' => [
+            'name' => 'JOHN DOE',
+            'number' => '4111111111111111',
+            'expiry' => '2028-12',
+            'security_code' => '123',
+            'billing_address' => [
+                'address_line_1' => '1 Main St',
+                'admin_area_2' => 'San Jose',
+                'admin_area_1' => 'CA',
+                'postal_code' => '95131',
+                'country_code' => 'US',
+            ],
+        ],
+    ],
+];

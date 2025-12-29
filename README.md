@@ -15,7 +15,7 @@
 [![type-coverage](https://shepherd.dev/github/yiisoft/payments/coverage.svg)](https://shepherd.dev/github/yiisoft/payments)
 [![psalm-level](https://shepherd.dev/github/yiisoft/payments/level.svg)](https://shepherd.dev/github/yiisoft/payments)
 
-A modern PHP 8.4+ library providing a unified interface for multiple payment gateways, with first-class support for Stripe and PayPal.
+A modern PHP 8.1+ library providing a unified interface for multiple payment gateways, with support for Stripe, PayPal (REST API v2), Robokassa and YooKassa.
 
 ## Requirements
 
@@ -36,33 +36,39 @@ graph TD
     A[Application] -->|Uses| B[PaymentGatewayInterface]
     B -->|Implemented by| C[StripeGateway]
     B -->|Implemented by| D[PayPalGateway]
-    B -->|Can be extended to| E[CustomGateway]
-    
+    B -->|Implemented by| E[RobokassaGateway]
+    B -->|Implemented by| F[YooKassaGateway]
+    B -->|Can be extended to| G[CustomGateway]
+
     subgraph "Core Components"
-        F[Customer] -->|Used by| B
-        G[PaymentIntent] -->|Used by| B
-        H[PaymentMethod] -->|Used by| B
-        I[PaymentException] -->|Thrown by| B
+        H[Customer] -->|Used by| B
+        I[PaymentIntent] -->|Used by| B
+        J[PaymentMethod] -->|Used by| B
+        K[PaymentException] -->|Thrown by| B
     end
-    
+
     subgraph "Gateway Implementations"
-        C -->|Uses| J[Stripe API]
-        D -->|Uses| K[PayPal API]
+        C -->|Uses| L[Stripe API]
+        D -->|Uses| M[PayPal REST API v2]
+        E -->|Uses| N[Robokassa API]
+        F -->|Uses| O[YooKassa API]
     end
-    
-    style F fill:#f9f,stroke:#333,stroke-width:2px
-    style G fill:#f9f,stroke:#333,stroke-width:2px
+
     style H fill:#f9f,stroke:#333,stroke-width:2px
     style I fill:#f9f,stroke:#333,stroke-width:2px
-    style J fill:#9f9,stroke:#333,stroke-width:2px
-    style K fill:#9f9,stroke:#333,stroke-width:2px
+    style J fill:#f9f,stroke:#333,stroke-width:2px
+    style K fill:#f9f,stroke:#333,stroke-width:2px
+    style L fill:#9f9,stroke:#333,stroke-width:2px
+    style M fill:#9f9,stroke:#333,stroke-width:2px
+    style N fill:#9f9,stroke:#333,stroke-width:2px
+    style O fill:#9f9,stroke:#333,stroke-width:2px
 ```
 
 The library provides a unified interface for multiple payment gateways, with each gateway implementing the `PaymentGatewayInterface`. The main components are:
 
 - **PaymentGatewayInterface**: Defines the common API for all payment gateways
 - **AbstractGateway**: Base class with shared functionality
-- **Gateway-specific implementations**: Classes like `StripeGateway` and `PayPalGateway`
+- **Gateway-specific implementations**: `StripeGateway`, `PayPalGateway`, `RobokassaGateway`, `YooKassaGateway`
 - **Data Models**: `Customer`, `PaymentIntent`, `PaymentMethod` for type-safe operations
 
 ## Features
@@ -71,7 +77,7 @@ The library provides a unified interface for multiple payment gateways, with eac
 - **Type Safety** - Strictly typed models and responses
 - **PSR Standards** - Follows PSR-4, PSR-7, PSR-17, and PSR-18
 - **Extensible** - Easy to add new payment gateways
-- **Modern PHP** - Requires PHP 8.4+ with strict types and readonly properties
+- **Modern PHP** - Requires PHP 8.1+ with strict types and readonly properties
 
 ## Payment Flow
 
@@ -197,13 +203,14 @@ const { paymentMethod, error } = await stripe.createPaymentMethod({
 // Send paymentMethod.id to your server
 ```
 
-#### Step 4: Create Payment Method
+#### Step 4: Attach Payment Method (Server-Side)
 ```php
-$paymentMethod = $gateway->createPaymentMethod(new PaymentMethod(
-    id: $_POST['payment_method_id'],
-    type: 'card',
-    customerId: $customer->id
-));
+// If your frontend already created a payment method (e.g. via Stripe.js),
+// you can simply attach it to the customer:
+$paymentMethod = $gateway->attachPaymentMethod(
+    $_POST['payment_method_id'],
+    $customer->id,
+);
 ```
 
 #### Step 5: Create Payment Intent
@@ -234,21 +241,10 @@ if (error) {
 }
 ```
 
-#### Step 7: Handle Webhook Events
-```php
-$event = $gateway->parseWebhookEvent($request->getBody());
+#### Step 7: Webhooks (optional)
+This library does not include webhook signature verification or event parsing.
+Handle webhooks in your application using the provider's official documentation/SDK.
 
-switch ($event->type) {
-    case 'payment_intent.succeeded':
-        $paymentIntent = $event->data->object;
-        // Update your database, send confirmation email, etc.
-        break;
-    case 'payment_intent.payment_failed':
-        $paymentIntent = $event->data->object;
-        // Log failure, notify customer
-        break;
-}
-```
 
 ### 3. Handling Different Statuses
 
@@ -296,146 +292,186 @@ try {
 
 ### Initializing a Gateway
 
+The library relies on PSR-18 (HTTP client) and PSR-17 (request/stream factories).
+In the examples below we use `symfony/http-client` and `nyholm/psr7`, but you can use any compatible implementations.
+
 #### Stripe
 
 ```php
-use PaymentGateway\Gateways\StripeGateway;
-use GuzzleHttp\Client;
+use Yiisoft\Payments\Gateways\StripeGateway;
+use Symfony\Component\HttpClient\Psr18Client;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
-$httpClient = new Client();
-$requestFactory = new Psr17Factory();
-$streamFactory = $requestFactory;
+$httpClient = new Psr18Client();      // Any PSR-18 client will work
+$psr17Factory = new Psr17Factory();   // PSR-17 factories (request + stream)
 
 $stripe = new StripeGateway(
-    'your-stripe-secret-key',
-    $httpClient,
-    $requestFactory,
-    $streamFactory
+    apiKey: 'YOUR_STRIPE_SECRET_KEY',
+    httpClient: $httpClient,
+    requestFactory: $psr17Factory,
+    streamFactory: $psr17Factory,
 );
 ```
 
-#### PayPal
+#### PayPal (Checkout Orders API v2)
 
 ```php
-use PaymentGateway\Gateways\PayPalGateway;
+use Yiisoft\Payments\Gateways\PayPalGateway;
 
+// Reuse $httpClient and $psr17Factory from the Stripe example above (or provide your own PSR-18/PSR-17 implementations).
 $paypal = new PayPalGateway(
-    'your-paypal-client-id',
-    'your-paypal-secret',
-    true, // sandbox mode
-    $httpClient,
-    $requestFactory,
-    $streamFactory
+    clientId: 'YOUR_CLIENT_ID',
+    clientSecret: 'YOUR_CLIENT_SECRET',
+    sandbox: true,
+    httpClient: $httpClient,
+    requestFactory: $psr17Factory,
+    streamFactory: $psr17Factory,
 );
 ```
+
+#### Robokassa
+
+```php
+use Yiisoft\Payments\Gateways\RobokassaGateway;
+
+// Reuse $httpClient and $psr17Factory from the Stripe example above (or provide your own PSR-18/PSR-17 implementations).
+$robokassa = new RobokassaGateway(
+    merchantLogin: 'YOUR_MERCHANT_LOGIN',
+    password1: 'YOUR_PASSWORD_1', // Invoice API (JWT signing)
+    password2: 'YOUR_PASSWORD_2', // XML status API (OpStateExt)
+    password3: 'YOUR_PASSWORD_3', // Refund API v2 (JWT signing). Set to null if you don't need refunds.
+    testMode: true,
+    httpClient: $httpClient,
+    requestFactory: $psr17Factory,
+    streamFactory: $psr17Factory,
+);
+```
+
+
 
 ### Working with Customers
 
 ```php
-// Create a customer
-$customer = new \PaymentGateway\Models\Customer(
-    null, // id will be generated by the gateway
-    'customer@example.com',
-    'John Doe'
-);
+use Yiisoft\Payments\Models\Customer;
 
-$createdCustomer = $gateway->createCustomer($customer);
+// Create a customer
+$customer = $gateway->createCustomer(new Customer(
+    email: 'customer@example.com',
+    name: 'John Doe',
+    metadata: ['user_id' => 42],
+));
 
 // Retrieve a customer
-$customer = $gateway->retrieveCustomer('cus_123');
+$customer = $gateway->retrieveCustomer($customer->id);
 
-// Update a customer
-$customer->setEmail('new.email@example.com');
-$updatedCustomer = $gateway->updateCustomer($customer);
+// Update a customer (models are readonly, create a new instance)
+$customer = $gateway->updateCustomer(new Customer(
+    id: $customer->id,
+    email: 'new.email@example.com',
+    name: $customer->name,
+    phone: $customer->phone,
+    address: $customer->address,
+    metadata: $customer->metadata,
+    description: $customer->description,
+));
 
 // Delete a customer
-$gateway->deleteCustomer('cus_123');
+$gateway->deleteCustomer($customer->id);
 ```
 
 ### Working with Payment Methods
 
 ```php
-// Create a payment method (e.g., card)
-$paymentMethod = new \PaymentGateway\Models\PaymentMethod(
-    null, // id will be generated by the gateway
-    'card',
-    [
-        'number' => '4242424242424242',
-        'exp_month' => '12',
-        'exp_year' => '2025',
-        'cvc' => '123',
-    ]
-);
+use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Models\PaymentMethodType;
 
-$createdMethod = $gateway->createPaymentMethod($paymentMethod);
+// Note: payment method payload is gateway-specific.
+// For card payments you should avoid handling raw card data on your server.
+// Use provider tokenization (e.g. Stripe.js) whenever possible.
 
-// Attach to a customer
-$attachedMethod = $gateway->attachPaymentMethod(
-    $createdMethod->getId(),
-    'cus_123'
-);
+$paymentMethod = $gateway->createPaymentMethod(new PaymentMethod(
+    type: PaymentMethodType::CARD,
+    details: [
+        // Example (Stripe): pass a token created on the client side.
+        // The gateway will send it under the "card" key because type === "card".
+        'token' => 'tok_visa',
+    ],
+    customerId: $customer->id,
+));
+
+$paymentMethod = $gateway->attachPaymentMethod($paymentMethod->id, $customer->id);
 ```
 
 ### Processing Payments
 
 ```php
-// Create a payment intent
-$intent = new \PaymentGateway\Models\PaymentIntent(
-    null, // id will be generated
-    null, // status will be set by the gateway
-    1000, // $10.00
-    'usd',
-    'cus_123',
-    'pm_123',
-    null, // client secret
-    'Order #123',
-    ['order_id' => '123']
-);
+use Yiisoft\Payments\Models\PaymentIntent;
 
-// Create and confirm the payment
-$createdIntent = $gateway->createPaymentIntent($intent);
+// Create a payment intent / order / invoice (gateway-specific)
+$intent = $gateway->createPaymentIntent(new PaymentIntent(
+    amount: 1000,          // in the smallest currency unit (e.g. cents)
+    currency: 'USD',
+    customerId: $customer->id,
+    paymentMethodId: $paymentMethod->id,
+    description: 'Order #123',
+    metadata: ['order_id' => '123'],
+));
 
-// Capture the payment (if not captured automatically)
-if ($createdIntent->getStatus() === 'requires_capture') {
-    $capturedIntent = $gateway->capturePaymentIntent($createdIntent->getId());
+// Some gateways (PayPal, Robokassa) require a customer approval step via redirect URL:
+$redirectUrl = $intent->nextAction['redirect_to_url']['url'] ?? null;
+
+// Capture the payment (only for gateways/flows that support delayed capture)
+if ($intent->status === PaymentIntent::STATUS_REQUIRES_CAPTURE) {
+    $intent = $gateway->capturePaymentIntent($intent->id);
 }
 
-// Refund a payment
-$refund = $gateway->createRefund($capturedIntent->getId(), [
-    'amount' => 1000,
-    'reason' => 'requested_by_customer'
+// Refund
+$refund = $gateway->createRefund($intent->id, [
+    'amount' => 1000, // optional partial refund
+    'reason' => 'requested_by_customer',
 ]);
 ```
 
 ## Available Gateways
 
-### Stripe
+### Stripe (`StripeGateway`)
 
-Full support for Stripe's payment processing features including:
 - Customers
-- Payment Methods (Cards, SEPA, etc.)
-- Payment Intents
+- Payment Methods (create + attach)
+- Payment Intents (create / retrieve / confirm / capture / cancel)
 - Refunds
-- Webhook handling (via separate event handling)
 
-### PayPal
+> Webhook verification/event parsing is intentionally out of scope for this library. Implement it in your application using Stripe docs/SDK.
 
-Support for PayPal's REST API including:
-- Orders API
-- Payments API
-- Payouts
-- Webhooks
+### PayPal (`PayPalGateway`) — REST API v2 (Checkout Orders)
+
+- Payment Intents are mapped to PayPal **Orders** (`/v2/checkout/orders`)
+- `createPaymentIntent()` creates an order and may return an approval URL in `PaymentIntent::$nextAction['redirect_to_url']['url']`
+- `capturePaymentIntent()` captures an order (`/v2/checkout/orders/{id}/capture`)
+- `createRefund()` refunds a capture (`/v2/payments/captures/{capture_id}/refund`)
+
+> PayPal does not expose generic Customer/PaymentMethod resources compatible with the library's models, so `Customer` / `PaymentMethod` operations are treated as lightweight placeholders (no persistent “vault” is created).
+
+### Robokassa (`RobokassaGateway`)
+
+- Payment Intents are mapped to Robokassa **invoices** (Invoice API JWT)
+- `createPaymentIntent()` creates an invoice and returns a redirect URL in `PaymentIntent::$nextAction['redirect_to_url']['url']`
+- `retrievePaymentIntent()` checks invoice status via **OpStateExt**
+- `createRefund()` performs refund via **Refund API v2** (JWT)
+
+> Robokassa customer/payment-method concepts differ from card processors, so `Customer` / `PaymentMethod` operations are implemented as placeholders for interface compatibility.
 
 ## Extending with New Gateways
 
-To add a new payment gateway, follow these steps:
+To add a new payment gateway, create a class that implements `PaymentGatewayInterface`.
+For convenience you can extend `Yiisoft\Payments\Gateways\AbstractGateway`, which provides:
 
-1. Create a new class that implements `PaymentGatewayInterface`
-2. Extend `AbstractGateway` for common functionality
-3. Implement the required methods for your gateway
+- JSON request/response handling (PSR-18 + PSR-17)
+- basic error-to-exception mapping (`PaymentException`, `InvalidRequestException`)
+- a helper to build requests: `createRequest()`
+- a helper to send and decode responses: `sendRequest()`
 
-Here's an example of creating a custom gateway for a hypothetical "AcmePay" payment processor:
+Example (minimal skeleton):
 
 ```php
 <?php
@@ -444,33 +480,28 @@ declare(strict_types=1);
 
 namespace App\Payment\Gateways;
 
-use Yiisoft\PaymentGateway\Core\Models\Customer;
-use Yiisoft\PaymentGateway\Core\Models\PaymentIntent;
-use Yiisoft\PaymentGateway\Core\Models\PaymentMethod;
-use Yiisoft\PaymentGateway\Gateways\AbstractGateway;
+use Yiisoft\Payments\Gateways\AbstractGateway;
+use Yiisoft\Payments\Models\Customer;
+use Yiisoft\Payments\Models\PaymentIntent;
+use Yiisoft\Payments\Models\PaymentMethod;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use Psr\Log\LoggerInterface;
 
 final class AcmePayGateway extends AbstractGateway
 {
     public function __construct(
         private string $apiKey,
-        private bool $sandbox = false,
-        ?ClientInterface $httpClient = null,
-        ?RequestFactoryInterface $requestFactory = null,
-        ?StreamFactoryInterface $streamFactory = null,
-        ?LoggerInterface $logger = null
+        ClientInterface $httpClient,
+        RequestFactoryInterface $requestFactory,
+        StreamFactoryInterface $streamFactory,
     ) {
-        parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
+        parent::__construct($httpClient, $requestFactory, $streamFactory);
     }
 
     protected function getBaseUri(): string
     {
-        return $this->sandbox 
-            ? 'https://api.sandbox.acmepay.com/v1' 
-            : 'https://api.acmepay.com/v1';
+        return 'https://api.acmepay.com/v1';
     }
 
     public function createCustomer(Customer $customer): Customer
@@ -482,11 +513,7 @@ final class AcmePayGateway extends AbstractGateway
             ])
         );
 
-        return new Customer(
-            id: $response['id'],
-            email: $customer->email,
-            name: $customer->name
-        );
+        return Customer::fromArray($response);
     }
 
     public function createPaymentIntent(PaymentIntent $intent): PaymentIntent
@@ -495,74 +522,99 @@ final class AcmePayGateway extends AbstractGateway
             $this->createRequest('POST', '/payment_intents', [
                 'amount' => $intent->amount,
                 'currency' => $intent->currency,
-                'customer' => $intent->customerId,
-                'payment_method' => $intent->paymentMethodId,
                 'metadata' => $intent->metadata,
             ])
         );
 
-        return new PaymentIntent(
-            id: $response['id'],
-            status: $response['status'],
-            amount: $intent->amount,
-            currency: $intent->currency,
-            customerId: $intent->customerId,
-            paymentMethodId: $intent->paymentMethodId,
-            metadata: $intent->metadata,
-        );
+        return PaymentIntent::fromArray($response);
     }
 
-    // Implement other required methods...
+    // Implement the remaining methods from PaymentGatewayInterface...
+    public function retrieveCustomer(string $customerId): Customer { /* ... */ }
+    public function updateCustomer(Customer $customer): Customer { /* ... */ }
+    public function deleteCustomer(string $customerId): void { /* ... */ }
+    public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod { /* ... */ }
+    public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod { /* ... */ }
+    public function confirmPaymentIntent(string $intentId, array $params = []): PaymentIntent { /* ... */ }
+    public function capturePaymentIntent(string $intentId, array $params = []): PaymentIntent { /* ... */ }
+    public function cancelPaymentIntent(string $intentId, array $params = []): PaymentIntent { /* ... */ }
+    public function createRefund(string $paymentIntentId, array $params = []): array { /* ... */ }
+    public function retrievePaymentIntent(string $intentId): PaymentIntent { /* ... */ }
 }
 ```
 
-Now to use it:
+
+### How to use it
+
+After implementing your gateway (for example, `AcmePayGateway` above), you can use it exactly like the built-in gateways.
+Instantiate it with a PSR-18 HTTP client and PSR-17 factories, then call the methods defined by `PaymentGatewayInterface`:
 
 ```php
+<?php
+
+declare(strict_types=1);
+
 use App\Payment\Gateways\AcmePayGateway;
-use Yiisoft\PaymentGateway\Core\Models\Customer;
-use Yiisoft\PaymentGateway\Core\Models\PaymentIntent;
+use Yiisoft\Payments\Models\Customer;
+use Yiisoft\Payments\Models\PaymentIntent;
 
-// Initialize the gateway
-$gateway = new AcmePayGateway(
-    apiKey: 'your_api_key_here',
-    sandbox: true, // Use sandbox for testing
-    httpClient: $httpClient, // PSR-18 HTTP Client
-    requestFactory: $requestFactory, // PSR-17 Request Factory
-    streamFactory: $streamFactory // PSR-17 Stream Factory
-);
+// $httpClient: PSR-18 client
+// $requestFactory: PSR-17 request factory
+// $streamFactory: PSR-17 stream factory
 
-// Create a customer
+$gateway = new AcmePayGateway($httpClient, $requestFactory, $streamFactory);
+
+// 1) (Optional) Create a customer in the provider
 $customer = $gateway->createCustomer(new Customer(
-    email: 'customer@example.com',
-    name: 'John Doe'
+    email: 'buyer@example.com',
+    name: 'Buyer',
 ));
 
-// Create a payment intent
+// 2) Create a payment intent (amount is in minor units, e.g. cents)
 $intent = $gateway->createPaymentIntent(new PaymentIntent(
-    amount: 1000, // $10.00
-    currency: 'usd',
+    amount: 1999,
+    currency: 'USD',
     customerId: $customer->id,
-    paymentMethodId: 'acme_card_123',
-    metadata: ['order_id' => '12345']
+    metadata: ['order_id' => 'ORDER-1001'],
 ));
+
+// 3) If the provider requires buyer approval via redirect, send the buyer to:
+$approvalUrl = $intent->nextAction['redirect_to_url']['url'] ?? null;
+
+// 4) Later (after approval), confirm / capture (if your gateway uses these steps)
+$intent = $gateway->confirmPaymentIntent($intent->id);
+$intent = $gateway->capturePaymentIntent($intent->id);
+
+// 5) Refund (full or partial, depending on your gateway constraints)
+$refund = $gateway->createRefund($intent->id, ['amount' => 1999]);
 ```
 
-When creating a new gateway, you'll need to implement these methods at minimum:
+#### Minimal required methods
 
-- `createCustomer(Customer $customer): Customer`
-- `updateCustomer(Customer $customer): Customer`
-- `createPaymentIntent(PaymentIntent $intent): PaymentIntent`
-- `createPaymentMethod(PaymentMethod $method): PaymentMethod`
-- `createRefund(string $paymentIntentId, array $params = []): array`
+`PaymentGatewayInterface` requires implementing **all** methods below:
 
-There are some best practices to follow:
+- Customer: `createCustomer()`, `retrieveCustomer()`, `updateCustomer()`, `deleteCustomer()`
+- Payment methods: `createPaymentMethod()`, `attachPaymentMethod()`
+- Payment intents: `createPaymentIntent()`, `retrievePaymentIntent()`, `confirmPaymentIntent()`, `capturePaymentIntent()`,
+  `cancelPaymentIntent()`
+- Refunds: `createRefund()`
 
-1. **Error Handling**: Always throw appropriate exceptions (`PaymentException` or its subclasses) for payment-related errors
-2. **Testing**: Create unit tests for your gateway implementation
-3. **Logging**: Use the injected logger to log important events and errors
-4. **Documentation**: Document any gateway-specific behavior or requirements
-5. **Idempotency**: Make requests idempotent where possible to handle retries safely
+For a gateway that only supports *payments + refunds* (and does not have a customer / payment-method concept), the minimum
+you typically implement with real provider calls is:
+
+- `createPaymentIntent()`, `retrievePaymentIntent()`, `cancelPaymentIntent()`, `createRefund()`
+- plus `confirmPaymentIntent()` / `capturePaymentIntent()` **if** your provider has a multi-step confirmation/capture flow
+
+Customer and payment-method operations can be implemented as no-ops (returning the input model) or by throwing
+`PaymentException` if the provider does not support them. Document that behavior in README.
+
+
+Best practices:
+
+1. Throw `PaymentException` (or subclasses) on any gateway-side errors.
+2. Use idempotency keys where the provider supports them.
+3. Add unit tests with a fake/spy HTTP client, and integration tests with real credentials (optional).
+4. Document any gateway-specific behavior (approval redirects, delayed capture, refund constraints).
 
 ## Documentation
 
@@ -570,6 +622,30 @@ There are some best practices to follow:
 
 If you need help or have a question, the [Yii Forum](https://forum.yiiframework.com/c/yii-3-0/63) is a good place
 for that. You may also check out other [Yii Community Resources](https://www.yiiframework.com/community).
+
+## Testing
+
+Unit tests:
+
+```bash
+vendor/bin/phpunit
+```
+
+Integration tests (PayPal / Robokassa real API exchange):
+
+1) Install dev dependencies
+2) Copy config templates and fill credentials:
+
+```bash
+cp tests/config/paypal.php.dist tests/config/paypal.php
+cp tests/config/robokassa.php.dist tests/config/robokassa.php
+```
+
+3) Run integration tests (they will be skipped if config is missing):
+
+```bash
+vendor/bin/phpunit --group integration
+```
 
 ## License
 
