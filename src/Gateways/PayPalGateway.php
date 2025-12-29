@@ -187,7 +187,7 @@ final class PayPalGateway extends AbstractGateway
      * For PayPal web flows, payer approval happens outside of the API (via approval link).
      * This method simply re-fetches the current order state.
      */
-    public function confirmPaymentIntent(string $paymentIntentId): PaymentIntent
+    public function confirmPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         return $this->retrievePaymentIntent($paymentIntentId);
     }
@@ -289,13 +289,13 @@ final class PayPalGateway extends AbstractGateway
         ]);
     }
 
-public function cancelPaymentIntent(string $paymentIntentId): PaymentIntent
+public function cancelPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         try {
             $order = $this->sendRequest(
                 $this->createRequest('GET', "/v2/checkout/orders/{$paymentIntentId}")
             );
-        } catch (PaymentException $e) {
+        } catch (PaymentException) {
             return PaymentIntent::fromArray(['id' => $paymentIntentId, 'status' => 'VOIDED']);
         }
 

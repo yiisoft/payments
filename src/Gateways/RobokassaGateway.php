@@ -165,8 +165,8 @@ final class RobokassaGateway extends AbstractGateway
         $payload = $paymentIntent->metadata ?? [];
 
         $payload['MerchantLogin'] = $this->merchantLogin;
-        $payload['OutSum'] = $payload['OutSum'] ?? $outSum;
-        $payload['Description'] = $payload['Description'] ?? $description;
+        $payload['OutSum'] ??= $outSum;
+        $payload['Description'] ??= $description;
 
         // In test mode Robokassa expects IsTest=1.
         if ($this->testMode) {
@@ -252,7 +252,7 @@ final class RobokassaGateway extends AbstractGateway
      * For Robokassa, payer action happens on a hosted payment page.
      * This method simply re-fetches invoice state.
      */
-    public function confirmPaymentIntent(string $paymentIntentId): PaymentIntent
+    public function confirmPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         return $this->retrievePaymentIntent($paymentIntentId);
     }
@@ -271,7 +271,7 @@ final class RobokassaGateway extends AbstractGateway
      *
      * If the Invoice API call is not available/authorized, returns a best-effort local status.
      */
-    public function cancelPaymentIntent(string $paymentIntentId): PaymentIntent
+    public function cancelPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         $payload = [
             'MerchantLogin' => $this->merchantLogin,
