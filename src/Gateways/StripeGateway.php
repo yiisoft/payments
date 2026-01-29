@@ -11,24 +11,29 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use Yiisoft\Payments\Endpoints\StripeEndpoints;
 
 class StripeGateway extends AbstractGateway
 {
     private string $apiVersion = '2023-10-16';
+
+    private StripeEndpoints $endpoints;
 
     public function __construct(
         private string $apiKey,
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?StripeEndpoints $endpoints = null
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
+        $this->endpoints = $endpoints ?? new StripeEndpoints();
     }
 
     protected function getBaseUri(): string
     {
-        return 'https://api.stripe.com/v1';
+        return $this->endpoints->baseUri;
     }
 
     /**

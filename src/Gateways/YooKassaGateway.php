@@ -12,23 +12,28 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use Yiisoft\Payments\Endpoints\YooKassaEndpoints;
 
 class YooKassaGateway extends AbstractGateway
 {
+    private YooKassaEndpoints $endpoints;
+
     public function __construct(
         private string $shopId,
         private string $secretKey,
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?YooKassaEndpoints $endpoints = null
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
+        $this->endpoints = $endpoints ?? new YooKassaEndpoints();
     }
 
     protected function getBaseUri(): string
     {
-        return 'https://api.yookassa.ru/v3';
+        return $this->endpoints->baseUri;
     }
 
     protected function createRequest(string $method, string $endpoint, array $data = [])

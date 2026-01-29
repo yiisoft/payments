@@ -198,6 +198,63 @@ $gateway = new StripeGateway(
 );
 ```
 
+#### Custom API endpoints
+
+Each gateway has a small endpoints value object that allows overriding vendor base URLs (useful for stubs, proxies or alternative environments).
+
+```php
+use Yiisoft\Payments\Endpoints\StripeEndpoints;
+use Yiisoft\Payments\Endpoints\PayPalEndpoints;
+use Yiisoft\Payments\Endpoints\RobokassaEndpoints;
+use Yiisoft\Payments\Endpoints\YooKassaEndpoints;
+
+$stripe = new StripeGateway(
+    apiKey: 'your_stripe_key',
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new StripeEndpoints(baseUri: 'https://proxy.example/stripe/v1'),
+);
+
+$paypal = new PayPalGateway(
+    clientId: 'your_client_id',
+    clientSecret: 'your_client_secret',
+    sandbox: true,
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new PayPalEndpoints(
+        sandboxBaseUri: 'https://api-m.sandbox.paypal.com',
+        liveBaseUri: 'https://api-m.paypal.com',
+    ),
+);
+
+$robokassa = new RobokassaGateway(
+    merchantLogin: 'demo',
+    password1: 'pass1',
+    password2: 'pass2',
+    password3: 'pass3',
+    testMode: true,
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new RobokassaEndpoints(
+        invoiceApiBaseUri: 'https://services.robokassa.ru/InvoiceServiceWebApi/api',
+        refundApiBaseUri: 'https://services.robokassa.ru/RefundService/Refund',
+        xmlApiBaseUri: 'https://auth.robokassa.ru/Merchant/WebService/Service.asmx',
+    ),
+);
+
+$yookassa = new YooKassaGateway(
+    shopId: 'your_shop_id',
+    secretKey: 'your_secret_key',
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new YooKassaEndpoints(baseUri: 'https://api.yookassa.ru/v3'),
+);
+```
+
 #### Step 2: Create or Retrieve Customer
 ```php
 // Create new customer

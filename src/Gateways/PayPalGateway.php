@@ -8,6 +8,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use Yiisoft\Payments\Endpoints\PayPalEndpoints;
 use Yiisoft\Payments\Exceptions\PaymentException;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
@@ -32,12 +33,11 @@ use Yiisoft\Payments\Models\PaymentMethod;
  */
 final class PayPalGateway extends AbstractGateway
 {
-    private const SANDBOX_BASE_URI = 'https://api-m.sandbox.paypal.com';
-    private const LIVE_BASE_URI = 'https://api-m.paypal.com';
-
     /** Access token cache. */
     private ?string $accessToken = null;
     private int $accessTokenExpiresAt = 0;
+
+    private PayPalEndpoints $endpoints;
 
     public function __construct(
         private string $clientId,
@@ -46,14 +46,16 @@ final class PayPalGateway extends AbstractGateway
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?PayPalEndpoints $endpoints = null
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
+        $this->endpoints = $endpoints ?? new PayPalEndpoints();
     }
 
     protected function getBaseUri(): string
     {
-        return $this->sandbox ? self::SANDBOX_BASE_URI : self::LIVE_BASE_URI;
+        return $this->endpoints->getBaseUri($this->sandbox);
     }
 
     /**

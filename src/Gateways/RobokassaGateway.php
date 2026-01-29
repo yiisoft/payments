@@ -8,6 +8,7 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use Yiisoft\Payments\Endpoints\RobokassaEndpoints;
 use Yiisoft\Payments\Exceptions\PaymentException;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
@@ -41,9 +42,12 @@ use Yiisoft\Payments\Models\PaymentMethod;
  */
 final class RobokassaGateway extends AbstractGateway
 {
-    private const INVOICE_API_BASE_URI = 'https://services.robokassa.ru/InvoiceServiceWebApi/api';
-    private const REFUND_API_BASE_URI = 'https://services.robokassa.ru/RefundService/Refund';
-    private const XML_API_BASE_URI = 'https://auth.robokassa.ru/Merchant/WebService/Service.asmx';
+    private const STATUS_SUCCEEDED = 'SUCCEEDED';
+    private const STATUS_PENDING = 'PENDING';
+    private const STATUS_CANCELLED = 'CANCELLED';
+    private const STATUS_UNKNOWN = 'UNKNOWN';
+
+    private RobokassaEndpoints $endpoints;
 
     public function __construct(
         private string $merchantLogin,
@@ -54,9 +58,11 @@ final class RobokassaGateway extends AbstractGateway
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
-        ?LoggerInterface $logger = null
+        ?LoggerInterface $logger = null,
+        ?RobokassaEndpoints $endpoints = null
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
+        $this->endpoints = $endpoints ?? new RobokassaEndpoints();
     }
 
     /**
@@ -65,7 +71,7 @@ final class RobokassaGateway extends AbstractGateway
      */
     protected function getBaseUri(): string
     {
-        return 'https://services.robokassa.ru';
+        return $this->endpoints->invoiceApiBaseUri;
     }
 
     // ---------------------------------------------------------------------
@@ -177,7 +183,7 @@ final class RobokassaGateway extends AbstractGateway
 
         $response = $this->sendRawJsonRequest(
             'POST',
-            self::INVOICE_API_BASE_URI . '/CreateInvoice',
+            $this->endpoints->invoiceApiBaseUri . '/CreateInvoice',
             $jwt
         );
 
@@ -221,7 +227,7 @@ final class RobokassaGateway extends AbstractGateway
      */
     public function retrievePaymentIntent(string $paymentIntentId): PaymentIntent
     {
-        $xml = $this->sendXmlRequest('POST', self::XML_API_BASE_URI . '/OpStateExt', [
+        $xml = $this->sendXmlRequest('POST', $this->endpoints->xmlApiBaseUri . '/OpStateExt', [
             'MerchantLogin' => $this->merchantLogin,
             'InvoiceID' => $paymentIntentId,
             'Signature' => md5($this->merchantLogin . ':' . $paymentIntentId . ':' . $this->password2),
@@ -287,25 +293,45 @@ final class RobokassaGateway extends AbstractGateway
         try {
             $response = $this->sendRawJsonRequest(
                 'POST',
-                self::INVOICE_API_BASE_URI . '/DeactivateInvoice',
+                $this->endpoints->invoiceApiBaseUri . '/DeactivateInvoice',
                 $jwt
             );
 
             return PaymentIntent::fromArray([
                 'id' => $paymentIntentId,
-                'status' => (string) ($response['Status'] ?? $response['status'] ?? 'CANCELLED'),
+                'status' => (string) ($response['Status'] ?? $response['status'] ?? self::STATUS_CANCELLED),
                 'metadata' => [
+                    'cancel_confirmed' => true,
                     'robokassa_deactivate' => $response,
                 ],
             ]);
         } catch (PaymentException $e) {
-            return PaymentIntent::fromArray([
-                'id' => $paymentIntentId,
-                'status' => 'CANCELLED',
-                'metadata' => [
-                    'robokassa_cancel_error' => $e->getMessage(),
-                ],
-            ]);
+            // If deactivation fails, try to re-fetch the real invoice state so the caller can understand
+            // whether cancellation actually happened.
+            try {
+                $current = $this->retrievePaymentIntent($paymentIntentId);
+
+                return PaymentIntent::fromArray([
+                    'id' => $paymentIntentId,
+                    'status' => $current->status,
+                    'metadata' => array_merge(
+                        $current->metadata ?? [],
+                        [
+                            'cancel_confirmed' => false,
+                            'robokassa_cancel_error' => $e->getMessage(),
+                        ]
+                    ),
+                ]);
+            } catch (PaymentException) {
+                return PaymentIntent::fromArray([
+                    'id' => $paymentIntentId,
+                    'status' => self::STATUS_UNKNOWN,
+                    'metadata' => [
+                        'cancel_confirmed' => false,
+                        'robokassa_cancel_error' => $e->getMessage(),
+                    ],
+                ]);
+            }
         }
     }
 
@@ -367,7 +393,7 @@ final class RobokassaGateway extends AbstractGateway
 
         return $this->sendRawJsonRequest(
             'POST',
-            self::REFUND_API_BASE_URI . '/Create',
+            $this->endpoints->refundApiBaseUri . '/Create',
             $jwt
         );
     }
@@ -444,8 +470,27 @@ final class RobokassaGateway extends AbstractGateway
         $response = $this->httpClient->sendRequest($request);
         $xmlString = (string) $response->getBody();
 
-        $xml = @simplexml_load_string($xmlString);
+        $previous = libxml_use_internal_errors(true);
+        libxml_clear_errors();
+
+        $xml = simplexml_load_string($xmlString, 'SimpleXMLElement', LIBXML_NONET);
         if ($xml === false) {
+            $errors = libxml_get_errors();
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = trim($error->message) . ' (line ' . $error->line . ', column ' . $error->column . ')';
+            }
+
+            $this->log('error', 'Robokassa XML API returned invalid XML.', [
+                'url' => $url,
+                'status_code' => $response->getStatusCode(),
+                'body' => mb_substr($xmlString, 0, 2048),
+                'libxml_errors' => $errorMessages,
+            ]);
+
             throw new PaymentException(
                 'Robokassa XML API returned invalid XML.',
                 'robokassa_invalid_xml',
@@ -456,6 +501,9 @@ final class RobokassaGateway extends AbstractGateway
             );
         }
 
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
         return $xml;
     }
 
@@ -465,18 +513,18 @@ final class RobokassaGateway extends AbstractGateway
         // - 5: payment completed successfully (commonly used)
         // - other codes depend on merchant settings and workflow.
         if ($stateCode === 5) {
-            return 'SUCCEEDED';
+            return self::STATUS_SUCCEEDED;
         }
 
         if ($stateCode === 0 || $stateCode === 1 || $stateCode === 2) {
-            return 'PENDING';
+            return self::STATUS_PENDING;
         }
 
         if ($stateCode === 10 || $stateCode === 100) {
-            return 'CANCELLED';
+            return self::STATUS_CANCELLED;
         }
 
-        return 'UNKNOWN';
+        return self::STATUS_UNKNOWN;
     }
 
     private function xmlToArray(\SimpleXMLElement $xml): array
