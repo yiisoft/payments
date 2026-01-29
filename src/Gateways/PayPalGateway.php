@@ -37,8 +37,6 @@ final class PayPalGateway extends AbstractGateway
     private ?string $accessToken = null;
     private int $accessTokenExpiresAt = 0;
 
-    private PayPalEndpoints $endpoints;
-
     public function __construct(
         private string $clientId,
         private string $clientSecret,
@@ -47,10 +45,9 @@ final class PayPalGateway extends AbstractGateway
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null,
-        ?PayPalEndpoints $endpoints = null
+        private ?PayPalEndpoints $endpoints = new PayPalEndpoints()
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-        $this->endpoints = $endpoints ?? new PayPalEndpoints();
     }
 
     protected function getBaseUri(): string

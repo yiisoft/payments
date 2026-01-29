@@ -17,18 +17,15 @@ class StripeGateway extends AbstractGateway
 {
     private string $apiVersion = '2023-10-16';
 
-    private StripeEndpoints $endpoints;
-
     public function __construct(
         private string $apiKey,
         ClientInterface $httpClient,
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null,
-        ?StripeEndpoints $endpoints = null
+        private ?StripeEndpoints $endpoints = new StripeEndpoints()
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-        $this->endpoints = $endpoints ?? new StripeEndpoints();
     }
 
     protected function getBaseUri(): string

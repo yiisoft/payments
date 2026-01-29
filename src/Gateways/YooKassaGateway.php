@@ -16,8 +16,6 @@ use Yiisoft\Payments\Endpoints\YooKassaEndpoints;
 
 class YooKassaGateway extends AbstractGateway
 {
-    private YooKassaEndpoints $endpoints;
-
     public function __construct(
         private string $shopId,
         private string $secretKey,
@@ -25,10 +23,9 @@ class YooKassaGateway extends AbstractGateway
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null,
-        ?YooKassaEndpoints $endpoints = null
+        private ?YooKassaEndpoints $endpoints = new YooKassaEndpoints()
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-        $this->endpoints = $endpoints ?? new YooKassaEndpoints();
     }
 
     protected function getBaseUri(): string
