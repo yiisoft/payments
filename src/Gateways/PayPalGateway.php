@@ -371,14 +371,16 @@ public function cancelPaymentIntent(string $paymentIntentId, array $params = [])
      * - as $paymentIntentId directly; OR
      * - as ['capture_id' => '...'] in $params
      */
-    public function createRefund(string $paymentIntentId, int $amount = null, array $params = []): array
+    public function createRefund(string $paymentIntentId, array $params = []): array
     {
         $captureId = (string) ($params['capture_id'] ?? $paymentIntentId);
+
+        $amount = $params['amount'] ?? null;
 
         $data = [];
         if ($amount !== null) {
             $data['amount'] = [
-                'value' => self::formatAmount($amount),
+                'value' => self::formatAmount((int) $amount),
                 'currency_code' => strtoupper($params['currency'] ?? 'USD'),
             ];
         }

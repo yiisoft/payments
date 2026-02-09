@@ -345,7 +345,7 @@ final class RobokassaGateway extends AbstractGateway
      *
      * @return array<string,mixed>
      */
-    public function createRefund(string $paymentIntentId, int $amount = null, array $params = []): array
+    public function createRefund(string $paymentIntentId, array $params = []): array
     {
         if ($this->password3 === null || $this->password3 === '') {
             throw new PaymentException(
@@ -380,8 +380,9 @@ final class RobokassaGateway extends AbstractGateway
             'OpKey' => (string) $opKey,
         ];
 
+        $amount = $params['amount'] ?? null;
         if ($amount !== null) {
-            $payload['RefundSum'] = self::formatAmount($amount);
+            $payload['RefundSum'] = self::formatAmount((int) $amount);
         }
 
         // Allow passing additional Refund API parameters (e.g. InvoiceItems) via $params['refund'].
