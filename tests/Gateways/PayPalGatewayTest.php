@@ -125,8 +125,7 @@ final class PayPalGatewayTest extends TestCase
 
         $result = $this->gateway->createRefund(
             paymentIntentId: 'CAPTURE-123',
-            amount: 1000,
-            params: ['currency' => 'USD', 'note_to_payer' => 'Refund for order #12345']
+            amount: 1000
         );
 
         $this->assertSame('RFD-123', $result['id']);

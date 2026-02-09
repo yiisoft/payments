@@ -72,8 +72,7 @@ final class PayPalGatewayIntegrationTest extends TestCase
         if (!empty($this->config['capture_id_for_refund'])) {
             $refund = $gateway->createRefund(
                 paymentIntentId: (string) $this->config['capture_id_for_refund'],
-                amount: 100,
-                params: ['currency' => 'USD', 'note_to_payer' => 'Integration test refund']
+                amount: 100
             );
 
             $this->assertNotEmpty($refund['id'] ?? null);

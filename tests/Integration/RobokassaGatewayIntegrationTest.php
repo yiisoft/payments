@@ -71,8 +71,7 @@ final class RobokassaGatewayIntegrationTest extends TestCase
         if (!empty($this->config['paid_op_key'])) {
             $refund = $gateway->createRefund(
                 paymentIntentId: (string) ($this->config['paid_invoice_id'] ?? $created->id),
-                amount: 100,
-                params: ['op_key' => (string) $this->config['paid_op_key']]
+                amount: 100
             );
 
             $this->assertTrue((bool) ($refund['success'] ?? false));

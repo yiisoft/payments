@@ -110,8 +110,7 @@ XML;
 
         $result = $this->gateway->createRefund(
             paymentIntentId: '123',
-            amount: 1000,
-            params: ['op_key' => 'OP-123']
+            amount: 1000
         );
 
         $this->assertTrue($result['success']);
