@@ -397,7 +397,7 @@ public function cancelPaymentIntent(string $paymentIntentId, array $params = [])
     /**
      * Adds authorization and request id headers.
      */
-    protected function createRequest(string $method, string $endpoint, array $data = null): \Psr\Http\Message\RequestInterface
+    protected function createRequest(string $method, string $endpoint, array $data = []): \Psr\Http\Message\RequestInterface
     {
         $request = parent::createRequest($method, $endpoint, $data);
         $uri = (string) $request->getUri();
