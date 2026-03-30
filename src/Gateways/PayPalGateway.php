@@ -45,9 +45,8 @@ final class PayPalGateway extends AbstractGateway
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null,
-        private ?PayPalEndpoints $endpoints = null
+        private ?PayPalEndpoints $endpoints = new PayPalEndpoints()
     ) {
-        $this->endpoints = $endpoints ?? new PayPalEndpoints();
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
     }
 
