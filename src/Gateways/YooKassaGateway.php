@@ -8,6 +8,7 @@ use Exception;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Exceptions\PaymentException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -51,17 +52,17 @@ class YooKassaGateway extends AbstractGateway
 
     public function retrieveCustomer(string $customerId): Customer
     {
-        throw new \RuntimeException('YooKassa API does not support retrieving customer');
+        throw new \PaymentException('YooKassa API does not support retrieving customer');
     }
 
     public function updateCustomer(Customer $customer): Customer
     {
-        throw new \RuntimeException('YooKassa API does not support updating customer');
+        throw new \PaymentException('YooKassa API does not support updating customer');
     }
 
     public function deleteCustomer(string $customerId): void
     {
-        throw new \RuntimeException('YooKassa API does not support delete customer');
+        throw new \PaymentException('YooKassa API does not support delete customer');
     }
 
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
@@ -133,9 +134,21 @@ class YooKassaGateway extends AbstractGateway
 
     public function createRefund(string $paymentId, array $params = []): array
     {
+        if (!array_key_exists('amount', $params) || !array_key_exists('currency', $params)) {
+            throw new PaymentException('Refund "amount" and "currency" parameters are required.');
+        }
+
+        $amount = $params['amount'];
+        $currency = $params['currency'];
+        if (!is_int($amount) || $amount <= 0) {
+            throw new PaymentException('Refund "amount" must be a positive integer representing minor currency units.');
+        }
+        if (!is_string($currency) || $currency === '') {
+            throw new PaymentException('Refund "currency" must be a non-empty string.');
+        }
         $data = [
             'payment_id' => $paymentId,
-            'amount' => $this->createAmountValue($params['amount'], $params['currency']),
+            'amount' => $this->createAmountValue($amount, $currency),
             'description' => $params['description'] ?? null,
         ];
 
