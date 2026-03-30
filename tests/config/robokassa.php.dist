@@ -1,0 +1,46 @@
+<?php
+
+/**
+ * Robokassa integration test configuration.
+ *
+ * How to use:
+ * 1) Copy this file to tests/config/robokassa.php
+ * 2) Fill in your merchant credentials.
+ * 3) Run tests.
+ *
+ * IMPORTANT:
+ * - Never commit tests/config/robokassa.php (it is ignored by git).
+ * - Robokassa payments are invoice-based and usually require manual payer action on a hosted page.
+ *   For that reason, the default tests only verify invoice creation and API connectivity.
+ * - Refund tests require a paid invoice OpKey and Password#3 (Refund API v2).
+ *
+ * Variant A (default):
+ * - create invoice via Invoice API (JWT)
+ * - retrieve status via OpStateExt (XML) (optional; only if you provide paid_invoice_id)
+ * - create refund (optional; only if you provide paid_op_key and password3)
+ *
+ * Variant B (optional):
+ * - additional checks for refund status (requires requestId and enabled flag)
+ */
+return [
+    'merchant_login' => 'YOUR_MERCHANT_LOGIN',
+
+    // Invoice API (JWT secret)
+    'password1' => 'YOUR_PASSWORD_1',
+
+    // XML status API (signature secret)
+    'password2' => 'YOUR_PASSWORD_2',
+
+    // Refund API v2 (JWT secret). Required only if you want refund tests.
+    'password3' => 'YOUR_PASSWORD_3',
+
+    // Use test mode by default (adds IsTest=1 to invoice payload).
+    'test_mode' => true,
+
+    // Optional: if you already have a paid invoice, provide its ID and OpKey to enable status/refund tests.
+    'paid_invoice_id' => null, // e.g. '123456'
+    'paid_op_key' => null,     // e.g. 'd3b07384d113edec49eaa6238ad5ff00'
+
+    // Optional: enable extra checks for refund status.
+    'enable_refund_status_checks' => false,
+];

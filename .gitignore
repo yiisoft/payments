@@ -30,3 +30,7 @@ composer.phar
 /phpunit.xml
 /.phpunit.cache
 /.phpunit.result.cache
+
+# Integration test configs (do not commit secrets)
+tests/config/*.php
+!tests/config/*.php.dist
