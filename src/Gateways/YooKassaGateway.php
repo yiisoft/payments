@@ -45,36 +45,63 @@ class YooKassaGateway extends AbstractGateway
         return $request;
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface. The method only returns the provided model.
+     */
     public function createCustomer(Customer $customer): Customer
     {
         return $customer;
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface.
+     */
     public function retrieveCustomer(string $customerId): Customer
     {
         throw new \PaymentException('YooKassa API does not support retrieving customer');
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface.
+     */
     public function updateCustomer(Customer $customer): Customer
     {
         throw new \PaymentException('YooKassa API does not support updating customer');
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface.
+     */
     public function deleteCustomer(string $customerId): void
     {
         throw new \PaymentException('YooKassa API does not support delete customer');
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason YooKassa public API does not expose a generic payment method resource compatible with this library interface. The method only returns the provided model.
+     */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
         return $paymentMethod;
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason YooKassa public API does not expose a generic payment-method attachment API compatible with this library interface. The method only returns a local placeholder model.
+     */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
         return new PaymentMethod($paymentMethodId, 'yookassa', [], $customerId);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function createPaymentIntent(PaymentIntent $intent): PaymentIntent
     {
         $data = [
@@ -103,6 +130,9 @@ class YooKassaGateway extends AbstractGateway
         return $this->parsePaymentIntent($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function retrievePaymentIntent(string $intentId): PaymentIntent
     {
         $request = $this->createRequest('GET', "/payments/{$intentId}");
@@ -111,11 +141,18 @@ class YooKassaGateway extends AbstractGateway
         return $this->parsePaymentIntent($response);
     }
 
+    /**
+     * @sandbox-support partial
+     * @sandbox-reason YooKassa does not use a separate confirm operation compatible with this library interface. This method delegates to capturePaymentIntent().
+     */
     public function confirmPaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
         return $this->capturePaymentIntent($intentId,  $params);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function capturePaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
         $request = $this->createRequest('POST', "/payments/{$intentId}/capture", []);
@@ -124,6 +161,9 @@ class YooKassaGateway extends AbstractGateway
         return $this->parsePaymentIntent($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function cancelPaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
         $request = $this->createRequest('POST', "/payments/{$intentId}/cancel", $params);
@@ -132,6 +172,9 @@ class YooKassaGateway extends AbstractGateway
         return $this->parsePaymentIntent($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function createRefund(string $paymentId, array $params = []): array
     {
         if (!array_key_exists('amount', $params) || !array_key_exists('currency', $params)) {

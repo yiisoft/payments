@@ -61,6 +61,10 @@ final class PayPalGateway extends AbstractGateway
      * This method returns the given model with an assigned ID if it doesn't have one. No API call is made.
      * The returned ID is stable only within the calling application (store it yourself if needed).
      */
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method only returns a local placeholder model.
+     */
     public function createCustomer(Customer $customer): Customer
     {
         if ($customer->id !== null) {
@@ -83,6 +87,10 @@ final class PayPalGateway extends AbstractGateway
      *
      * This method returns a placeholder customer with the provided ID.
      */
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method only returns a local placeholder model.
+     */
     public function retrieveCustomer(string $customerId): Customer
     {
         return new Customer(id: $customerId);
@@ -93,6 +101,10 @@ final class PayPalGateway extends AbstractGateway
      *
      * This method returns the input customer unchanged.
      */
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method only returns the provided model without a remote update.
+     */
     public function updateCustomer(Customer $customer): Customer
     {
         return $customer;
@@ -102,6 +114,10 @@ final class PayPalGateway extends AbstractGateway
      * PayPal does not expose a generic "Customer" resource compatible with this library's interface.
      *
      * This method is a no-op.
+     */
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method is a local no-op.
      */
     public function deleteCustomer(string $customerId): void
     {
@@ -119,6 +135,9 @@ final class PayPalGateway extends AbstractGateway
      * Optional metadata keys used by this gateway:
      * - return_url: URL where PayPal will redirect the payer after approval (web flow)
      * - cancel_url: URL where PayPal will redirect the payer if they cancel (web flow)
+     */
+    /**
+     * @sandbox-support implemented
      */
     public function createPaymentIntent(PaymentIntent $paymentIntent): PaymentIntent
     {
@@ -171,6 +190,9 @@ final class PayPalGateway extends AbstractGateway
     /**
      * Retrieves PayPal Order data.
      */
+    /**
+     * @sandbox-support implemented
+     */
     public function retrievePaymentIntent(string $paymentIntentId): PaymentIntent
     {
         $order = $this->sendRequest(
@@ -186,6 +208,10 @@ final class PayPalGateway extends AbstractGateway
      * For PayPal web flows, payer approval happens outside of the API (via approval link).
      * This method simply re-fetches the current order state.
      */
+    /**
+     * @sandbox-support partial
+     * @sandbox-reason PayPal payer confirmation happens on the hosted PayPal side. This method only re-fetches the current order state and does not call a dedicated confirm endpoint.
+     */
     public function confirmPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         return $this->retrievePaymentIntent($paymentIntentId);
@@ -199,6 +225,9 @@ final class PayPalGateway extends AbstractGateway
      *
      * If you already have an authorization ID and want to capture it explicitly, pass it as:
      *   $this->capturePaymentIntent($orderId, ['authorization_id' => '...'])
+     */
+        /**
+     * @sandbox-support implemented
      */
         public function capturePaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -288,6 +317,9 @@ final class PayPalGateway extends AbstractGateway
         ]);
     }
 
+/**
+     * @sandbox-support implemented
+     */
 public function cancelPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         try {
@@ -306,6 +338,10 @@ public function cancelPaymentIntent(string $paymentIntentId, array $params = [])
      * PayPal does not expose a generic "PaymentMethod" resource compatible with this library's interface.
      *
      * This method returns the given model with an assigned ID if it doesn't have one. No API call is made.
+     */
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason PayPal public API does not expose a generic payment method resource compatible with this library interface. The method only returns a local placeholder model.
      */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
@@ -358,6 +394,10 @@ public function cancelPaymentIntent(string $paymentIntentId, array $params = [])
      *
      * This method returns the payment method unchanged.
      */
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason PayPal public API does not expose a generic payment-method attachment API compatible with this library interface. The method only returns a local placeholder model.
+     */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
         return $this->retrievePaymentMethod($paymentMethodId);
@@ -370,6 +410,9 @@ public function cancelPaymentIntent(string $paymentIntentId, array $params = [])
      * To use this method you must pass a capture ID either:
      * - as $paymentIntentId directly; OR
      * - as ['capture_id' => '...'] in $params
+     */
+    /**
+     * @sandbox-support implemented
      */
     public function createRefund(string $paymentIntentId, array $params = []): array
     {

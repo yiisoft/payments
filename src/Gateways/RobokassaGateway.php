@@ -78,6 +78,10 @@ final class RobokassaGateway extends AbstractGateway
     // Customer and PaymentMethod operations (no-op placeholders)
     // ---------------------------------------------------------------------
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method only generates a local placeholder model.
+     */
     public function createCustomer(Customer $customer): Customer
     {
         if ($customer->id !== null) {
@@ -95,21 +99,37 @@ final class RobokassaGateway extends AbstractGateway
         );
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method only returns a local placeholder model.
+     */
     public function retrieveCustomer(string $customerId): Customer
     {
         return new Customer(id: $customerId);
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method only returns the provided model without a remote update.
+     */
     public function updateCustomer(Customer $customer): Customer
     {
         return $customer;
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method is a local no-op.
+     */
     public function deleteCustomer(string $customerId): void
     {
         // Intentionally no-op.
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a generic payment method resource compatible with this library interface. The method only generates a local placeholder model.
+     */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
         if ($paymentMethod->id !== null) {
@@ -141,6 +161,10 @@ final class RobokassaGateway extends AbstractGateway
         // Intentionally no-op.
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a generic payment-method attachment API compatible with this library interface. The method only returns a local placeholder model.
+     */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
         return $this->retrievePaymentMethod($paymentMethodId);
@@ -162,6 +186,9 @@ final class RobokassaGateway extends AbstractGateway
      * Additional Robokassa-specific invoice fields can be provided via metadata:
      * - InvoiceType, ExpirationDate, Culture, Email, SuccessUrl, FailUrl, ResultUrl, Receipt, etc.
      * All metadata is passed to Robokassa as-is (except reserved keys shown above).
+     */
+    /**
+     * @sandbox-support implemented
      */
     public function createPaymentIntent(PaymentIntent $paymentIntent): PaymentIntent
     {
@@ -225,6 +252,9 @@ final class RobokassaGateway extends AbstractGateway
      * - status: Robokassa state code (string) in metadata and mapped high-level status in PaymentIntent::status
      * - metadata.robokassa_op_key: operation key for refunds (when available)
      */
+    /**
+     * @sandbox-support implemented
+     */
     public function retrievePaymentIntent(string $paymentIntentId): PaymentIntent
     {
         $xml = $this->sendXmlRequest('POST', $this->endpoints->xmlApiBaseUri . '/OpStateExt', [
@@ -258,6 +288,10 @@ final class RobokassaGateway extends AbstractGateway
      * For Robokassa, payer action happens on a hosted payment page.
      * This method simply re-fetches invoice state.
      */
+    /**
+     * @sandbox-support partial
+     * @sandbox-reason Robokassa payer confirmation happens on the hosted payment page. This method only re-fetches invoice state and does not call a dedicated confirm endpoint.
+     */
     public function confirmPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         return $this->retrievePaymentIntent($paymentIntentId);
@@ -266,6 +300,10 @@ final class RobokassaGateway extends AbstractGateway
     /**
      * Robokassa does not support "capture" in the same way as card processors (it is invoice-based).
      * This method re-fetches invoice state.
+     */
+    /**
+     * @sandbox-support partial
+     * @sandbox-reason Robokassa invoice flow does not provide a separate capture operation compatible with this library interface. This method only re-fetches invoice state.
      */
     public function capturePaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -276,6 +314,10 @@ final class RobokassaGateway extends AbstractGateway
      * Attempts to deactivate an invoice via Invoice API.
      *
      * If the Invoice API call is not available/authorized, returns a best-effort local status.
+     */
+    /**
+     * @sandbox-support partial
+     * @sandbox-reason Robokassa cancellation is implemented as a best-effort invoice deactivation and may fall back to the current remote state instead of a guaranteed cancel endpoint result.
      */
     public function cancelPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -344,6 +386,9 @@ final class RobokassaGateway extends AbstractGateway
      * If it is not provided, the gateway will call OpStateExt to obtain it.
      *
      * @return array<string,mixed>
+     */
+    /**
+     * @sandbox-support implemented
      */
     public function createRefund(string $paymentIntentId, array $params = []): array
     {
