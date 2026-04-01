@@ -62,8 +62,38 @@ final class RobokassaGatewayTest extends TestCase
         $this->assertArrayHasKey('Content-Type', $lastRequest['headers']);
         $this->assertSame('text/plain', $lastRequest['headers']['Content-Type'][0]);
 
-        // JWT has 3 dot-separated segments.
-        $this->assertCount(3, explode('.', $lastRequest['body']));
+        $this->assertStringStartsWith('"', $lastRequest['body']);
+        $this->assertStringEndsWith('"', $lastRequest['body']);
+        // JWT has 3 dot-separated segments inside quoted request body.
+        $this->assertCount(3, explode('.', trim($lastRequest['body'], '"')));
+    }
+
+
+    public function testCreatePaymentIntentIncludesApiErrorDetailsInException(): void
+    {
+        $this->httpClient->queueJsonResponse([
+            'Error' => 'Invalid signature.',
+            'ErrorCode' => 'INVALID_SIGNATURE',
+        ], 400);
+
+        $intent = new PaymentIntent(
+            id: null,
+            amount: 2500,
+            currency: 'RUB',
+            description: 'Test payment'
+        );
+
+        $this->expectException(\Yiisoft\Payments\Exceptions\InvalidRequestException::class);
+        $this->expectExceptionMessage('Invalid signature.');
+
+        try {
+            $this->gateway->createPaymentIntent($intent);
+        } catch (\Yiisoft\Payments\Exceptions\InvalidRequestException $e) {
+            $this->assertSame('INVALID_SIGNATURE', $e->errorCode);
+            $this->assertIsArray($e->details);
+            $this->assertSame('Invalid signature.', $e->details['response']['Error'] ?? null);
+            throw $e;
+        }
     }
 
     public function testRetrievePaymentIntentUsesOpStateExt(): void

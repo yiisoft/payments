@@ -412,45 +412,119 @@ final class RobokassaGateway extends AbstractGateway
      */
     private function sendRawJsonRequest(string $method, string $url, string $jwt): array
     {
+        $requestBody = '"' . $jwt . '"';
+
         $request = $this->requestFactory->createRequest($method, $url)
             ->withHeader('Content-Type', 'text/plain')
             ->withHeader('Accept', 'application/json');
 
-        $request = $request->withBody($this->streamFactory->createStream($jwt));
+        $request = $request->withBody($this->streamFactory->createStream($requestBody));
 
         $response = $this->httpClient->sendRequest($request);
         $body = (string) $response->getBody();
         $data = json_decode($body, true);
 
         if (!is_array($data)) {
+            $this->log('error', 'Robokassa API returned a non-JSON response.', [
+                'status' => $response->getStatusCode(),
+                'body' => $body,
+            ]);
+
             throw new PaymentException(
                 'Robokassa API returned a non-JSON response.',
                 'robokassa_invalid_response',
                 'robokassa',
                 null,
                 null,
+                [
+                    'status' => $response->getStatusCode(),
+                    'response_body' => $body,
+                ],
                 $response->getStatusCode()
             );
         }
 
         if ($response->getStatusCode() >= 400) {
+            $this->log('error', 'Robokassa JSON API request failed.', [
+                'status' => $response->getStatusCode(),
+                'response' => $data,
+            ]);
             $this->handleErrorResponse($data, $response->getStatusCode());
         }
 
         // Some Robokassa endpoints return 200 even on logical failure.
-        if (isset($data['success']) && $data['success'] === false) {
-            $message = (string) ($data['message'] ?? 'Robokassa request failed.');
+        $isFailure = (isset($data['success']) && $data['success'] === false)
+            || (isset($data['Success']) && $data['Success'] === false)
+            || (isset($data['Result']) && $data['Result'] === false);
+
+        if ($isFailure) {
+            $message = $this->extractRobokassaErrorMessage($data) ?? 'Robokassa request failed.';
+            $errorCode = $this->extractRobokassaErrorCode($data) ?? 'robokassa_error';
+
+            $this->log('error', 'Robokassa logical API failure.', [
+                'status' => $response->getStatusCode(),
+                'response' => $data,
+            ]);
+
             throw new PaymentException(
                 $message,
-                (string) ($data['code'] ?? 'robokassa_error'),
+                $errorCode,
                 'robokassa',
                 null,
                 null,
+                [
+                    'status' => $response->getStatusCode(),
+                    'response' => $data,
+                ],
                 $response->getStatusCode()
             );
         }
 
         return $data;
+    }
+
+    private function extractRobokassaErrorMessage(array $data): ?string
+    {
+        foreach (['message', 'Message', 'description', 'Description', 'error', 'Error'] as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+
+            $value = $data[$key];
+            if (is_scalar($value) && $value !== '') {
+                return (string) $value;
+            }
+        }
+
+        $errors = $data['errors'] ?? $data['Errors'] ?? null;
+        if (is_array($errors) && $errors !== []) {
+            $first = reset($errors);
+            if (is_array($first)) {
+                return $this->extractRobokassaErrorMessage($first);
+            }
+
+            if (is_scalar($first) && $first !== '') {
+                return (string) $first;
+            }
+        }
+
+        return null;
+    }
+
+    private function extractRobokassaErrorCode(array $data): ?string
+    {
+        foreach (['code', 'Code', 'errorCode', 'ErrorCode'] as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+
+            $value = $data[$key];
+            if (is_scalar($value) && $value !== '') {
+                return (string) $value;
+            }
+        }
+
+        return null;
     }
 
     /**
