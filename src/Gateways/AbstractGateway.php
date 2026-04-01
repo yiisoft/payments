@@ -123,7 +123,7 @@ abstract class AbstractGateway implements PaymentGatewayInterface
     {
         $message = $this->extractErrorField(
             $payload,
-            ['message', 'Message', 'description', 'Description', 'error_description', 'error_message', 'Error']
+            ['message', 'Message', 'description', 'Description', 'detail', 'Detail', 'title', 'Title', 'error_description', 'error_message', 'Error']
         );
 
         if ($message !== null && $message !== '') {

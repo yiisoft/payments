@@ -415,7 +415,7 @@ final class RobokassaGateway extends AbstractGateway
         $requestBody = '"' . $jwt . '"';
 
         $request = $this->requestFactory->createRequest($method, $url)
-            ->withHeader('Content-Type', 'text/plain')
+            ->withHeader('Content-Type', 'application/json')
             ->withHeader('Accept', 'application/json');
 
         $request = $request->withBody($this->streamFactory->createStream($requestBody));
