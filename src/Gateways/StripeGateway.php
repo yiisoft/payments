@@ -38,11 +38,66 @@ class StripeGateway extends AbstractGateway
      */
     protected function createRequest(string $method, string $endpoint, array $data = [])
     {
-        $request = parent::createRequest($method, $endpoint, $data);
-        
-        return $request
+        $uri = rtrim($this->getBaseUri(), '/') . '/' . ltrim($endpoint, '/');
+        $request = $this->requestFactory->createRequest($method, $uri)
+            ->withHeader('Accept', 'application/json')
+            ->withHeader('User-Agent', 'PaymentGateway/' . self::API_VERSION)
             ->withHeader('Authorization', 'Bearer ' . $this->apiKey)
             ->withHeader('Stripe-Version', $this->apiVersion);
+
+        if (!empty($data)) {
+            $stream = $this->streamFactory->createStream($this->buildFormBody($data));
+            $request = $request
+                ->withBody($stream)
+                ->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+        }
+
+        return $request;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function buildFormBody(array $data): string
+    {
+        $pairs = [];
+
+        foreach ($this->flattenFormFields($data) as $key => $value) {
+            $pairs[] = rawurlencode($key) . '=' . rawurlencode($value);
+        }
+
+        return implode('&', $pairs);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, string>
+     */
+    private function flattenFormFields(array $data, string $prefix = ''): array
+    {
+        $result = [];
+
+        foreach ($data as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+
+            $field = $prefix === '' ? (string) $key : $prefix . '[' . $key . ']';
+
+            if (is_array($value)) {
+                $result += $this->flattenFormFields($value, $field);
+                continue;
+            }
+
+            if (is_bool($value)) {
+                $result[$field] = $value ? 'true' : 'false';
+                continue;
+            }
+
+            $result[$field] = (string) $value;
+        }
+
+        return $result;
     }
 
     public function createCustomer(Customer $customer): Customer

@@ -86,6 +86,11 @@ class StripeGatewayTest extends TestCase
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('/customers', $lastRequest['uri']);
+        $this->assertSame('application/x-www-form-urlencoded', $lastRequest['headers']['Content-Type'][0]);
+        $this->assertStringContainsString('email=test%40example.com', $lastRequest['body']);
+        $this->assertStringContainsString('name=Test%20User', $lastRequest['body']);
+        $this->assertStringContainsString('address%5Bline1%5D=123%20Test%20St', $lastRequest['body']);
+        $this->assertStringContainsString('metadata%5Btest_meta%5D=value', $lastRequest['body']);
     }
 
     public function testCreatePaymentIntent(): void
@@ -135,6 +140,10 @@ class StripeGatewayTest extends TestCase
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('/payment_intents', $lastRequest['uri']);
+        $this->assertSame('application/x-www-form-urlencoded', $lastRequest['headers']['Content-Type'][0]);
+        $this->assertStringContainsString('confirm=true', $lastRequest['body']);
+        $this->assertStringContainsString('off_session=false', $lastRequest['body']);
+        $this->assertStringContainsString('metadata%5Border_id%5D=12345', $lastRequest['body']);
     }
 
     public function testConfirmPaymentIntent(): void
@@ -154,7 +163,8 @@ class StripeGatewayTest extends TestCase
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('/payment_intents/pi_test123/confirm', $lastRequest['uri']);
-        $this->assertStringContainsString('return_url', $lastRequest['body']);
+        $this->assertSame('application/x-www-form-urlencoded', $lastRequest['headers']['Content-Type'][0]);
+        $this->assertStringContainsString('return_url=https%3A%2F%2Fexample.com%2Freturn', $lastRequest['body']);
     }
 
     public function testCreateRefund(): void
@@ -177,9 +187,7 @@ class StripeGatewayTest extends TestCase
         $lastRequest = $this->getLastRequest();
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertSame('https://api.stripe.com/v1/refunds', $lastRequest['uri']);
-        $this->assertJsonStringEqualsJsonString(
-            '{"payment_intent":"pi_test123","amount":1000}',
-            $lastRequest['body']
-        );
+        $this->assertSame('application/x-www-form-urlencoded', $lastRequest['headers']['Content-Type'][0]);
+        $this->assertSame('amount=1000&payment_intent=pi_test123', $lastRequest['body']);
     }
 }
