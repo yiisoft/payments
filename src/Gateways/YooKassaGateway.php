@@ -47,7 +47,7 @@ class YooKassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface. The method only returns the provided model.
+     * @sandbox-reason YooKassa public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public YooKassa API.
      */
     public function createCustomer(Customer $customer): Customer
     {
@@ -56,7 +56,7 @@ class YooKassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface.
+     * @sandbox-reason YooKassa public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public YooKassa API.
      */
     public function retrieveCustomer(string $customerId): Customer
     {
@@ -65,7 +65,7 @@ class YooKassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface.
+     * @sandbox-reason YooKassa public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public YooKassa API.
      */
     public function updateCustomer(Customer $customer): Customer
     {
@@ -74,7 +74,7 @@ class YooKassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason YooKassa public API does not expose a customer resource compatible with this library interface.
+     * @sandbox-reason YooKassa public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public YooKassa API.
      */
     public function deleteCustomer(string $customerId): void
     {
@@ -83,7 +83,7 @@ class YooKassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason YooKassa public API does not expose a generic payment method resource compatible with this library interface. The method only returns the provided model.
+     * @sandbox-reason YooKassa public API does not expose a standalone generic payment-method resource compatible with this interface. This operation cannot be implemented against the public YooKassa API.
      */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
@@ -92,7 +92,7 @@ class YooKassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason YooKassa public API does not expose a generic payment-method attachment API compatible with this library interface. The method only returns a local placeholder model.
+     * @sandbox-reason YooKassa public API does not expose a generic payment-method attachment endpoint compatible with this interface. This operation cannot be implemented against the public YooKassa API.
      */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
@@ -143,7 +143,7 @@ class YooKassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support partial
-     * @sandbox-reason YooKassa does not use a separate confirm operation compatible with this library interface. This method delegates to capturePaymentIntent().
+     * @sandbox-reason YooKassa payment flow does not expose a separate generic confirm endpoint compatible with this interface; confirmation is handled by the provider flow and subsequent capture step.
      */
     public function confirmPaymentIntent(string $intentId, array $params = []): PaymentIntent
     {

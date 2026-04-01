@@ -80,7 +80,7 @@ final class RobokassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method only generates a local placeholder model.
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public Robokassa API.
      */
     public function createCustomer(Customer $customer): Customer
     {
@@ -101,7 +101,7 @@ final class RobokassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method only returns a local placeholder model.
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer retrieval endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
      */
     public function retrieveCustomer(string $customerId): Customer
     {
@@ -110,7 +110,7 @@ final class RobokassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method only returns the provided model without a remote update.
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer update endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
      */
     public function updateCustomer(Customer $customer): Customer
     {
@@ -119,7 +119,7 @@ final class RobokassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason Robokassa public API does not expose a customer resource compatible with this library interface. The method is a local no-op.
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer deletion endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
      */
     public function deleteCustomer(string $customerId): void
     {
@@ -128,7 +128,7 @@ final class RobokassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason Robokassa public API does not expose a generic payment method resource compatible with this library interface. The method only generates a local placeholder model.
+     * @sandbox-reason Robokassa public API does not expose a standalone generic payment-method resource compatible with this interface. This operation cannot be implemented against the public Robokassa API.
      */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
@@ -163,7 +163,7 @@ final class RobokassaGateway extends AbstractGateway
 
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason Robokassa public API does not expose a generic payment-method attachment API compatible with this library interface. The method only returns a local placeholder model.
+     * @sandbox-reason Robokassa public API does not expose a generic payment-method attachment endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
      */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
@@ -290,7 +290,7 @@ final class RobokassaGateway extends AbstractGateway
      */
     /**
      * @sandbox-support partial
-     * @sandbox-reason Robokassa payer confirmation happens on the hosted payment page. This method only re-fetches invoice state and does not call a dedicated confirm endpoint.
+     * @sandbox-reason Robokassa payment confirmation is performed by the payer on the hosted payment page. The public API does not expose a separate generic confirm endpoint compatible with this interface.
      */
     public function confirmPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -303,7 +303,7 @@ final class RobokassaGateway extends AbstractGateway
      */
     /**
      * @sandbox-support partial
-     * @sandbox-reason Robokassa invoice flow does not provide a separate capture operation compatible with this library interface. This method only re-fetches invoice state.
+     * @sandbox-reason Robokassa invoice flow does not expose a separate capture endpoint compatible with this interface; payment is completed on the hosted invoice/payment page.
      */
     public function capturePaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -317,7 +317,7 @@ final class RobokassaGateway extends AbstractGateway
      */
     /**
      * @sandbox-support partial
-     * @sandbox-reason Robokassa cancellation is implemented as a best-effort invoice deactivation and may fall back to the current remote state instead of a guaranteed cancel endpoint result.
+     * @sandbox-reason Robokassa invoice deactivation is not equivalent to a guaranteed generic cancel operation for this interface, so cancellation can only be provided on a best-effort basis.
      */
     public function cancelPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {

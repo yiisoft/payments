@@ -63,7 +63,7 @@ final class PayPalGateway extends AbstractGateway
      */
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method only returns a local placeholder model.
+     * @sandbox-reason PayPal public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
     public function createCustomer(Customer $customer): Customer
     {
@@ -89,7 +89,7 @@ final class PayPalGateway extends AbstractGateway
      */
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method only returns a local placeholder model.
+     * @sandbox-reason PayPal public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
     public function retrieveCustomer(string $customerId): Customer
     {
@@ -103,7 +103,7 @@ final class PayPalGateway extends AbstractGateway
      */
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method only returns the provided model without a remote update.
+     * @sandbox-reason PayPal public API does not expose a standalone customer resource or customer update endpoint compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
     public function updateCustomer(Customer $customer): Customer
     {
@@ -117,7 +117,7 @@ final class PayPalGateway extends AbstractGateway
      */
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason PayPal public API does not expose a generic customer resource compatible with this library interface. The method is a local no-op.
+     * @sandbox-reason PayPal public API does not expose a standalone customer resource or customer deletion endpoint compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
     public function deleteCustomer(string $customerId): void
     {
@@ -210,7 +210,7 @@ final class PayPalGateway extends AbstractGateway
      */
     /**
      * @sandbox-support partial
-     * @sandbox-reason PayPal payer confirmation happens on the hosted PayPal side. This method only re-fetches the current order state and does not call a dedicated confirm endpoint.
+     * @sandbox-reason PayPal order approval is performed by the payer on PayPal-hosted pages. The public API does not expose a separate generic confirm endpoint compatible with this interface.
      */
     public function confirmPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -341,7 +341,7 @@ public function cancelPaymentIntent(string $paymentIntentId, array $params = [])
      */
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason PayPal public API does not expose a generic payment method resource compatible with this library interface. The method only returns a local placeholder model.
+     * @sandbox-reason PayPal public API does not expose a standalone generic payment-method resource compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
@@ -396,7 +396,7 @@ public function cancelPaymentIntent(string $paymentIntentId, array $params = [])
      */
     /**
      * @sandbox-support not_implemented
-     * @sandbox-reason PayPal public API does not expose a generic payment-method attachment API compatible with this library interface. The method only returns a local placeholder model.
+     * @sandbox-reason PayPal public API does not expose a generic payment-method attachment endpoint compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
