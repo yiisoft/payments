@@ -142,7 +142,7 @@ class StripeGatewayTest extends TestCase
         $this->assertStringContainsString('/payment_intents', $lastRequest['uri']);
         $this->assertSame('application/x-www-form-urlencoded', $lastRequest['headers']['Content-Type'][0]);
         $this->assertStringNotContainsString('confirm=true', $lastRequest['body']);
-        $this->assertStringContainsString('off_session=false', $lastRequest['body']);
+        $this->assertStringNotContainsString('off_session=false', $lastRequest['body']);
         $this->assertStringContainsString('metadata%5Border_id%5D=12345', $lastRequest['body']);
     }
 
