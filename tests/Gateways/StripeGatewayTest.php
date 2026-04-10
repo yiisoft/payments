@@ -188,6 +188,10 @@ class StripeGatewayTest extends TestCase
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertSame('https://api.stripe.com/v1/refunds', $lastRequest['uri']);
         $this->assertSame('application/x-www-form-urlencoded', $lastRequest['headers']['Content-Type'][0]);
-        $this->assertSame('amount=1000&payment_intent=pi_test123', $lastRequest['body']);
+        parse_str($lastRequest['body'], $parsedBody);
+        $this->assertSame([
+            'amount' => '1000',
+            'payment_intent' => 'pi_test123',
+        ], $parsedBody);
     }
 }

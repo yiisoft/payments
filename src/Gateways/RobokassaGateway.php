@@ -186,8 +186,7 @@ final class RobokassaGateway extends AbstractGateway
      * Additional Robokassa-specific invoice fields can be provided via metadata:
      * - InvoiceType, ExpirationDate, Culture, Email, SuccessUrl, FailUrl, ResultUrl, Receipt, etc.
      * All metadata is passed to Robokassa as-is (except reserved keys shown above).
-     */
-    /**
+     * 
      * @sandbox-support implemented
      */
     public function createPaymentIntent(PaymentIntent $paymentIntent): PaymentIntent
@@ -251,8 +250,7 @@ final class RobokassaGateway extends AbstractGateway
      * Returns:
      * - status: Robokassa state code (string) in metadata and mapped high-level status in PaymentIntent::status
      * - metadata.robokassa_op_key: operation key for refunds (when available)
-     */
-    /**
+     * 
      * @sandbox-support implemented
      */
     public function retrievePaymentIntent(string $paymentIntentId): PaymentIntent
@@ -267,7 +265,15 @@ final class RobokassaGateway extends AbstractGateway
         $code = isset($result->Code) ? (int) $result->Code : null;
         if ($code !== 0) {
             $desc = isset($result->Description) ? (string) $result->Description : 'Robokassa OpStateExt error';
-            throw new PaymentException($desc, (string) $code, 'robokassa', null, null, 400);
+            throw new PaymentException(
+                $desc,
+                (string) $code,
+                'robokassa',
+                null,
+                null,
+                null,
+                400
+            );
         }
 
         $stateCode = isset($xml->State->Code) ? (int) $xml->State->Code : null;
@@ -287,8 +293,7 @@ final class RobokassaGateway extends AbstractGateway
     /**
      * For Robokassa, payer action happens on a hosted payment page.
      * This method simply re-fetches invoice state.
-     */
-    /**
+     * 
      * @sandbox-support partial
      * @sandbox-reason Robokassa payment confirmation is performed by the payer on the hosted payment page. The public API does not expose a separate generic confirm endpoint compatible with this interface.
      */
@@ -300,8 +305,7 @@ final class RobokassaGateway extends AbstractGateway
     /**
      * Robokassa does not support "capture" in the same way as card processors (it is invoice-based).
      * This method re-fetches invoice state.
-     */
-    /**
+     * 
      * @sandbox-support partial
      * @sandbox-reason Robokassa invoice flow does not expose a separate capture endpoint compatible with this interface; payment is completed on the hosted invoice/payment page.
      */
@@ -314,8 +318,7 @@ final class RobokassaGateway extends AbstractGateway
      * Attempts to deactivate an invoice via Invoice API.
      *
      * If the Invoice API call is not available/authorized, returns a best-effort local status.
-     */
-    /**
+     * 
      * @sandbox-support partial
      * @sandbox-reason Robokassa invoice deactivation is not equivalent to a guaranteed generic cancel operation for this interface, so cancellation can only be provided on a best-effort basis.
      */
@@ -386,8 +389,7 @@ final class RobokassaGateway extends AbstractGateway
      * If it is not provided, the gateway will call OpStateExt to obtain it.
      *
      * @return array<string,mixed>
-     */
-    /**
+     * 
      * @sandbox-support implemented
      */
     public function createRefund(string $paymentIntentId, array $params = []): array
@@ -397,6 +399,7 @@ final class RobokassaGateway extends AbstractGateway
                 'Robokassa Refund API v2 requires Password#3 to be configured.',
                 'robokassa_password3_required',
                 'robokassa',
+                null,
                 null,
                 null,
                 500
@@ -414,6 +417,7 @@ final class RobokassaGateway extends AbstractGateway
                 'Cannot create Robokassa refund: OpKey is missing (provide params[\'op_key\'] or ensure invoice is paid).',
                 'robokassa_op_key_missing',
                 'robokassa',
+                null,
                 null,
                 null,
                 400
@@ -450,8 +454,6 @@ final class RobokassaGateway extends AbstractGateway
 
     /**
      * Sends a JWT-as-body request to an endpoint that returns JSON.
-     *
-     * The JWT is sent as a plain string body, without JSON encoding.
      *
      * @return array<string,mixed>
      */
@@ -615,6 +617,7 @@ final class RobokassaGateway extends AbstractGateway
                 'Robokassa XML API returned invalid XML.',
                 'robokassa_invalid_xml',
                 'robokassa',
+                null,
                 null,
                 null,
                 $response->getStatusCode()

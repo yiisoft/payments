@@ -60,7 +60,7 @@ class YooKassaGateway extends AbstractGateway
      */
     public function retrieveCustomer(string $customerId): Customer
     {
-        throw new \PaymentException('YooKassa API does not support retrieving customer');
+        throw new PaymentException('YooKassa API does not support retrieving customer');
     }
 
     /**
@@ -69,7 +69,7 @@ class YooKassaGateway extends AbstractGateway
      */
     public function updateCustomer(Customer $customer): Customer
     {
-        throw new \PaymentException('YooKassa API does not support updating customer');
+        throw new PaymentException('YooKassa API does not support updating customer');
     }
 
     /**
@@ -78,7 +78,7 @@ class YooKassaGateway extends AbstractGateway
      */
     public function deleteCustomer(string $customerId): void
     {
-        throw new \PaymentException('YooKassa API does not support delete customer');
+        throw new PaymentException('YooKassa API does not support delete customer');
     }
 
     /**
