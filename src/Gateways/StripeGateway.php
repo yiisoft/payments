@@ -243,6 +243,9 @@ class StripeGateway extends AbstractGateway
             'payment_method' => $intent->paymentMethodId,
             'description' => $intent->description,
             'metadata' => $intent->metadata,
+            'capture_method' => $intent->captureMethod === null
+                ? null
+                : ($intent->captureMethod ? 'manual' : 'automatic'),
             'confirm' => $intent->confirm,
             'off_session' => $intent->offSession,
             'receipt_email' => $intent->receiptEmail,

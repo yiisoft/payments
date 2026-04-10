@@ -52,7 +52,7 @@ final class StripeGatewayCaptureMethodTest extends TestCase
 
         $this->assertSame('pi_automatic', $result->id);
 
-        $body = json_decode($this->httpClient->lastRequest['body'], true);
+        parse_str($this->httpClient->lastRequest['body'], $body);
         $this->assertSame('automatic', $body['capture_method']);
     }
 }
