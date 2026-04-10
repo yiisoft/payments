@@ -99,7 +99,7 @@ class YooKassaGatewayTest extends TestCase
 
         $this->assertSame('30ae77b9-000f-5001-8000-13e0de458932', $result->id);
         $this->assertSame(10000, $result->amount);
-        $this->assertSame('rub', $result->currency);
+        $this->assertSame('RUB', $result->currency);
         $this->assertSame('Test payment', $result->description);
     }
 
