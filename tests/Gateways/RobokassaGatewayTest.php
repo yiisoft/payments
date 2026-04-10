@@ -170,7 +170,7 @@ XML;
 
         $result = $this->gateway->createRefund(
             paymentIntentId: '123',
-            amount: 1000
+            params: ['amount' => 1000]
         );
 
         $this->assertTrue($result['success']);
