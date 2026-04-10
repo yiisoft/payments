@@ -116,6 +116,15 @@ readonly class PaymentIntent
             throw new InvalidArgumentException('Currency must be a string or null');
         }
 
+        $captureMethod = $data['capture_method'] ?? $data['captureMethod'] ?? null;
+        if (is_string($captureMethod)) {
+            $captureMethod = match ($captureMethod) {
+                'manual' => true,
+                'automatic' => false,
+                default => null,
+            };
+        }
+
         return new self(
             id: $data['id'] ?? null,
             status: $data['status'] ?? null,
@@ -128,7 +137,7 @@ readonly class PaymentIntent
             metadata: $data['metadata'] ?? null,
             nextAction: $data['next_action'] ?? $data['nextAction'] ?? null,
             charges: $data['charges'] ?? null,
-            captureMethod: $data['capture_method'] ?? $data['captureMethod'] ?? null,
+            captureMethod: $captureMethod,
             confirm: $data['confirm'] ?? null,
             offSession: $data['off_session'] ?? $data['offSession'] ?? null,
             receiptEmail: $data['receipt_email'] ?? $data['receiptEmail'] ?? null,
