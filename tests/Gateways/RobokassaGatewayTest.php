@@ -170,7 +170,10 @@ XML;
 
         $result = $this->gateway->createRefund(
             paymentIntentId: '123',
-            params: ['amount' => 1000]
+            params: [
+                'amount' => 1000,
+                'op_key' => 'OP-123',
+            ]
         );
 
         $this->assertTrue($result['success']);
