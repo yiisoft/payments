@@ -78,6 +78,10 @@ final class RobokassaGateway extends AbstractGateway
     // Customer and PaymentMethod operations (no-op placeholders)
     // ---------------------------------------------------------------------
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public Robokassa API.
+     */
     public function createCustomer(Customer $customer): Customer
     {
         if ($customer->id !== null) {
@@ -95,21 +99,37 @@ final class RobokassaGateway extends AbstractGateway
         );
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer retrieval endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
+     */
     public function retrieveCustomer(string $customerId): Customer
     {
         return new Customer(id: $customerId);
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer update endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
+     */
     public function updateCustomer(Customer $customer): Customer
     {
         return $customer;
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a standalone customer resource or customer deletion endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
+     */
     public function deleteCustomer(string $customerId): void
     {
         // Intentionally no-op.
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a standalone generic payment-method resource compatible with this interface. This operation cannot be implemented against the public Robokassa API.
+     */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
         if ($paymentMethod->id !== null) {
@@ -141,6 +161,10 @@ final class RobokassaGateway extends AbstractGateway
         // Intentionally no-op.
     }
 
+    /**
+     * @sandbox-support not_implemented
+     * @sandbox-reason Robokassa public API does not expose a generic payment-method attachment endpoint compatible with this interface. This operation cannot be implemented against the public Robokassa API.
+     */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
         return $this->retrievePaymentMethod($paymentMethodId);
@@ -162,6 +186,8 @@ final class RobokassaGateway extends AbstractGateway
      * Additional Robokassa-specific invoice fields can be provided via metadata:
      * - InvoiceType, ExpirationDate, Culture, Email, SuccessUrl, FailUrl, ResultUrl, Receipt, etc.
      * All metadata is passed to Robokassa as-is (except reserved keys shown above).
+     * 
+     * @sandbox-support implemented
      */
     public function createPaymentIntent(PaymentIntent $paymentIntent): PaymentIntent
     {
@@ -224,6 +250,8 @@ final class RobokassaGateway extends AbstractGateway
      * Returns:
      * - status: Robokassa state code (string) in metadata and mapped high-level status in PaymentIntent::status
      * - metadata.robokassa_op_key: operation key for refunds (when available)
+     * 
+     * @sandbox-support implemented
      */
     public function retrievePaymentIntent(string $paymentIntentId): PaymentIntent
     {
@@ -237,7 +265,15 @@ final class RobokassaGateway extends AbstractGateway
         $code = isset($result->Code) ? (int) $result->Code : null;
         if ($code !== 0) {
             $desc = isset($result->Description) ? (string) $result->Description : 'Robokassa OpStateExt error';
-            throw new PaymentException($desc, (string) $code, 'robokassa', null, null, 400);
+            throw new PaymentException(
+                $desc,
+                (string) $code,
+                'robokassa',
+                null,
+                null,
+                null,
+                400
+            );
         }
 
         $stateCode = isset($xml->State->Code) ? (int) $xml->State->Code : null;
@@ -257,6 +293,9 @@ final class RobokassaGateway extends AbstractGateway
     /**
      * For Robokassa, payer action happens on a hosted payment page.
      * This method simply re-fetches invoice state.
+     * 
+     * @sandbox-support partial
+     * @sandbox-reason Robokassa payment confirmation is performed by the payer on the hosted payment page. The public API does not expose a separate generic confirm endpoint compatible with this interface.
      */
     public function confirmPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -266,6 +305,9 @@ final class RobokassaGateway extends AbstractGateway
     /**
      * Robokassa does not support "capture" in the same way as card processors (it is invoice-based).
      * This method re-fetches invoice state.
+     * 
+     * @sandbox-support partial
+     * @sandbox-reason Robokassa invoice flow does not expose a separate capture endpoint compatible with this interface; payment is completed on the hosted invoice/payment page.
      */
     public function capturePaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -276,6 +318,9 @@ final class RobokassaGateway extends AbstractGateway
      * Attempts to deactivate an invoice via Invoice API.
      *
      * If the Invoice API call is not available/authorized, returns a best-effort local status.
+     * 
+     * @sandbox-support partial
+     * @sandbox-reason Robokassa invoice deactivation is not equivalent to a guaranteed generic cancel operation for this interface, so cancellation can only be provided on a best-effort basis.
      */
     public function cancelPaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
@@ -344,6 +389,8 @@ final class RobokassaGateway extends AbstractGateway
      * If it is not provided, the gateway will call OpStateExt to obtain it.
      *
      * @return array<string,mixed>
+     * 
+     * @sandbox-support implemented
      */
     public function createRefund(string $paymentIntentId, array $params = []): array
     {
@@ -352,6 +399,7 @@ final class RobokassaGateway extends AbstractGateway
                 'Robokassa Refund API v2 requires Password#3 to be configured.',
                 'robokassa_password3_required',
                 'robokassa',
+                null,
                 null,
                 null,
                 500
@@ -369,6 +417,7 @@ final class RobokassaGateway extends AbstractGateway
                 'Cannot create Robokassa refund: OpKey is missing (provide params[\'op_key\'] or ensure invoice is paid).',
                 'robokassa_op_key_missing',
                 'robokassa',
+                null,
                 null,
                 null,
                 400
@@ -406,51 +455,123 @@ final class RobokassaGateway extends AbstractGateway
     /**
      * Sends a JWT-as-body request to an endpoint that returns JSON.
      *
-     * The JWT is sent as a plain string body, without JSON encoding.
-     *
      * @return array<string,mixed>
      */
     private function sendRawJsonRequest(string $method, string $url, string $jwt): array
     {
+        $requestBody = '"' . $jwt . '"';
+
         $request = $this->requestFactory->createRequest($method, $url)
-            ->withHeader('Content-Type', 'text/plain')
+            ->withHeader('Content-Type', 'application/json')
             ->withHeader('Accept', 'application/json');
 
-        $request = $request->withBody($this->streamFactory->createStream($jwt));
+        $request = $request->withBody($this->streamFactory->createStream($requestBody));
 
         $response = $this->httpClient->sendRequest($request);
         $body = (string) $response->getBody();
         $data = json_decode($body, true);
 
         if (!is_array($data)) {
+            $this->log('error', 'Robokassa API returned a non-JSON response.', [
+                'status' => $response->getStatusCode(),
+                'body' => $body,
+            ]);
+
             throw new PaymentException(
                 'Robokassa API returned a non-JSON response.',
                 'robokassa_invalid_response',
                 'robokassa',
                 null,
                 null,
+                [
+                    'status' => $response->getStatusCode(),
+                    'response_body' => $body,
+                ],
                 $response->getStatusCode()
             );
         }
 
         if ($response->getStatusCode() >= 400) {
+            $this->log('error', 'Robokassa JSON API request failed.', [
+                'status' => $response->getStatusCode(),
+                'response' => $data,
+            ]);
             $this->handleErrorResponse($data, $response->getStatusCode());
         }
 
         // Some Robokassa endpoints return 200 even on logical failure.
-        if (isset($data['success']) && $data['success'] === false) {
-            $message = (string) ($data['message'] ?? 'Robokassa request failed.');
+        $isFailure = (isset($data['success']) && $data['success'] === false)
+            || (isset($data['Success']) && $data['Success'] === false)
+            || (isset($data['Result']) && $data['Result'] === false);
+
+        if ($isFailure) {
+            $message = $this->extractRobokassaErrorMessage($data) ?? 'Robokassa request failed.';
+            $errorCode = $this->extractRobokassaErrorCode($data) ?? 'robokassa_error';
+
+            $this->log('error', 'Robokassa logical API failure.', [
+                'status' => $response->getStatusCode(),
+                'response' => $data,
+            ]);
+
             throw new PaymentException(
                 $message,
-                (string) ($data['code'] ?? 'robokassa_error'),
+                $errorCode,
                 'robokassa',
                 null,
                 null,
+                [
+                    'status' => $response->getStatusCode(),
+                    'response' => $data,
+                ],
                 $response->getStatusCode()
             );
         }
 
         return $data;
+    }
+
+    private function extractRobokassaErrorMessage(array $data): ?string
+    {
+        foreach (['message', 'Message', 'description', 'Description', 'error', 'Error'] as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+
+            $value = $data[$key];
+            if (is_scalar($value) && $value !== '') {
+                return (string) $value;
+            }
+        }
+
+        $errors = $data['errors'] ?? $data['Errors'] ?? null;
+        if (is_array($errors) && $errors !== []) {
+            $first = reset($errors);
+            if (is_array($first)) {
+                return $this->extractRobokassaErrorMessage($first);
+            }
+
+            if (is_scalar($first) && $first !== '') {
+                return (string) $first;
+            }
+        }
+
+        return null;
+    }
+
+    private function extractRobokassaErrorCode(array $data): ?string
+    {
+        foreach (['code', 'Code', 'errorCode', 'ErrorCode'] as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+
+            $value = $data[$key];
+            if (is_scalar($value) && $value !== '') {
+                return (string) $value;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -496,6 +617,7 @@ final class RobokassaGateway extends AbstractGateway
                 'Robokassa XML API returned invalid XML.',
                 'robokassa_invalid_xml',
                 'robokassa',
+                null,
                 null,
                 null,
                 $response->getStatusCode()

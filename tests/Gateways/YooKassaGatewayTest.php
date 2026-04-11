@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Gateways;
 
 use PHPUnit\Framework\TestCase;
+use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Gateways\YooKassaGateway;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
@@ -42,7 +43,19 @@ class YooKassaGatewayTest extends TestCase
         return $this->httpClient->lastRequest;
     }
 
-    public function testCreateCustomer(): void {}
+    public function testCreateCustomer(): void
+    {
+        $customer = new Customer(
+            email: 'test@example.com',
+            name: 'Test User',
+        );
+
+        $created = $this->gateway->createCustomer($customer);
+
+        $this->assertNull($created->id);
+        $this->assertSame('test@example.com', $created->email);
+        $this->assertSame('Test User', $created->name);
+    }
 
     public function testCreatePaymentIntent(): void
     {
@@ -99,7 +112,7 @@ class YooKassaGatewayTest extends TestCase
 
         $this->assertSame('30ae77b9-000f-5001-8000-13e0de458932', $result->id);
         $this->assertSame(10000, $result->amount);
-        $this->assertSame('rub', $result->currency);
+        $this->assertSame('RUB', $result->currency);
         $this->assertSame('Test payment', $result->description);
     }
 

@@ -38,13 +38,71 @@ class StripeGateway extends AbstractGateway
      */
     protected function createRequest(string $method, string $endpoint, array $data = [])
     {
-        $request = parent::createRequest($method, $endpoint, $data);
-        
-        return $request
+        $uri = rtrim($this->getBaseUri(), '/') . '/' . ltrim($endpoint, '/');
+        $request = $this->requestFactory->createRequest($method, $uri)
+            ->withHeader('Accept', 'application/json')
+            ->withHeader('User-Agent', 'PaymentGateway/' . self::API_VERSION)
             ->withHeader('Authorization', 'Bearer ' . $this->apiKey)
             ->withHeader('Stripe-Version', $this->apiVersion);
+
+        if (!empty($data)) {
+            $stream = $this->streamFactory->createStream($this->buildFormBody($data));
+            $request = $request
+                ->withBody($stream)
+                ->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+        }
+
+        return $request;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function buildFormBody(array $data): string
+    {
+        $pairs = [];
+
+        foreach ($this->flattenFormFields($data) as $key => $value) {
+            $pairs[] = rawurlencode($key) . '=' . rawurlencode($value);
+        }
+
+        return implode('&', $pairs);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, string>
+     */
+    private function flattenFormFields(array $data, string $prefix = ''): array
+    {
+        $result = [];
+
+        foreach ($data as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+
+            $field = $prefix === '' ? (string) $key : $prefix . '[' . $key . ']';
+
+            if (is_array($value)) {
+                $result += $this->flattenFormFields($value, $field);
+                continue;
+            }
+
+            if (is_bool($value)) {
+                $result[$field] = $value ? 'true' : 'false';
+                continue;
+            }
+
+            $result[$field] = (string) $value;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @sandbox-support implemented
+     */
     public function createCustomer(Customer $customer): Customer
     {
         $data = array_filter([
@@ -75,6 +133,9 @@ class StripeGateway extends AbstractGateway
         );
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function retrieveCustomer(string $customerId): Customer
     {
         $request = $this->createRequest('GET', "/customers/{$customerId}");
@@ -91,6 +152,9 @@ class StripeGateway extends AbstractGateway
         );
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function updateCustomer(Customer $customer): Customer
     {
         if ($customer->id === null) {
@@ -125,12 +189,18 @@ class StripeGateway extends AbstractGateway
         );
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function deleteCustomer(string $customerId): void
     {
         $request = $this->createRequest('DELETE', "/customers/{$customerId}");
         $this->sendRequest($request);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function createPaymentMethod(PaymentMethod $paymentMethod): PaymentMethod
     {
         $data = [
@@ -146,6 +216,9 @@ class StripeGateway extends AbstractGateway
         return PaymentMethod::fromArray($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function attachPaymentMethod(string $paymentMethodId, string $customerId): PaymentMethod
     {
         $request = $this->createRequest(
@@ -158,6 +231,9 @@ class StripeGateway extends AbstractGateway
         return PaymentMethod::fromArray($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function createPaymentIntent(PaymentIntent $intent): PaymentIntent
     {
         $data = array_filter([
@@ -167,6 +243,9 @@ class StripeGateway extends AbstractGateway
             'payment_method' => $intent->paymentMethodId,
             'description' => $intent->description,
             'metadata' => $intent->metadata,
+            'capture_method' => $intent->captureMethod === null
+                ? null
+                : ($intent->captureMethod ? 'manual' : 'automatic'),
             'confirm' => $intent->confirm,
             'off_session' => $intent->offSession,
             'receipt_email' => $intent->receiptEmail,
@@ -179,6 +258,9 @@ class StripeGateway extends AbstractGateway
         return PaymentIntent::fromArray($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function confirmPaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
         $request = $this->createRequest('POST', "/payment_intents/{$intentId}/confirm", $params);
@@ -186,6 +268,9 @@ class StripeGateway extends AbstractGateway
         return PaymentIntent::fromArray($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function capturePaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
         $request = $this->createRequest('POST', "/payment_intents/{$intentId}/capture", $params);
@@ -193,6 +278,9 @@ class StripeGateway extends AbstractGateway
         return PaymentIntent::fromArray($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function cancelPaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
         $request = $this->createRequest('POST', "/payment_intents/{$intentId}/cancel", $params);
@@ -200,6 +288,9 @@ class StripeGateway extends AbstractGateway
         return PaymentIntent::fromArray($response);
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function createRefund(string $paymentIntentId, array $params = []): array
     {
         $params['payment_intent'] = $paymentIntentId;
@@ -215,6 +306,9 @@ class StripeGateway extends AbstractGateway
         ];
     }
 
+    /**
+     * @sandbox-support implemented
+     */
     public function retrievePaymentIntent(string $intentId): PaymentIntent
     {
         $request = $this->createRequest('GET', "/payment_intents/{$intentId}");

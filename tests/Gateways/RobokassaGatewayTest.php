@@ -60,10 +60,70 @@ final class RobokassaGatewayTest extends TestCase
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('InvoiceServiceWebApi/api/CreateInvoice', $lastRequest['uri']);
         $this->assertArrayHasKey('Content-Type', $lastRequest['headers']);
-        $this->assertSame('text/plain', $lastRequest['headers']['Content-Type'][0]);
+        $this->assertSame('application/json', $lastRequest['headers']['Content-Type'][0]);
 
-        // JWT has 3 dot-separated segments.
-        $this->assertCount(3, explode('.', $lastRequest['body']));
+        $this->assertStringStartsWith('"', $lastRequest['body']);
+        $this->assertStringEndsWith('"', $lastRequest['body']);
+        // JWT has 3 dot-separated segments inside quoted request body.
+        $this->assertCount(3, explode('.', trim($lastRequest['body'], '"')));
+    }
+
+
+    public function testCreatePaymentIntentIncludesApiErrorDetailsInException(): void
+    {
+        $this->httpClient->queueJsonResponse([
+            'Error' => 'Invalid signature.',
+            'ErrorCode' => 'INVALID_SIGNATURE',
+        ], 400);
+
+        $intent = new PaymentIntent(
+            id: null,
+            amount: 2500,
+            currency: 'RUB',
+            description: 'Test payment'
+        );
+
+        $this->expectException(\Yiisoft\Payments\Exceptions\InvalidRequestException::class);
+        $this->expectExceptionMessage('Invalid signature.');
+
+        try {
+            $this->gateway->createPaymentIntent($intent);
+        } catch (\Yiisoft\Payments\Exceptions\InvalidRequestException $e) {
+            $this->assertSame('INVALID_SIGNATURE', $e->errorCode);
+            $this->assertIsArray($e->details);
+            $this->assertSame('Invalid signature.', $e->details['response']['Error'] ?? null);
+            throw $e;
+        }
+    }
+
+
+    public function testCreatePaymentIntentUsesProblemDetailsTitleAsErrorMessage(): void
+    {
+        $this->httpClient->queueJsonResponse([
+            'type' => 'https://tools.ietf.org/html/rfc9110#section-15.5.16',
+            'title' => 'Unsupported Media Type',
+            'status' => 415,
+            'traceId' => 'trace-id',
+        ], 415);
+
+        $intent = new PaymentIntent(
+            id: null,
+            amount: 2500,
+            currency: 'RUB',
+            description: 'Test payment'
+        );
+
+        $this->expectException(\Yiisoft\Payments\Exceptions\PaymentException::class);
+        $this->expectExceptionMessage('Unsupported Media Type');
+
+        try {
+            $this->gateway->createPaymentIntent($intent);
+        } catch (\Yiisoft\Payments\Exceptions\PaymentException $e) {
+            $this->assertSame('https://tools.ietf.org/html/rfc9110#section-15.5.16', $e->errorType);
+            $this->assertIsArray($e->details);
+            $this->assertSame('Unsupported Media Type', $e->details['response']['title'] ?? null);
+            throw $e;
+        }
     }
 
     public function testRetrievePaymentIntentUsesOpStateExt(): void
@@ -110,7 +170,10 @@ XML;
 
         $result = $this->gateway->createRefund(
             paymentIntentId: '123',
-            amount: 1000
+            params: [
+                'amount' => 1000,
+                'op_key' => 'OP-123',
+            ]
         );
 
         $this->assertTrue($result['success']);

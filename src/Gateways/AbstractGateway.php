@@ -79,33 +79,93 @@ abstract class AbstractGateway implements PaymentGatewayInterface
 
     protected function handleErrorResponse(array $response, int $statusCode): void
     {
-        $error = $response['error'] ?? [];
-        $message = $error['message'] ?? 'An error occurred with the payment gateway';
-        $code = $error['code'] ?? null;
-        $type = $error['type'] ?? null;
-        $declineCode = $error['decline_code'] ?? null;
-        $param = $error['param'] ?? null;
+        $error = isset($response['error']) && is_array($response['error'])
+            ? $response['error']
+            : $response;
+
+        $message = $this->extractErrorMessage($error)
+            ?? $this->extractErrorMessage($response)
+            ?? 'An error occurred with the payment gateway';
+
+        $code = $this->extractErrorField($error, ['code', 'Code', 'error_code', 'ErrorCode', 'ResultCode']);
+        $type = $this->extractErrorField($error, ['type', 'Type', 'error_type', 'ErrorType']);
+        $declineCode = $this->extractErrorField($error, ['decline_code', 'DeclineCode']);
+        $param = $this->extractErrorField($error, ['param', 'Param', 'parameter', 'Parameter']);
+        $details = [
+            'response' => $response,
+        ];
 
         switch ($statusCode) {
             case 400:
-                throw new \Yiisoft\Payments\Exceptions\InvalidRequestException(
+                throw new InvalidRequestException(
                     $message,
                     $code,
                     $type,
                     $declineCode,
                     $param,
+                    $details,
                     $statusCode
                 );
-            // Add more specific exceptions as needed
             default:
-                throw new \Yiisoft\Payments\Exceptions\PaymentException(
+                throw new PaymentException(
                     $message,
                     $code,
                     $type,
                     $declineCode,
                     $param,
+                    $details,
                     $statusCode
                 );
         }
+    }
+
+    private function extractErrorMessage(array $payload): ?string
+    {
+        $message = $this->extractErrorField(
+            $payload,
+            ['message', 'Message', 'description', 'Description', 'detail', 'Detail', 'title', 'Title', 'error_description', 'error_message', 'Error']
+        );
+
+        if ($message !== null && $message !== '') {
+            return $message;
+        }
+
+        $errors = $payload['errors'] ?? $payload['Errors'] ?? null;
+        if (is_array($errors) && $errors !== []) {
+            $first = reset($errors);
+            if (is_array($first)) {
+                return $this->extractErrorMessage($first);
+            }
+
+            if (is_scalar($first)) {
+                return (string) $first;
+            }
+        }
+
+        $error = $payload['error'] ?? null;
+        if (is_scalar($error) && $error !== '') {
+            return (string) $error;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<string> $keys
+     */
+    private function extractErrorField(array $payload, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            if (!array_key_exists($key, $payload)) {
+                continue;
+            }
+
+            $value = $payload[$key];
+            if (is_scalar($value) && $value !== '') {
+                return (string) $value;
+            }
+        }
+
+        return null;
     }
 }
