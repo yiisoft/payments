@@ -762,34 +762,33 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
 sequenceDiagram
     participant GP as Gateway Provider
     participant UC as User Code
-    participant PG as payments Gateway
-    participant WL as Webhook Layer
+    participant WH as WebhookHandler
     participant VP as Validator / Parser
     participant WR as WebhookResult
 
     GP->>UC: POST webhook HTTP request
     Note over GP,UC: headers + raw body
-    UC->>PG: pass PSR-7 request to configured gateway
-    PG->>WL: handleWebhook(request)
-    WL->>VP: validate(request)
-    WL->>VP: recognizeEvent(request)
-    WL->>VP: parsePayload(request)
-    Note over VP: signature, headers, event type
-    VP-->>WL: normalized webhook data
-    WL->>WR: build common result envelope
+    UC->>WH: handle(request)
+    WH->>VP: validate(request)
+    WH->>VP: recognizeEvent(request)
+    WH->>VP: parsePayload(request)
+    Note over VP: signature / headers / event type
+    VP-->>WH: normalized webhook data
+    WH->>WR: build common result envelope
     WR-->>UC: return WebhookResult
-    Note over UC: update local state, log, or ignore unknown event
+    Note over UC: update local state / log / ignore unknown event
 ```
 
-Release 1 webhook support is designed to add a **common, payment-oriented webhook handling layer** on top of the existing gateway API.
+Release 1 webhook support is designed to add a **common, payment-oriented webhook handling layer** alongside the existing gateway API.
 
 The main idea is:
 
 - user code still owns the HTTP endpoint;
 - the library receives a `ServerRequestInterface`;
-- a gateway-specific webhook processor validates and parses the request;
+- a provider-specific webhook handler validates and parses the request;
 - the library returns a normalized `WebhookResult`;
-- Release 1 covers **payment-related webhook events only**.
+- Release 1 covers **payment-related webhook events only**;
+- webhook handling is modeled as a **separate object graph**, not as an extension of `PaymentGatewayInterface`.
 
 ### Goals of Release 1
 
@@ -806,19 +805,6 @@ Release 1 should provide a common way to:
 
 The exact naming may still change during implementation, but the proposed Release 1 API is centered around the following concepts.
 
-#### Gateway-level webhook support
-
-```php
-interface WebhookGatewayInterface extends PaymentGatewayInterface
-{
-    public function getWebhookHandler(): WebhookHandlerInterface;
-    public function supportsWebhooks(): bool;
-    public function supportsWebhookEntity(string $entityKind): bool;
-}
-```
-
-This keeps webhook support close to the existing gateway model while making support explicit.
-
 #### Main webhook entry point
 
 ```php
@@ -826,11 +812,11 @@ use Psr\Http\Message\ServerRequestInterface;
 
 interface WebhookHandlerInterface
 {
-    public function handleWebhook(ServerRequestInterface $request): WebhookResult;
+    public function handle(ServerRequestInterface $request): WebhookResult;
 }
 ```
 
-This is the common entry point for user code.
+This is the main entry point for incoming webhook processing.
 
 #### Validation
 
@@ -889,7 +875,7 @@ Release 1 is intentionally limited to `PaymentIntent`-oriented webhook handling.
 #### Validation result
 
 ```php
-final readonly class WebhookValidationResult
+readonly class WebhookValidationResult
 {
     public function __construct(
         public bool $isValid,
@@ -902,7 +888,7 @@ final readonly class WebhookValidationResult
 #### Parsed payload
 
 ```php
-final readonly class WebhookPayload
+readonly class WebhookPayload
 {
     public function __construct(
         public string $entityKind,
@@ -918,7 +904,7 @@ final readonly class WebhookPayload
 #### Final result returned to user code
 
 ```php
-final readonly class WebhookResult
+readonly class WebhookResult
 {
     public function __construct(
         public bool $isValid,
@@ -935,35 +921,31 @@ final readonly class WebhookResult
 }
 ```
 
-`WebhookResult` is intended to be the main value returned from `handleWebhook()`.
+`WebhookResult` is intended to be the main value returned from `handle()`.
 
 ### Example: Common user-code flow
 
 In a typical web application, the HTTP endpoint belongs to the application layer.
-The application resolves the gateway for the current webhook endpoint and then passes the incoming PSR-7 request to the library.
+The application wires a provider-specific webhook handler for the current endpoint and then passes the incoming PSR-7 request to the library.
 
 #### Container definitions
 
 ```php
-use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Container\ContainerInterface;
-use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
-use Yiisoft\Payments\Gateways\StripeGateway;
+use Yiisoft\Payments\Webhooks\Handlers\StripeWebhookHandler;
+use Yiisoft\Payments\Webhooks\WebhookHandlerInterface;
 
 return [
-    StripeGateway::class => static function (ContainerInterface $container): StripeGateway {
-        return new StripeGateway(
+    StripeWebhookHandler::class => static function (ContainerInterface $container): StripeWebhookHandler {
+        return new StripeWebhookHandler(
             apiKey: $_ENV['STRIPE_API_KEY'],
-            httpClient: $container->get(ClientInterface::class),
-            requestFactory: $container->get(Psr17Factory::class),
-            streamFactory: $container->get(Psr17Factory::class),
         );
     },
 
     StripeWebhookController::class => static function (ContainerInterface $container): StripeWebhookController {
         return new StripeWebhookController(
-            gateway: $container->get(StripeGateway::class),
+            webhookHandler: $container->get(StripeWebhookHandler::class),
             responseFactory: $container->get(ResponseFactoryInterface::class),
         );
     },
@@ -976,28 +958,20 @@ return [
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Yiisoft\Payments\Gateways\StripeGateway;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookHandlerInterface;
 
 final class StripeWebhookController
 {
     public function __construct(
-        private StripeGateway $gateway,
+        private WebhookHandlerInterface $webhookHandler,
         private ResponseFactoryInterface $responseFactory,
     ) {
     }
 
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
-        if (!$this->gateway->supportsWebhooks()) {
-            return $this->responseFactory->createResponse(501);
-        }
-
-        if (!$this->gateway->supportsWebhookEntity(WebhookEntityKind::PAYMENT)) {
-            return $this->responseFactory->createResponse(501);
-        }
-
-        $result = $this->gateway->getWebhookHandler()->handleWebhook($request);
+        $result = $this->webhookHandler->handle($request);
 
         if (!$result->isValid) {
             return $this->responseFactory->createResponse(400);
@@ -1023,11 +997,12 @@ final class StripeWebhookController
 The sequence is:
 
 1. the application builds `StripeWebhookController`;
-2. the container injects a configured `StripeGateway`;
-3. the controller verifies that webhook support is available for payment events;
-4. the controller passes the incoming `ServerRequestInterface` to `handleWebhook()`;
-5. the library validates and parses the provider-specific webhook request;
+2. the container injects a configured `StripeWebhookHandler`;
+3. the controller passes the incoming `ServerRequestInterface` to `handle()`;
+4. the library validates and parses the provider-specific webhook request;
+5. the library returns `WebhookResult`;
 6. the controller converts `WebhookResult` into an application response.
+
 ### Why Release 1 is limited to payment events
 
 Release 1 focuses on payment-related webhook handling because it fits the current public API more naturally:
