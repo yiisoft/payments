@@ -747,18 +747,6 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
 > It does **not** describe functionality that is already available in the current stable version of the library.
 
 ```mermaid
-%%{init: {"theme":"base","themeVariables": {
-  "background":"transparent",
-  "fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-  "primaryColor":"#0f172a",
-  "primaryTextColor":"#e2e8f0",
-  "primaryBorderColor":"#94a3b8",
-  "lineColor":"#94a3b8",
-  "secondaryColor":"#052e16",
-  "tertiaryColor":"#1e293b",
-  "clusterBkg":"#0b1220",
-  "clusterBorder":"#334155"
-}}}%%
 sequenceDiagram
     participant GP as Gateway Provider
     participant UC as User Code
@@ -769,16 +757,16 @@ sequenceDiagram
 
     GP->>UC: POST webhook HTTP request
     Note over GP,UC: headers + raw body
-    UC->>PG: resolve gateway and pass PSR-7 Request
+    UC->>PG: pass PSR-7 request to configured gateway
     PG->>WL: handleWebhook(request)
     WL->>VP: validate(request)
     WL->>VP: recognizeEvent(request)
     WL->>VP: parsePayload(request)
-    Note over VP: signature / headers / event type
+    Note over VP: signature, headers, event type
     VP-->>WL: normalized webhook data
     WL->>WR: build common result envelope
-    WR-->>UC: WebhookResult
-    Note over UC: update local state / log / ignore unknown event
+    WR-->>UC: return WebhookResult
+    Note over UC: update local state, log, or ignore unknown event
 ```
 
 Release 1 webhook support is designed to add a **common, payment-oriented webhook handling layer** on top of the existing gateway API.
@@ -942,17 +930,47 @@ final readonly class WebhookResult
 In a typical web application, the HTTP endpoint belongs to the application layer.
 The application resolves the gateway for the current webhook endpoint and then passes the incoming PSR-7 request to the library.
 
+#### Container definitions
+
+```php
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
+use Yiisoft\Payments\Gateways\StripeGateway;
+
+return [
+    StripeGateway::class => static function (ContainerInterface $container): StripeGateway {
+        return new StripeGateway(
+            apiKey: $_ENV['STRIPE_API_KEY'],
+            httpClient: $container->get(ClientInterface::class),
+            requestFactory: $container->get(Psr17Factory::class),
+            streamFactory: $container->get(Psr17Factory::class),
+        );
+    },
+
+    StripeWebhookController::class => static function (ContainerInterface $container): StripeWebhookController {
+        return new StripeWebhookController(
+            gateway: $container->get(StripeGateway::class),
+            responseFactory: $container->get(ResponseFactoryInterface::class),
+        );
+    },
+];
+```
+
+#### Controller
+
 ```php
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Yiisoft\Payments\Gateways\StripeGateway;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
-use Yiisoft\Payments\Webhooks\WebhookGatewayInterface;
 
 final class StripeWebhookController
 {
     public function __construct(
-        private WebhookGatewayInterface $gateway,
+        private StripeGateway $gateway,
         private ResponseFactoryInterface $responseFactory,
     ) {
     }
@@ -960,6 +978,10 @@ final class StripeWebhookController
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
         if (!$this->gateway->supportsWebhooks()) {
+            return $this->responseFactory->createResponse(501);
+        }
+
+        if (!$this->gateway->supportsWebhookEntity(WebhookEntityKind::PAYMENT)) {
             return $this->responseFactory->createResponse(501);
         }
 
@@ -986,27 +1008,14 @@ final class StripeWebhookController
 }
 ```
 
-A typical application would expose a dedicated route per payment system, for example `/webhooks/stripe`, `/webhooks/paypal`, `/webhooks/robokassa` and `/webhooks/yookassa`.
-Because the route is already tied to one provider, the application already knows which gateway instance to inject into the controller/handler.
-The `payments` library only processes the provider-specific webhook request and returns a normalized result.
+The sequence is:
 
-
-### Example: Capability checks
-
-```php
-use Yiisoft\Payments\Webhooks\WebhookEntityKind;
-use Yiisoft\Payments\Webhooks\WebhookGatewayInterface;
-
-/** @var WebhookGatewayInterface $gateway */
-
-if (
-    $gateway->supportsWebhooks()
-    && $gateway->supportsWebhookEntity(WebhookEntityKind::PAYMENT)
-) {
-    $result = $gateway->getWebhookHandler()->handleWebhook($request);
-}
-```
-
+1. the application builds `StripeWebhookController`;
+2. the container injects a configured `StripeGateway`;
+3. the controller verifies that webhook support is available for payment events;
+4. the controller passes the incoming `ServerRequestInterface` to `handleWebhook()`;
+5. the library validates and parses the provider-specific webhook request;
+6. the controller converts `WebhookResult` into an application response.
 ### Why Release 1 is limited to payment events
 
 Release 1 focuses on payment-related webhook handling because it fits the current public API more naturally:
