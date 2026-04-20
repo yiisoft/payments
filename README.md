@@ -198,63 +198,6 @@ $gateway = new StripeGateway(
 );
 ```
 
-#### Custom API endpoints
-
-Each gateway has a small endpoints value object that allows overriding vendor base URLs (useful for stubs, proxies or alternative environments).
-
-```php
-use Yiisoft\Payments\Endpoints\StripeEndpoints;
-use Yiisoft\Payments\Endpoints\PayPalEndpoints;
-use Yiisoft\Payments\Endpoints\RobokassaEndpoints;
-use Yiisoft\Payments\Endpoints\YooKassaEndpoints;
-
-$stripe = new StripeGateway(
-    apiKey: 'your_stripe_key',
-    httpClient: $httpClient,
-    requestFactory: $requestFactory,
-    streamFactory: $streamFactory,
-    endpoints: new StripeEndpoints(baseUri: 'https://proxy.example/stripe/v1'),
-);
-
-$paypal = new PayPalGateway(
-    clientId: 'your_client_id',
-    clientSecret: 'your_client_secret',
-    sandbox: true,
-    httpClient: $httpClient,
-    requestFactory: $requestFactory,
-    streamFactory: $streamFactory,
-    endpoints: new PayPalEndpoints(
-        sandboxBaseUri: 'https://api-m.sandbox.paypal.com',
-        liveBaseUri: 'https://api-m.paypal.com',
-    ),
-);
-
-$robokassa = new RobokassaGateway(
-    merchantLogin: 'demo',
-    password1: 'pass1',
-    password2: 'pass2',
-    password3: 'pass3',
-    testMode: true,
-    httpClient: $httpClient,
-    requestFactory: $requestFactory,
-    streamFactory: $streamFactory,
-    endpoints: new RobokassaEndpoints(
-        invoiceApiBaseUri: 'https://services.robokassa.ru/InvoiceServiceWebApi/api',
-        refundApiBaseUri: 'https://services.robokassa.ru/RefundService/Refund',
-        xmlApiBaseUri: 'https://auth.robokassa.ru/Merchant/WebService/Service.asmx',
-    ),
-);
-
-$yookassa = new YooKassaGateway(
-    shopId: 'your_shop_id',
-    secretKey: 'your_secret_key',
-    httpClient: $httpClient,
-    requestFactory: $requestFactory,
-    streamFactory: $streamFactory,
-    endpoints: new YooKassaEndpoints(baseUri: 'https://api.yookassa.ru/v3'),
-);
-```
-
 #### Step 2: Create or Retrieve Customer
 ```php
 // Create new customer
@@ -316,9 +259,13 @@ if (error) {
 }
 ```
 
-#### Step 7: Webhooks (optional)
-This library does not include webhook signature verification or event parsing.
-Handle webhooks in your application using the provider's official documentation/SDK.
+#### Step 7: Webhooks (planned Release 1)
+Release 1 introduces a common webhook-processing model for payment-related events.
+The application still owns the HTTP endpoint, resolves the provider-specific webhook-aware gateway for that endpoint,
+and passes the incoming PSR-7 `ServerRequestInterface` to the gateway webhook handler.
+The handler validates the request, recognizes the payment event, parses the payload,
+and returns a normalized `WebhookResult`.
+See [Webhooks](#webhooks) below.
 
 
 ### 3. Handling Different Statuses
@@ -515,8 +462,6 @@ $refund = $gateway->createRefund($intent->id, [
 - Payment Methods (create + attach)
 - Payment Intents (create / retrieve / confirm / capture / cancel)
 - Refunds
-
-> Webhook verification/event parsing is intentionally out of scope for this library. Implement it in your application using Stripe docs/SDK.
 
 ### PayPal (`PayPalGateway`) — REST API v2 (Checkout Orders)
 
@@ -741,10 +686,22 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
 [![Facebook](https://img.shields.io/badge/facebook-join-1DA1F2?style=flat&logo=facebook&logoColor=ffffff)](https://www.facebook.com/groups/yiitalk)
 [![Slack](https://img.shields.io/badge/slack-join-1DA1F2?style=flat&logo=slack)](https://yiiframework.com/go/slack)
 
-## Proposed Release 1: Webhooks (planned)
 
-> This section describes a **proposed** webhook API for **Release 1** and is intended for discussion in a feature branch.  
-> It does **not** describe functionality that is already available in the current stable version of the library.
+## Webhooks
+
+Webhook support is planned as a multi-release subsystem.
+
+Release 1 adds **payment webhook processing** for all supported gateways.
+The application owns the HTTP endpoint, creates the gateway instance configured for that endpoint,
+obtains webhook capabilities and the webhook handler from that gateway,
+and passes the incoming PSR-7 `ServerRequestInterface` to the handler.
+The library validates the request, recognizes the payment event, parses the payload,
+maps it to a common result shape, extracts a common payment-oriented status,
+and returns a normalized `WebhookResult`.
+
+### Release 1 — Payment Webhooks
+
+#### Webhook Flow
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables": {
@@ -760,92 +717,85 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
   "clusterBorder":"#334155"
 }}}%%
 sequenceDiagram
-    participant GP as Gateway Provider
-    participant UC as User Code
-    participant WH as WebhookHandler
-    participant VP as Validator / Parser
-    participant WR as WebhookResult
+    participant A as Application Endpoint
+    participant G as StripeGateway
+    participant C as WebhookCapabilitiesInterface
+    participant H as WebhookHandlerInterface
+    participant V as Validator / Recognizer / Parser / Mapper
+    participant R as WebhookResult
 
-    GP->>UC: POST webhook HTTP request
-    Note over GP,UC: headers + raw body
-    UC->>WH: handle(request)
-    WH->>VP: validate(request)
-    WH->>VP: recognizeEvent(request)
-    WH->>VP: parsePayload(request)
-    Note over VP: signature / headers / event type
-    VP-->>WH: normalized webhook data
-    WH->>WR: build common result envelope
-    WR-->>UC: return WebhookResult
-    Note over UC: update local state / log / ignore unknown event
+    A->>G: Create gateway configured for this webhook endpoint
+    A->>G: getWebhookCapabilities()
+    G-->>C: WebhookCapabilitiesInterface
+    A->>G: getWebhookHandler()
+    G-->>H: WebhookHandlerInterface
+    A->>H: handleWebhook(request)
+    H->>V: validate request
+    H->>V: recognize payment event
+    H->>V: parse payload
+    H->>V: map to PaymentIntent and common payment status
+    V-->>R: normalized result
+    R-->>A: WebhookResult
+    A->>A: Use normalized payment data and raw request data
 ```
 
-Release 1 webhook support is designed to add a **common, payment-oriented webhook handling layer** alongside the existing gateway API.
+### Common Contracts
 
-The main idea is:
+#### `WebhookGatewayInterface`
 
-- user code still owns the HTTP endpoint;
-- the library receives a `ServerRequestInterface`;
-- a provider-specific webhook handler validates and parses the request;
-- the library returns a normalized `WebhookResult`;
-- Release 1 covers **payment-related webhook events only**;
-- webhook handling is modeled as a **separate object graph**, not as an extension of `PaymentGatewayInterface`.
+Webhook-aware extension of the gateway contract.
 
-### Goals of Release 1
+```php
+interface WebhookGatewayInterface extends PaymentGatewayInterface
+{
+    public function getWebhookHandler(): WebhookHandlerInterface;
+    public function getWebhookCapabilities(): WebhookCapabilitiesInterface;
+}
+```
 
-Release 1 should provide a common way to:
+#### `WebhookHandlerInterface`
 
-- accept webhook requests from all supported gateways;
-- validate request authenticity using provider-specific rules;
-- recognize payment-related event kinds;
-- parse the payload into normalized internal data;
-- map the result to the existing `PaymentIntent` model where possible;
-- expose raw request data for debugging and traceability.
-
-### Proposed Common Contracts
-
-The exact naming may still change during implementation, but the proposed Release 1 API is centered around the following concepts.
-
-#### Main webhook entry point
+The common public entry point for incoming webhook requests.
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
 
 interface WebhookHandlerInterface
 {
-    public function handle(ServerRequestInterface $request): WebhookResult;
+    public function handleWebhook(ServerRequestInterface $request): WebhookResult;
 }
 ```
 
-This is the main entry point for incoming webhook processing.
+#### `WebhookRequestValidatorInterface`
 
-#### Validation
+Provider-specific verification of signatures, headers, secrets, and other authenticity markers.
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
 
-interface WebhookValidatorInterface
+interface WebhookRequestValidatorInterface
 {
     public function validate(ServerRequestInterface $request): WebhookValidationResult;
 }
 ```
 
-Validation remains provider-specific because each payment system uses its own signature, headers, and verification rules.
+#### `WebhookEventRecognizerInterface`
 
-#### Event recognition
+Recognition of payment-related webhook events in a provider-specific payload.
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
 
 interface WebhookEventRecognizerInterface
 {
-    public function recognizeEvent(ServerRequestInterface $request): string;
+    public function recognizeEvent(ServerRequestInterface $request): ?string;
     public function recognizeRawEventName(ServerRequestInterface $request): ?string;
 }
 ```
 
-This separates the normalized event kind from the original provider event name.
+#### `WebhookPayloadParserInterface`
 
-#### Payload parsing
+Parsing of the incoming request into normalized internal webhook data.
 
 ```php
 use Psr\Http\Message\ServerRequestInterface;
@@ -856,11 +806,13 @@ interface WebhookPayloadParserInterface
 }
 ```
 
-The parser converts the raw request into normalized internal webhook data.
+#### `PaymentWebhookMapperInterface`
 
-#### Mapping to payment-related models
+Mapping of parsed webhook data into the common payment-oriented result shape.
 
 ```php
+use Yiisoft\Payments\Models\PaymentIntent;
+
 interface PaymentWebhookMapperInterface
 {
     public function mapPaymentIntent(WebhookPayload $payload): ?PaymentIntent;
@@ -868,11 +820,21 @@ interface PaymentWebhookMapperInterface
 }
 ```
 
-Release 1 is intentionally limited to `PaymentIntent`-oriented webhook handling.
+#### `WebhookCapabilitiesInterface`
 
-### Proposed Result Objects
+Explicit declaration of webhook support and supported entity kinds per gateway.
 
-#### Validation result
+```php
+interface WebhookCapabilitiesInterface
+{
+    public function supportsWebhooks(): bool;
+    public function supportsWebhookEntity(string $entityKind): bool;
+}
+```
+
+#### `WebhookValidationResult`
+
+Validation result for the incoming webhook request.
 
 ```php
 readonly class WebhookValidationResult
@@ -885,153 +847,170 @@ readonly class WebhookValidationResult
 }
 ```
 
-#### Parsed payload
+#### `WebhookPayload`
+
+A normalized internal representation of the parsed webhook payload.
 
 ```php
 readonly class WebhookPayload
 {
     public function __construct(
         public string $entityKind,
-        public ?string $rawEventName,
-        public array $data,
-        public string $rawBody,
-        public array $headers = [],
+        public ?string $eventName = null,
+        public ?string $rawEventName = null,
+        public array $data = [],
+        public string $rawBody = '',
+        public array $rawHeaders = [],
     ) {
     }
 }
 ```
 
-#### Final result returned to user code
+#### `WebhookResult`
+
+The normalized result returned to user code after validation, event recognition, payload parsing, and mapping.
 
 ```php
+use Yiisoft\Payments\Models\PaymentIntent;
+
 readonly class WebhookResult
 {
     public function __construct(
         public bool $isValid,
-        public string $entityKind,
+        public bool $isSupported,
+        public ?string $provider = null,
+        public ?string $entityKind = null,
+        public ?string $eventName = null,
         public ?string $rawEventName = null,
         public ?string $paymentStatus = null,
         public ?PaymentIntent $paymentIntent = null,
-        public ?string $failureReason = null,
         public string $rawBody = '',
-        public array $headers = [],
-        public array $providerData = [],
+        public array $rawHeaders = [],
     ) {
     }
 }
 ```
 
-`WebhookResult` is intended to be the main value returned from `handle()`.
+### Example: Gateway and Handler Setup
 
-### Example: Common user-code flow
-
-In a typical web application, the HTTP endpoint belongs to the application layer.
-The application wires a provider-specific webhook handler for the current endpoint and then passes the incoming PSR-7 request to the library.
-
-#### Container definitions
+The application creates the gateway configured for the current webhook endpoint and obtains
+both webhook capabilities and the webhook handler from that gateway.
 
 ```php
-use Psr\Container\ContainerInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
-use Yiisoft\Payments\Webhooks\Handlers\StripeWebhookHandler;
-use Yiisoft\Payments\Webhooks\WebhookHandlerInterface;
+<?php
 
-return [
-    StripeWebhookHandler::class => static function (ContainerInterface $container): StripeWebhookHandler {
-        return new StripeWebhookHandler(
-            apiKey: $_ENV['STRIPE_API_KEY'],
-        );
-    },
+declare(strict_types=1);
 
-    StripeWebhookController::class => static function (ContainerInterface $container): StripeWebhookController {
-        return new StripeWebhookController(
-            webhookHandler: $container->get(StripeWebhookHandler::class),
-            responseFactory: $container->get(ResponseFactoryInterface::class),
-        );
-    },
-];
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Yiisoft\Payments\Gateways\StripeGateway;
+
+/** @var ClientInterface $httpClient */
+/** @var RequestFactoryInterface $requestFactory */
+/** @var StreamFactoryInterface $streamFactory */
+
+$gateway = new StripeGateway(
+    apiKey: 'YOUR_STRIPE_SECRET_KEY',
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+);
+
+$capabilities = $gateway->getWebhookCapabilities();
+$handler = $gateway->getWebhookHandler();
 ```
 
-#### Controller
+### Example: Application Flow
+
+The application passes the incoming PSR-7 server request to the webhook handler,
+then uses the normalized webhook result returned by the library.
 
 ```php
-use Psr\Http\Message\ResponseFactoryInterface;
-use Psr\Http\Message\ResponseInterface;
+<?php
+
+declare(strict_types=1);
+
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Yiisoft\Payments\Gateways\StripeGateway;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
-use Yiisoft\Payments\Webhooks\WebhookHandlerInterface;
 
-final class StripeWebhookController
-{
-    public function __construct(
-        private WebhookHandlerInterface $webhookHandler,
-        private ResponseFactoryInterface $responseFactory,
-    ) {
-    }
+/** @var ClientInterface $httpClient */
+/** @var RequestFactoryInterface $requestFactory */
+/** @var StreamFactoryInterface $streamFactory */
+/** @var ServerRequestInterface $request */
 
-    public function __invoke(ServerRequestInterface $request): ResponseInterface
-    {
-        $result = $this->webhookHandler->handle($request);
+$gateway = new StripeGateway(
+    apiKey: 'YOUR_STRIPE_SECRET_KEY',
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+);
 
-        if (!$result->isValid) {
-            return $this->responseFactory->createResponse(400);
-        }
+$capabilities = $gateway->getWebhookCapabilities();
+$handler = $gateway->getWebhookHandler();
+$result = $handler->handleWebhook($request);
 
-        if ($result->entityKind !== WebhookEntityKind::PAYMENT) {
-            return $this->responseFactory->createResponse(200);
-        }
+if ($capabilities->supportsWebhooks() && $capabilities->supportsWebhookEntity(WebhookEntityKind::PAYMENT)) {
+    $paymentIntent = $result->paymentIntent;
+    $paymentStatus = $result->paymentStatus;
+    $rawBody = $result->rawBody;
+    $rawHeaders = $result->rawHeaders;
+    $rawEventName = $result->rawEventName;
 
-        $intent = $result->paymentIntent;
-        $status = $result->paymentStatus;
-
-        // Application-specific logic goes here:
-        // - update local payment state
-        // - write audit logs
-        // - ignore unknown or unsupported events
-
-        return $this->responseFactory->createResponse(200);
-    }
+    // Application-specific handling:
+    // - update the local payment record;
+    // - use the normalized payment status;
+    // - store raw webhook data for diagnostics when needed.
 }
 ```
 
-The sequence is:
-
-1. the application builds `StripeWebhookController`;
-2. the container injects a configured `StripeWebhookHandler`;
-3. the controller passes the incoming `ServerRequestInterface` to `handle()`;
-4. the library validates and parses the provider-specific webhook request;
-5. the library returns `WebhookResult`;
-6. the controller converts `WebhookResult` into an application response.
-
-### Why Release 1 is limited to payment events
-
-Release 1 focuses on payment-related webhook handling because it fits the current public API more naturally:
-
-- the library already has a common `PaymentIntent` model;
-- refund handling is currently less symmetrical than payment flows;
-- subscription / recurring support is even more provider-specific and should be introduced separately.
-
-This makes Release 1 useful immediately while keeping the public API easier to stabilize.
+If `isValid` is `false`, the request failed provider-specific validation.
+If `isSupported` is `false`, the request is valid but the event is unknown, unsupported, or outside the current normalization scope.
+In both cases, the result still exposes the raw request data needed for diagnostics or custom fallback handling.
 
 ### Out of Scope for Release 1
 
-Release 1 should **not** include:
-
-- refund webhook normalization;
+- refund-specific webhook normalization;
 - subscription / recurring webhook normalization;
-- framework controllers or route wiring;
-- persistence of webhook events;
-- retry queues or delivery orchestration;
-- business-side order processing;
-- outgoing webhook support;
-- a guarantee that every provider event maps to a common object.
+- provider-specific extras API;
+- advanced detailed event taxonomy;
+- idempotency helpers;
+- advanced acknowledgment helpers;
+- rich error hierarchy beyond practical minimum;
+- heavy webhook testing toolkit.
 
-### Notes for future releases
+### Planned Webhook Releases
 
-A possible next-step sequence after Release 1 is:
+#### Release 1 — Payment Webhooks
 
-1. **Release 2** — refund webhook support;
-2. **Release 3** — subscription / recurring webhook support;
-3. **Release 4** — webhook API polish and advanced usability.
+Common payment webhook processing for all supported gateways:
+unified webhook handling entry point, provider-specific request validation,
+payment event recognition, payload parsing,
+mapping to `WebhookResult`, common payment status extraction,
+raw request access, unknown or unsupported event handling,
+and explicit capability declaration per gateway.
 
-This sequence keeps each release independently useful while reducing the risk of breaking the public API later.
+#### Release 2 — Refund Webhooks
+
+Extension of the same subsystem for refund-related events:
+refund event recognition, refund payload mapping,
+common refund status extraction, safe public API extension,
+and documentation updates.
+
+#### Release 3 — Subscription / Recurring Webhooks
+
+Support for recurring-payment and subscription lifecycle events:
+capability declaration per gateway, recurring event recognition,
+mapping into the common webhook result, common recurring status extraction,
+explicit unsupported behavior, and documentation updates.
+
+#### Release 4 — Webhook API Polish
+
+API hardening and usability improvements:
+richer event taxonomy, advanced error model,
+provider-specific extras, event ID / idempotency helpers,
+better testing tooling, and fuller documentation.
