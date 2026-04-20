@@ -939,37 +939,57 @@ final readonly class WebhookResult
 
 ### Example: Common user-code flow
 
+In a typical web application, the HTTP endpoint belongs to the application layer.
+The application resolves the gateway for the current webhook endpoint and then passes the incoming PSR-7 request to the library.
+
 ```php
+use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Yiisoft\Payments\Webhooks\WebhookGatewayInterface;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookGatewayInterface;
 
-/** @var ServerRequestInterface $request */
-/** @var WebhookGatewayInterface $gateway */
+final class StripeWebhookController
+{
+    public function __construct(
+        private WebhookGatewayInterface $gateway,
+        private ResponseFactoryInterface $responseFactory,
+    ) {
+    }
 
-if (!$gateway->supportsWebhooks()) {
-    throw new RuntimeException('This gateway does not support webhooks.');
+    public function __invoke(ServerRequestInterface $request): ResponseInterface
+    {
+        if (!$this->gateway->supportsWebhooks()) {
+            return $this->responseFactory->createResponse(501);
+        }
+
+        $result = $this->gateway->getWebhookHandler()->handleWebhook($request);
+
+        if (!$result->isValid) {
+            return $this->responseFactory->createResponse(400);
+        }
+
+        if ($result->entityKind !== WebhookEntityKind::PAYMENT) {
+            return $this->responseFactory->createResponse(200);
+        }
+
+        $intent = $result->paymentIntent;
+        $status = $result->paymentStatus;
+
+        // Application-specific logic goes here:
+        // - update local payment state
+        // - write audit logs
+        // - ignore unknown or unsupported events
+
+        return $this->responseFactory->createResponse(200);
+    }
 }
-
-$handler = $gateway->getWebhookHandler();
-$result = $handler->handleWebhook($request);
-
-if (!$result->isValid) {
-    // Log invalid request, return error response, or ignore it.
-}
-
-if ($result->entityKind !== WebhookEntityKind::PAYMENT) {
-    // Release 1 handles payment-related webhook events only.
-}
-
-$intent = $result->paymentIntent;
-$status = $result->paymentStatus;
-
-// Application-specific logic goes here:
-// - update local payment state
-// - write audit logs
-// - ignore unknown or unsupported events
 ```
+
+A typical application would expose a dedicated route per payment system, for example `/webhooks/stripe`, `/webhooks/paypal`, `/webhooks/robokassa` and `/webhooks/yookassa`.
+Because the route is already tied to one provider, the application already knows which gateway instance to inject into the controller/handler.
+The `payments` library only processes the provider-specific webhook request and returns a normalized result.
+
 
 ### Example: Capability checks
 
