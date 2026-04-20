@@ -740,3 +740,282 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
 [![Telegram](https://img.shields.io/badge/telegram-join-1DA1F2?style=flat&logo=telegram)](https://t.me/yii3en)
 [![Facebook](https://img.shields.io/badge/facebook-join-1DA1F2?style=flat&logo=facebook&logoColor=ffffff)](https://www.facebook.com/groups/yiitalk)
 [![Slack](https://img.shields.io/badge/slack-join-1DA1F2?style=flat&logo=slack)](https://yiiframework.com/go/slack)
+
+## Proposed Release 1: Webhooks (planned)
+
+> This section describes a **proposed** webhook API for **Release 1** and is intended for discussion in a feature branch.  
+> It does **not** describe functionality that is already available in the current stable version of the library.
+
+```mermaid
+%%{init: {"theme":"base","themeVariables": {
+  "background":"transparent",
+  "fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+  "primaryColor":"#0f172a",
+  "primaryTextColor":"#e2e8f0",
+  "primaryBorderColor":"#94a3b8",
+  "lineColor":"#94a3b8",
+  "secondaryColor":"#052e16",
+  "tertiaryColor":"#1e293b",
+  "clusterBkg":"#0b1220",
+  "clusterBorder":"#334155"
+}}}%%
+sequenceDiagram
+    participant GP as Gateway Provider
+    participant UC as User Code
+    participant PG as payments Gateway
+    participant WL as Webhook Layer
+    participant VP as Validator / Parser
+    participant WR as WebhookResult
+
+    GP->>UC: POST webhook HTTP request
+    Note over GP,UC: headers + raw body
+    UC->>PG: resolve gateway and pass PSR-7 Request
+    PG->>WL: handleWebhook(request)
+    WL->>VP: validate(request)
+    WL->>VP: recognizeEvent(request)
+    WL->>VP: parsePayload(request)
+    Note over VP: signature / headers / event type
+    VP-->>WL: normalized webhook data
+    WL->>WR: build common result envelope
+    WR-->>UC: WebhookResult
+    Note over UC: update local state / log / ignore unknown event
+```
+
+Release 1 webhook support is designed to add a **common, payment-oriented webhook handling layer** on top of the existing gateway API.
+
+The main idea is:
+
+- user code still owns the HTTP endpoint;
+- the library receives a `ServerRequestInterface`;
+- a gateway-specific webhook processor validates and parses the request;
+- the library returns a normalized `WebhookResult`;
+- Release 1 covers **payment-related webhook events only**.
+
+### Goals of Release 1
+
+Release 1 should provide a common way to:
+
+- accept webhook requests from all supported gateways;
+- validate request authenticity using provider-specific rules;
+- recognize payment-related event kinds;
+- parse the payload into normalized internal data;
+- map the result to the existing `PaymentIntent` model where possible;
+- expose raw request data for debugging and traceability.
+
+### Proposed Common Contracts
+
+The exact naming may still change during implementation, but the proposed Release 1 API is centered around the following concepts.
+
+#### Gateway-level webhook support
+
+```php
+interface WebhookGatewayInterface extends PaymentGatewayInterface
+{
+    public function getWebhookHandler(): WebhookHandlerInterface;
+    public function supportsWebhooks(): bool;
+    public function supportsWebhookEntity(string $entityKind): bool;
+}
+```
+
+This keeps webhook support close to the existing gateway model while making support explicit.
+
+#### Main webhook entry point
+
+```php
+use Psr\Http\Message\ServerRequestInterface;
+
+interface WebhookHandlerInterface
+{
+    public function handleWebhook(ServerRequestInterface $request): WebhookResult;
+}
+```
+
+This is the common entry point for user code.
+
+#### Validation
+
+```php
+use Psr\Http\Message\ServerRequestInterface;
+
+interface WebhookValidatorInterface
+{
+    public function validate(ServerRequestInterface $request): WebhookValidationResult;
+}
+```
+
+Validation remains provider-specific because each payment system uses its own signature, headers, and verification rules.
+
+#### Event recognition
+
+```php
+use Psr\Http\Message\ServerRequestInterface;
+
+interface WebhookEventRecognizerInterface
+{
+    public function recognizeEvent(ServerRequestInterface $request): string;
+    public function recognizeRawEventName(ServerRequestInterface $request): ?string;
+}
+```
+
+This separates the normalized event kind from the original provider event name.
+
+#### Payload parsing
+
+```php
+use Psr\Http\Message\ServerRequestInterface;
+
+interface WebhookPayloadParserInterface
+{
+    public function parsePayload(ServerRequestInterface $request): WebhookPayload;
+}
+```
+
+The parser converts the raw request into normalized internal webhook data.
+
+#### Mapping to payment-related models
+
+```php
+interface PaymentWebhookMapperInterface
+{
+    public function mapPaymentIntent(WebhookPayload $payload): ?PaymentIntent;
+    public function extractPaymentStatus(WebhookPayload $payload): ?string;
+}
+```
+
+Release 1 is intentionally limited to `PaymentIntent`-oriented webhook handling.
+
+### Proposed Result Objects
+
+#### Validation result
+
+```php
+final readonly class WebhookValidationResult
+{
+    public function __construct(
+        public bool $isValid,
+        public ?string $reason = null,
+    ) {
+    }
+}
+```
+
+#### Parsed payload
+
+```php
+final readonly class WebhookPayload
+{
+    public function __construct(
+        public string $entityKind,
+        public ?string $rawEventName,
+        public array $data,
+        public string $rawBody,
+        public array $headers = [],
+    ) {
+    }
+}
+```
+
+#### Final result returned to user code
+
+```php
+final readonly class WebhookResult
+{
+    public function __construct(
+        public bool $isValid,
+        public string $entityKind,
+        public ?string $rawEventName = null,
+        public ?string $paymentStatus = null,
+        public ?PaymentIntent $paymentIntent = null,
+        public ?string $failureReason = null,
+        public string $rawBody = '',
+        public array $headers = [],
+        public array $providerData = [],
+    ) {
+    }
+}
+```
+
+`WebhookResult` is intended to be the main value returned from `handleWebhook()`.
+
+### Example: Common user-code flow
+
+```php
+use Psr\Http\Message\ServerRequestInterface;
+use Yiisoft\Payments\Webhooks\WebhookGatewayInterface;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+
+/** @var ServerRequestInterface $request */
+/** @var WebhookGatewayInterface $gateway */
+
+if (!$gateway->supportsWebhooks()) {
+    throw new RuntimeException('This gateway does not support webhooks.');
+}
+
+$handler = $gateway->getWebhookHandler();
+$result = $handler->handleWebhook($request);
+
+if (!$result->isValid) {
+    // Log invalid request, return error response, or ignore it.
+}
+
+if ($result->entityKind !== WebhookEntityKind::PAYMENT) {
+    // Release 1 handles payment-related webhook events only.
+}
+
+$intent = $result->paymentIntent;
+$status = $result->paymentStatus;
+
+// Application-specific logic goes here:
+// - update local payment state
+// - write audit logs
+// - ignore unknown or unsupported events
+```
+
+### Example: Capability checks
+
+```php
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookGatewayInterface;
+
+/** @var WebhookGatewayInterface $gateway */
+
+if (
+    $gateway->supportsWebhooks()
+    && $gateway->supportsWebhookEntity(WebhookEntityKind::PAYMENT)
+) {
+    $result = $gateway->getWebhookHandler()->handleWebhook($request);
+}
+```
+
+### Why Release 1 is limited to payment events
+
+Release 1 focuses on payment-related webhook handling because it fits the current public API more naturally:
+
+- the library already has a common `PaymentIntent` model;
+- refund handling is currently less symmetrical than payment flows;
+- subscription / recurring support is even more provider-specific and should be introduced separately.
+
+This makes Release 1 useful immediately while keeping the public API easier to stabilize.
+
+### Out of Scope for Release 1
+
+Release 1 should **not** include:
+
+- refund webhook normalization;
+- subscription / recurring webhook normalization;
+- framework controllers or route wiring;
+- persistence of webhook events;
+- retry queues or delivery orchestration;
+- business-side order processing;
+- outgoing webhook support;
+- a guarantee that every provider event maps to a common object.
+
+### Notes for future releases
+
+A possible next-step sequence after Release 1 is:
+
+1. **Release 2** — refund webhook support;
+2. **Release 3** — subscription / recurring webhook support;
+3. **Release 4** — webhook API polish and advanced usability.
+
+This sequence keeps each release independently useful while reducing the risk of breaking the public API later.
