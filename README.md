@@ -747,6 +747,18 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
 > It does **not** describe functionality that is already available in the current stable version of the library.
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables": {
+  "background":"transparent",
+  "fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+  "primaryColor":"#0f172a",
+  "primaryTextColor":"#e2e8f0",
+  "primaryBorderColor":"#94a3b8",
+  "lineColor":"#94a3b8",
+  "secondaryColor":"#052e16",
+  "tertiaryColor":"#1e293b",
+  "clusterBkg":"#0b1220",
+  "clusterBorder":"#334155"
+}}}%%
 sequenceDiagram
     participant GP as Gateway Provider
     participant UC as User Code
