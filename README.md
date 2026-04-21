@@ -749,7 +749,7 @@ Release 1 adds **payment webhook processing** for all supported gateways.
 The application owns the HTTP endpoint and the provider-specific webhook configuration for that endpoint.
 The application converts the incoming HTTP request into a library-specific `WebhookInput`,
 passes it to the provider-specific webhook processor,
-and receives a normalized `WebhookResult`.
+and receives a normalized `WebhookContext`.
 
 ### Release 1 — Payment Webhooks
 
@@ -773,7 +773,7 @@ sequenceDiagram
     participant I as WebhookInput
     participant P as Provider WebhookProcessor
     participant V as Validator / Recognizer / Parser / Mapper
-    participant R as WebhookResult
+    participant R as WebhookContext
 
     A->>A: Receive HTTP request for one configured provider
     A->>I: Build WebhookInput from body, headers, query, parsed body
@@ -783,7 +783,7 @@ sequenceDiagram
     P->>V: parse payload
     P->>V: map to PaymentIntent and common payment status
     V-->>R: normalized result
-    R-->>A: WebhookResult
+    R-->>A: WebhookContext
     A->>A: Use normalized payment data and raw request data
 ```
 
@@ -793,7 +793,7 @@ The main idea is:
 - each webhook endpoint is configured for one payment provider;
 - the application converts the incoming HTTP request into a library-specific `WebhookInput`;
 - a provider-specific webhook processor validates and parses that input;
-- the library returns a normalized `WebhookResult`;
+- the library returns a normalized `WebhookContext`;
 - Release 1 covers payment-related webhook events only.
 
 ### Common Contracts
@@ -805,7 +805,7 @@ The common public entry point for webhook processing.
 ```php
 interface WebhookProcessorInterface
 {
-    public function process(WebhookInput $input): WebhookResult;
+    public function process(WebhookInput $input): WebhookContext;
     public function getCapabilities(): WebhookCapabilitiesInterface;
 }
 ```
@@ -921,14 +921,14 @@ readonly class WebhookPayload
 }
 ```
 
-#### `WebhookResult`
+#### `WebhookContext`
 
-The normalized result returned to user code after validation, event recognition, payload parsing, and mapping.
+The normalized webhook context returned to user code after validation, event recognition, payload parsing, and mapping.
 
 ```php
 use Yiisoft\Payments\Models\PaymentIntent;
 
-readonly class WebhookResult
+readonly class WebhookContext
 {
     public function __construct(
         public bool $isValid,
@@ -967,7 +967,7 @@ $capabilities = $processor->getCapabilities();
 ### Example: Application Flow
 
 The application reads the incoming HTTP request, converts it into `WebhookInput`,
-passes it to the configured processor, and then uses the normalized webhook result.
+passes it to the configured processor, and then uses the normalized webhook context.
 
 ```php
 <?php
@@ -995,14 +995,14 @@ $input = new WebhookInput(
     parsedBody: $parsedBody,
 );
 
-$result = $processor->process($input);
+$context = $processor->process($input);
 
 if ($capabilities->supportsWebhooks() && $capabilities->supportsWebhookEntity(WebhookEntityKind::PAYMENT)) {
-    $paymentIntent = $result->paymentIntent;
-    $paymentStatus = $result->paymentStatus;
-    $rawBody = $result->rawBody;
-    $rawHeaders = $result->rawHeaders;
-    $rawEventName = $result->rawEventName;
+    $paymentIntent = $context->paymentIntent;
+    $paymentStatus = $context->paymentStatus;
+    $rawBody = $context->rawBody;
+    $rawHeaders = $context->rawHeaders;
+    $rawEventName = $context->rawEventName;
 
     // Application-specific handling:
     // - update the local payment record;
@@ -1013,7 +1013,7 @@ if ($capabilities->supportsWebhooks() && $capabilities->supportsWebhookEntity(We
 
 If `isValid` is `false`, the request failed provider-specific validation.
 If `isSupported` is `false`, the request is valid but the event is unknown, unsupported, or outside the current normalization scope.
-In both cases, the result still exposes the raw request data needed for diagnostics or custom fallback handling.
+In both cases, the context still exposes the raw request data needed for diagnostics or custom fallback handling.
 
 ### Out of Scope for Release 1
 
@@ -1032,7 +1032,7 @@ In both cases, the result still exposes the raw request data needed for diagnost
 Common payment webhook processing for all supported gateways:
 unified webhook handling entry point, provider-specific request validation,
 payment event recognition, payload parsing,
-mapping to `WebhookResult`, common payment status extraction,
+mapping to `WebhookContext`, common payment status extraction,
 raw request access, unknown or unsupported event handling,
 and explicit capability declaration per gateway.
 
