@@ -946,28 +946,11 @@ readonly class WebhookContext
 }
 ```
 
-### Example: Processor Setup
-
-The application configures the provider-specific webhook processor for the endpoint.
-
-```php
-<?php
-
-declare(strict_types=1);
-
-use Yiisoft\Payments\Webhooks\Stripe\StripeWebhookProcessor;
-
-$processor = new StripeWebhookProcessor(
-    signingSecret: 'YOUR_STRIPE_WEBHOOK_SECRET',
-);
-
-$capabilities = $processor->getCapabilities();
-```
-
 ### Example: Application Flow
 
-The application reads the incoming HTTP request, converts it into `WebhookInput`,
-passes it to the configured processor, and then uses the normalized webhook context.
+For each webhook endpoint, the application uses the corresponding provider-specific `WebhookProcessorInterface`.
+It converts the incoming HTTP request into `WebhookInput`, passes it to the processor,
+and then works with the resulting `WebhookContext`.
 
 ```php
 <?php
