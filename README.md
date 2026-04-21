@@ -198,6 +198,63 @@ $gateway = new StripeGateway(
 );
 ```
 
+#### Custom API endpoints
+
+Each gateway has a small endpoints value object that allows overriding vendor base URLs (useful for stubs, proxies or alternative environments).
+
+```php
+use Yiisoft\Payments\Endpoints\StripeEndpoints;
+use Yiisoft\Payments\Endpoints\PayPalEndpoints;
+use Yiisoft\Payments\Endpoints\RobokassaEndpoints;
+use Yiisoft\Payments\Endpoints\YooKassaEndpoints;
+
+$stripe = new StripeGateway(
+    apiKey: 'your_stripe_key',
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new StripeEndpoints(baseUri: 'https://proxy.example/stripe/v1'),
+);
+
+$paypal = new PayPalGateway(
+    clientId: 'your_client_id',
+    clientSecret: 'your_client_secret',
+    sandbox: true,
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new PayPalEndpoints(
+        sandboxBaseUri: 'https://api-m.sandbox.paypal.com',
+        liveBaseUri: 'https://api-m.paypal.com',
+    ),
+);
+
+$robokassa = new RobokassaGateway(
+    merchantLogin: 'demo',
+    password1: 'pass1',
+    password2: 'pass2',
+    password3: 'pass3',
+    testMode: true,
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new RobokassaEndpoints(
+        invoiceApiBaseUri: 'https://services.robokassa.ru/InvoiceServiceWebApi/api',
+        refundApiBaseUri: 'https://services.robokassa.ru/RefundService/Refund',
+        xmlApiBaseUri: 'https://auth.robokassa.ru/Merchant/WebService/Service.asmx',
+    ),
+);
+
+$yookassa = new YooKassaGateway(
+    shopId: 'your_shop_id',
+    secretKey: 'your_secret_key',
+    httpClient: $httpClient,
+    requestFactory: $requestFactory,
+    streamFactory: $streamFactory,
+    endpoints: new YooKassaEndpoints(baseUri: 'https://api.yookassa.ru/v3'),
+);
+```
+
 #### Step 2: Create or Retrieve Customer
 ```php
 // Create new customer
@@ -259,13 +316,9 @@ if (error) {
 }
 ```
 
-#### Step 7: Webhooks (planned Release 1)
-Release 1 introduces a common webhook-processing model for payment-related events.
-The application still owns the HTTP endpoint, resolves the provider-specific webhook-aware gateway for that endpoint,
-and passes the incoming PSR-7 `ServerRequestInterface` to the gateway webhook handler.
-The handler validates the request, recognizes the payment event, parses the payload,
-and returns a normalized `WebhookResult`.
-See [Webhooks](#webhooks) below.
+#### Step 7: Webhooks (optional)
+This library does not include webhook signature verification or event parsing.
+Handle webhooks in your application using the provider's official documentation/SDK.
 
 
 ### 3. Handling Different Statuses
@@ -462,6 +515,8 @@ $refund = $gateway->createRefund($intent->id, [
 - Payment Methods (create + attach)
 - Payment Intents (create / retrieve / confirm / capture / cancel)
 - Refunds
+
+> Webhook verification/event parsing is intentionally out of scope for this library. Implement it in your application using Stripe docs/SDK.
 
 ### PayPal (`PayPalGateway`) — REST API v2 (Checkout Orders)
 
@@ -685,7 +740,6 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
 [![Telegram](https://img.shields.io/badge/telegram-join-1DA1F2?style=flat&logo=telegram)](https://t.me/yii3en)
 [![Facebook](https://img.shields.io/badge/facebook-join-1DA1F2?style=flat&logo=facebook&logoColor=ffffff)](https://www.facebook.com/groups/yiitalk)
 [![Slack](https://img.shields.io/badge/slack-join-1DA1F2?style=flat&logo=slack)](https://yiiframework.com/go/slack)
-
 
 ## Webhooks
 
