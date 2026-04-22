@@ -991,6 +991,11 @@ if ($capabilities->supportsWebhooks() && $capabilities->supportsWebhookEntity(We
     // - update the local payment record;
     // - use the normalized payment status;
     // - store raw webhook data for diagnostics when needed.
+} else {
+    // Alternative application-specific handling:
+    // - reject webhook processing for unsupported entity kinds;
+    // - ignore events outside the configured normalization scope;
+    // - keep raw webhook data for logging or custom fallback handling.
 }
 ```
 
