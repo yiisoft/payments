@@ -948,60 +948,116 @@ readonly class WebhookContext
 
 ### Example: Application Flow
 
-For each webhook endpoint, the application uses the corresponding provider-specific `WebhookProcessorInterface`.
-It converts the incoming HTTP request into `WebhookInput`, passes it to the processor,
-and then works with the resulting `WebhookContext`.
+For each webhook endpoint, the application selects the provider explicitly and wires the common
+`WebhookProcessorInterface` with the provider-specific processor and validator used by that endpoint.
+It then converts the incoming HTTP request into `WebhookInput`, passes it to the processor,
+and works with the resulting `WebhookContext`.
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookContext;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
-use Yiisoft\Payments\Webhooks\Stripe\StripeWebhookProcessor;
+use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
+use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
+use Yiisoft\Payments\Webhooks\WebhookProcessor;
+use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
+use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
+use Yiisoft\Payments\Webhooks\WebhookRawData;
+use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
+
+final class ApplicationStripePaymentWebhookProcessor implements WebhookProviderProcessorInterface
+{
+    public function getProviderId(): string
+    {
+        return 'stripe';
+    }
+
+    public function process(WebhookInput $input): WebhookProcessingResult
+    {
+        $payload = json_decode($input->rawBody, true);
+        $providerEventType = is_array($payload) && isset($payload['type']) && is_string($payload['type'])
+            ? $payload['type']
+            : 'unknown';
+
+        $rawData = new WebhookRawData(
+            rawBody: $input->rawBody,
+            headers: $input->headers,
+            payload: $payload,
+            providerEventType: $providerEventType,
+            queryParams: $input->queryParams,
+            bodyParams: $input->bodyParams,
+        );
+
+        return match ($providerEventType) {
+            'payment_intent.succeeded' => new WebhookProcessingResult(
+                status: WebhookProcessingStatus::Processed,
+                eventType: WebhookEventType::PaymentSucceeded,
+                rawData: $rawData,
+            ),
+            default => WebhookProcessingResult::unknownEvent($providerEventType),
+        };
+    }
+}
+
+function createStripeWebhookProcessor(string $signingSecret): WebhookProcessorInterface
+{
+    return new WebhookProcessor(
+        providerProcessorRegistry: new WebhookProviderProcessorRegistry(
+            new ApplicationStripePaymentWebhookProcessor(),
+        ),
+        providerValidatorRegistry: new WebhookProviderValidatorRegistry(
+            new WebhookStripeValidator($signingSecret),
+        ),
+    );
+}
 
 /** @var string $rawBody */
-/** @var array $rawHeaders */
-/** @var array $queryParams */
-/** @var array|null $parsedBody */
+/** @var array<string, string|list<string>> $rawHeaders */
+/** @var array<string, mixed> $queryParams */
+/** @var array<string, mixed> $bodyParams */
 
-$processor = new StripeWebhookProcessor(
-    signingSecret: 'YOUR_STRIPE_WEBHOOK_SECRET',
-);
-
-$capabilities = $processor->getCapabilities();
+$processor = createStripeWebhookProcessor('YOUR_STRIPE_WEBHOOK_SECRET');
 $input = new WebhookInput(
-    body: $rawBody,
+    rawBody: $rawBody,
     headers: $rawHeaders,
     queryParams: $queryParams,
-    parsedBody: $parsedBody,
+    bodyParams: $bodyParams,
+    providerId: 'stripe',
 );
 
 $context = $processor->process($input);
 
-if ($capabilities->supportsWebhooks() && $capabilities->supportsWebhookEntity(WebhookEntityKind::PAYMENT)) {
-    $paymentIntent = $context->paymentIntent;
-    $paymentStatus = $context->paymentStatus;
-    $rawBody = $context->rawBody;
-    $rawHeaders = $context->rawHeaders;
-    $rawEventName = $context->rawEventName;
+if ($context->status === WebhookProcessingStatus::Processed) {
+    $eventType = $context->eventType;
+    $rawData = $context->rawData;
 
     // Application-specific handling:
     // - update the local payment record;
-    // - use the normalized payment status;
+    // - use the normalized payment event type;
     // - store raw webhook data for diagnostics when needed.
 } else {
-    // Alternative application-specific handling:
-    // - reject webhook processing for unsupported entity kinds;
-    // - ignore events outside the configured normalization scope;
-    // - keep raw webhook data for logging or custom fallback handling.
+    handleWebhookProcessingFailure($context);
+}
+
+function handleWebhookProcessingFailure(WebhookContext $context): void
+{
+    // Application-specific fallback handling:
+    // - log validation failures;
+    // - ignore unknown or unsupported events;
+    // - keep raw webhook data for diagnostics when available.
 }
 ```
 
-If `isValid` is `false`, the request failed provider-specific validation.
-If `isSupported` is `false`, the request is valid but the event is unknown, unsupported, or outside the current normalization scope.
-In both cases, the context still exposes the raw request data needed for diagnostics or custom fallback handling.
+If the context status is `WebhookProcessingStatus::ValidationFailed`, the request failed provider-specific validation.
+If the context status is `WebhookProcessingStatus::UnknownEvent` or `WebhookProcessingStatus::UnsupportedEvent`,
+the request is valid but the event is unknown, unsupported, or outside the current normalization scope.
+In these cases, the context still exposes the raw request data needed for diagnostics or custom fallback handling.
 
 ### Out of Scope for Release 1
 
