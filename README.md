@@ -949,43 +949,54 @@ The target provider processing flow is:
 
 #### `WebhookEventRecognizerInterface`
 
-Recognition of payment-related webhook events from the original provider request data.
-The recognizer decides whether the provider event can enter the R1 payment webhook processing path
-and keeps the raw provider event name available for diagnostics and unsupported/unknown handling.
+Provider-specific recognition of payment-related webhook events. The recognizer reads the
+original provider request represented by `WebhookInput`, extracts the raw provider event type,
+and maps it to the normalized `WebhookEventType` used by the R1 payment webhook contract.
+
+Recognition is an internal provider-processing stage. It does not replace `WebhookInput`, does
+not return `WebhookContext`, and must not require application code to parse provider payloads.
+Unknown provider event names and known-but-unsupported event types are converted later into
+`WebhookProcessingResult` statuses.
 
 ```php
 interface WebhookEventRecognizerInterface
 {
-    public function recognizeEvent(WebhookInput $input): ?string;
-    public function recognizeRawEventName(WebhookInput $input): ?string;
+    public function recognizeProviderEventType(WebhookInput $input): ?string;
+
+    public function recognizeEventType(string $providerEventType): ?WebhookEventType;
 }
 ```
 
 #### `WebhookPayloadParserInterface`
 
-Parsing of original provider request data into an intermediate provider payload used by the
-provider processing pipeline. The parser reads from `WebhookInput`; it does not replace
-`WebhookInput` as the application-owned boundary object.
+Provider-specific parsing of original request data into an intermediate provider payload used by
+the provider processing pipeline. The parser reads from `WebhookInput` after validation and
+recognition; it does not replace `WebhookInput` as the application-owned boundary object and does
+not produce the final application-facing result.
 
 ```php
 interface WebhookPayloadParserInterface
 {
-    public function parsePayload(WebhookInput $input): WebhookPayload;
+    public function parsePayload(
+        WebhookInput $input,
+        WebhookEventType $eventType,
+        ?string $providerEventType = null,
+    ): WebhookPayload;
 }
 ```
 
 #### `PaymentWebhookMapperInterface`
 
-Mapping of the intermediate provider payload into the common payment-oriented processing result.
-The mapper is responsible for converting provider-specific payment data and payment state into
-the common model that is later exposed through `WebhookContext`.
+Provider-specific mapping of the intermediate `WebhookPayload` into the common payment-oriented
+processing outcome. The mapper converts provider-specific payment data, payment event type, and
+payment state into `WebhookProcessingResult`; the common processor then wraps that result into the
+final `WebhookContext` returned to application code.
 
 ```php
-use Yiisoft\Payments\Models\PaymentIntent;
-
 interface PaymentWebhookMapperInterface
 {
-    public function mapPaymentIntent(WebhookPayload $payload): ?PaymentIntent;
+    public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult;
+
     public function extractPaymentStatus(WebhookPayload $payload): ?string;
 }
 ```
@@ -1098,20 +1109,24 @@ readonly class WebhookReason
 #### `WebhookPayload`
 
 Intermediate internal representation of the parsed provider webhook payload. `WebhookPayload` is
-used inside the provider processing pipeline between payload parsing and payment mapping. It is
-not the application-owned input object and it is not the final result returned to application code;
-applications receive `WebhookContext` from the common processor.
+created by the provider parser after validation and event recognition, then consumed by the
+payment mapper. It carries provider-specific parsed data together with normalized event metadata
+needed to build `WebhookProcessingResult`.
+
+`WebhookPayload` is not the application-owned input object and it is not the final result returned
+to application code. Applications pass `WebhookInput` into the common processor and receive
+`WebhookContext` back.
 
 ```php
 readonly class WebhookPayload
 {
     public function __construct(
-        public string $entityKind,
-        public ?string $eventName = null,
-        public ?string $rawEventName = null,
+        public ?string $providerId = null,
+        public ?WebhookEventType $eventType = null,
+        public ?string $providerEventType = null,
         public array $data = [],
-        public string $rawBody = '',
-        public array $rawHeaders = [],
+        public ?string $paymentStatus = null,
+        public ?WebhookRawData $rawData = null,
     ) {
     }
 }
