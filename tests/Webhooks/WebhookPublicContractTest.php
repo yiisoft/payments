@@ -11,6 +11,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
+use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
@@ -26,6 +27,7 @@ use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
+use Yiisoft\Payments\Webhooks\WebhookValidationResult;
 
 final class WebhookPublicContractTest extends TestCase
 {
@@ -88,6 +90,29 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(WebhookProcessingResult::class, $processMethod->getReturnType()?->getName());
     }
 
+
+    public function testWebhookProviderValidatorInterfaceContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookProviderValidatorInterface::class);
+
+        $this->assertTrue($reflection->isInterface());
+        $this->assertSame(['getProviderId', 'validate'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
+
+        $providerIdMethod = $reflection->getMethod('getProviderId');
+
+        $this->assertSame(0, $providerIdMethod->getNumberOfParameters());
+        $this->assertSame('string', $providerIdMethod->getReturnType()?->getName());
+        $this->assertFalse($providerIdMethod->getReturnType()?->allowsNull());
+
+        $validateMethod = $reflection->getMethod('validate');
+
+        $this->assertSame(1, $validateMethod->getNumberOfParameters());
+        $this->assertSame('input', $validateMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookInput::class, $validateMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($validateMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame(WebhookValidationResult::class, $validateMethod->getReturnType()?->getName());
+        $this->assertFalse($validateMethod->getReturnType()?->allowsNull());
+    }
 
     public function testWebhookProviderProcessorRegistryContractIsStable(): void
     {
