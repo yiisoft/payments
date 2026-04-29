@@ -818,6 +818,14 @@ The main idea is:
 - each gateway declares its supported, partially supported, and unsupported webhook capabilities explicitly;
 - Release 1 includes minimal documentation and support matrix information needed to use payment webhook support.
 
+Architecture boundaries:
+
+- incoming webhook processing is separate from the outbound `PaymentGatewayInterface` used to create, capture, cancel, and refund payments;
+- the application owns HTTP routing, controller/action code, endpoint-to-provider mapping, secrets, and provider-specific webhook configuration;
+- the library works with the `WebhookInput` passed by application code and does not create framework controllers or HTTP responses;
+- provider auto-detection from a raw HTTP request is not part of Release 1. The application selects the provider for the configured endpoint and passes its identifier in `WebhookInput`;
+- provider-specific webhook processors are configured in the webhook object graph, not retrieved from outbound gateway instances such as `StripeGateway->getWebhookHandler()`.
+
 ### Common Contracts
 
 #### `WebhookProcessorInterface`
