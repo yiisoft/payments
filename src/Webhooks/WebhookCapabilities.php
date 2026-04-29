@@ -34,6 +34,29 @@ final readonly class WebhookCapabilities implements Countable, IteratorAggregate
         return $this->capabilities;
     }
 
+    /**
+     * Creates an unsupported processing result when the declared capability explicitly marks the event as unsupported.
+     */
+    public function unsupportedResultFor(
+        WebhookEventType $eventType,
+        WebhookEntityKind $entityKind,
+        ?string $providerEventType = null,
+    ): ?WebhookProcessingResult {
+        foreach ($this->capabilities as $capability) {
+            if ($capability->eventType !== $eventType || $capability->entityKind !== $entityKind) {
+                continue;
+            }
+
+            if ($capability->supportStatus === WebhookSupportStatus::Unsupported) {
+                return WebhookProcessingResult::unsupportedEvent($eventType, $providerEventType);
+            }
+
+            return null;
+        }
+
+        return null;
+    }
+
     public function count(): int
     {
         return count($this->capabilities);

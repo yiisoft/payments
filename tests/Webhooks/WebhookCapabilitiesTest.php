@@ -9,6 +9,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class WebhookCapabilitiesTest extends TestCase
@@ -72,6 +73,58 @@ final class WebhookCapabilitiesTest extends TestCase
             $capabilities,
             WebhookEventType::PaymentRefunded,
             WebhookEntityKind::Payment,
+        ));
+    }
+
+    public function testUnsupportedCapabilityCreatesUnsupportedProcessingResult(): void
+    {
+        $capabilities = new WebhookCapabilities(new WebhookCapability(
+            eventType: WebhookEventType::PaymentRefunded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Unsupported,
+        ));
+
+        $result = $capabilities->unsupportedResultFor(
+            WebhookEventType::PaymentRefunded,
+            WebhookEntityKind::Payment,
+            'charge.refunded',
+        );
+
+        $this->assertNotNull($result);
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame('charge.refunded', $result->reason->providerEventType);
+    }
+
+    public function testSupportedCapabilityDoesNotCreateUnsupportedProcessingResult(): void
+    {
+        $capabilities = new WebhookCapabilities(new WebhookCapability(
+            eventType: WebhookEventType::PaymentSucceeded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Supported,
+        ));
+
+        $this->assertNull($capabilities->unsupportedResultFor(
+            WebhookEventType::PaymentSucceeded,
+            WebhookEntityKind::Payment,
+            'payment_intent.succeeded',
+        ));
+    }
+
+    public function testMissingCapabilityDoesNotCreateUnsupportedProcessingResult(): void
+    {
+        $capabilities = new WebhookCapabilities(new WebhookCapability(
+            eventType: WebhookEventType::PaymentSucceeded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Supported,
+        ));
+
+        $this->assertNull($capabilities->unsupportedResultFor(
+            WebhookEventType::PaymentRefunded,
+            WebhookEntityKind::Payment,
+            'charge.refunded',
         ));
     }
 

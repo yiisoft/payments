@@ -199,7 +199,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->isFinal());
         $this->assertTrue($reflection->implementsInterface(Countable::class));
         $this->assertTrue($reflection->implementsInterface(IteratorAggregate::class));
-        $this->assertSame(['__construct', 'all', 'count', 'getIterator'], $this->methodNames($reflection));
+        $this->assertSame(['__construct', 'all', 'count', 'getIterator', 'unsupportedResultFor'], $this->methodNames($reflection));
 
         $constructor = $reflection->getConstructor();
 
@@ -207,6 +207,21 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(1, $constructor->getNumberOfParameters());
         $this->assertTrue($constructor->getParameters()[0]->isVariadic());
         $this->assertSame(WebhookCapability::class, $constructor->getParameters()[0]->getType()?->getName());
+
+        $unsupportedResultForMethod = $reflection->getMethod('unsupportedResultFor');
+
+        $this->assertSame(['eventType', 'entityKind', 'providerEventType'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $unsupportedResultForMethod->getParameters(),
+        ));
+        $this->assertSame(WebhookEventType::class, $unsupportedResultForMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookEntityKind::class, $unsupportedResultForMethod->getParameters()[1]->getType()?->getName());
+        $this->assertSame('string', $unsupportedResultForMethod->getParameters()[2]->getType()?->getName());
+        $this->assertTrue($unsupportedResultForMethod->getParameters()[2]->getType()?->allowsNull());
+        $this->assertTrue($unsupportedResultForMethod->getParameters()[2]->isDefaultValueAvailable());
+        $this->assertNull($unsupportedResultForMethod->getParameters()[2]->getDefaultValue());
+        $this->assertSame(WebhookProcessingResult::class, $unsupportedResultForMethod->getReturnType()?->getName());
+        $this->assertTrue($unsupportedResultForMethod->getReturnType()?->allowsNull());
 
         $this->assertSame('array', $reflection->getMethod('all')->getReturnType()?->getName());
         $this->assertSame('int', $reflection->getMethod('count')->getReturnType()?->getName());
