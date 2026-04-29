@@ -743,13 +743,11 @@ Maintained by [Yii Software](https://www.yiiframework.com/).
 
 ## Webhooks
 
-Webhook support is planned as a multi-release subsystem.
+Release 1 provides the payment webhook processing subsystem for public use.
+It defines a provider-independent entry point for incoming payment webhooks while keeping the application in control of HTTP routing and provider-specific endpoint configuration.
 
-Release 1 adds **payment webhook processing** for all supported gateways.
-The application owns the HTTP endpoint and the provider-specific webhook configuration for that endpoint.
-The application converts the incoming HTTP request into a library-specific `WebhookInput`,
-passes it to the provider-specific webhook processor,
-and receives a normalized `WebhookContext`.
+The application owns the HTTP endpoint, selects the configured provider for that endpoint, and builds a `WebhookInput` from the original request data.
+The library validates the provider request, processes the payment webhook through the provider-specific pipeline, and returns a normalized `WebhookContext` that application code can use together with preserved raw request data.
 
 ### Release 1 — Payment Webhooks
 
