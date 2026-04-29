@@ -91,6 +91,29 @@ final class WebhookPublicContractTest extends TestCase
     }
 
 
+    public function testWebhookValidationResultContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookValidationResult::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertSame(['__construct'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(['isValid'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $constructor->getParameters(),
+        ));
+        $this->assertSame('bool', $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+
+        $this->assertSame('bool', $reflection->getProperty('isValid')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('isValid')->isPublic());
+        $this->assertTrue($reflection->getProperty('isValid')->isReadOnly());
+    }
+
     public function testWebhookProviderValidatorInterfaceContractIsStable(): void
     {
         $reflection = new ReflectionClass(WebhookProviderValidatorInterface::class);
