@@ -9,8 +9,12 @@ namespace Yiisoft\Payments\Webhooks;
  */
 final readonly class WebhookInput
 {
+    /**
+     * @param array<string, list<string>> $headers
+     */
     public function __construct(
         public string $rawBody,
+        public array $headers = [],
     ) {
     }
 }
