@@ -28,6 +28,44 @@ final class WebhookPayPalValidatorTest extends TestCase
         new WebhookPayPalValidator('   ');
     }
 
+    public function testAcceptsStructurallyValidPayPalValidationInput(): void
+    {
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
+            rawBody: '{"id":"WH-EVENT-123","event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"CAPTURE-123"}}',
+            headers: $this->requiredTransmissionHeaders(),
+            providerId: 'paypal',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_live_verification_not_supported_in_r1', $result->reason->code->value);
+        $this->assertSame(
+            'PayPal webhook validation in R1 does not perform live certificate or PayPal API verification.',
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testAcceptsStructurallyValidPayPalValidationInputWithWhitespaceAroundHeaderValues(): void
+    {
+        $headers = $this->requiredTransmissionHeaders();
+        $headers['PayPal-Transmission-Id'] = '  transmission-id  ';
+        $headers['PayPal-Transmission-Time'] = '  2026-04-29T10:00:00Z  ';
+        $headers['PayPal-Cert-Url'] = '  https://api-m.paypal.com/certs/test.pem  ';
+        $headers['PayPal-Auth-Algo'] = '  SHA256withRSA  ';
+        $headers['PayPal-Transmission-Sig'] = '  signature  ';
+
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
+            rawBody: '{"id":"WH-EVENT-123","event_type":"CHECKOUT.ORDER.APPROVED"}',
+            headers: $headers,
+            providerId: 'paypal',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_live_verification_not_supported_in_r1', $result->reason->code->value);
+    }
+
     public function testReturnsValidationFailureForR1LimitationWithoutLiveVerification(): void
     {
         $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
