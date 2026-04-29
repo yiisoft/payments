@@ -1340,13 +1340,13 @@ and works with the resulting `WebhookContext`.
 
 declare(strict_types=1);
 
+use Psr\Http\Message\ServerRequestInterface;
 use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
-use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
@@ -1387,43 +1387,61 @@ final class ApplicationStripePaymentWebhookProcessor implements WebhookProviderP
     }
 }
 
-function createStripeWebhookProcessor(string $signingSecret): WebhookProcessorInterface
-{
-    return new WebhookProcessor(
-        providerProcessorRegistry: new WebhookProviderProcessorRegistry(
-            new ApplicationStripePaymentWebhookProcessor(),
-        ),
-        providerValidatorRegistry: new WebhookProviderValidatorRegistry(
-            new WebhookStripeValidator($signingSecret),
-        ),
+/**
+ * @param array<string, string|list<string>> $headers
+ * @param array<string, mixed> $queryParams Original provider fields from the HTTP query string.
+ * @param array<string, mixed> $bodyParams Original provider fields from a form-like request body; use [] for JSON webhooks.
+ */
+function handleStripeWebhook(
+    string $rawBody,
+    array $headers,
+    array $queryParams = [],
+    array $bodyParams = [],
+): WebhookContext {
+    $input = new WebhookInput(
+        rawBody: $rawBody,
+        headers: $headers,
+        queryParams: $queryParams,
+        bodyParams: $bodyParams,
+        providerId: 'stripe',
     );
+
+    $providerSpecificProcessor = new ApplicationStripePaymentWebhookProcessor();
+
+    $providerProcessorRegistry = new WebhookProviderProcessorRegistry(
+        $providerSpecificProcessor,
+    );
+
+    $providerValidatorRegistry = new WebhookProviderValidatorRegistry(
+        new WebhookStripeValidator('YOUR_STRIPE_WEBHOOK_SECRET'),
+    );
+
+    $commonProcessor = new WebhookProcessor(
+        providerProcessorRegistry: $providerProcessorRegistry,
+        providerValidatorRegistry: $providerValidatorRegistry,
+    );
+
+    return $commonProcessor->process($input);
 }
 
-/** @var string $rawBody */
-/** @var array<string, string|list<string>> $rawHeaders */
-/** @var array<string, mixed> $queryParams Original provider fields from the HTTP query string. */
-/** @var array<string, mixed> $bodyParams Original provider fields from a form-like request body; use [] for JSON webhooks. */
+function handleStripeHttpRequest(ServerRequestInterface $httpRequest): void
+{
+    $context = handleStripeWebhook(
+        rawBody: $httpRequest->getBody()->getContents(),
+        headers: $httpRequest->getHeaders(),
+    );
 
-$processor = createStripeWebhookProcessor('YOUR_STRIPE_WEBHOOK_SECRET');
-$input = new WebhookInput(
-    rawBody: $rawBody,
-    headers: $rawHeaders,
-    queryParams: $queryParams,
-    bodyParams: $bodyParams,
-    providerId: 'stripe',
-);
+    if ($context->status === WebhookProcessingStatus::Processed) {
+        $eventType = $context->eventType;
+        $rawData = $context->rawData;
 
-$context = $processor->process($input);
+        // Application-specific handling:
+        // - update the local payment record;
+        // - use the normalized payment event type;
+        // - store raw webhook data for diagnostics when needed.
+        return;
+    }
 
-if ($context->status === WebhookProcessingStatus::Processed) {
-    $eventType = $context->eventType;
-    $rawData = $context->rawData;
-
-    // Application-specific handling:
-    // - update the local payment record;
-    // - use the normalized payment event type;
-    // - store raw webhook data for diagnostics when needed.
-} else {
     handleWebhookProcessingFailure($context);
 }
 
