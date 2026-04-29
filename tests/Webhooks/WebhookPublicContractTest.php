@@ -11,7 +11,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
-use Yiisoft\Payments\Webhooks\StripeWebhookValidator;
+use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
@@ -163,9 +163,9 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertFalse($validateMethod->getReturnType()?->allowsNull());
     }
 
-    public function testStripeWebhookValidatorContractIsStable(): void
+    public function testWebhookStripeValidatorContractIsStable(): void
     {
-        $reflection = new ReflectionClass(StripeWebhookValidator::class);
+        $reflection = new ReflectionClass(WebhookStripeValidator::class);
 
         $this->assertTrue($reflection->isFinal());
         $this->assertTrue($reflection->isReadOnly());

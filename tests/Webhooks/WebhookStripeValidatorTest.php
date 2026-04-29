@@ -6,15 +6,15 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\StripeWebhookValidator;
+use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 
-final class StripeWebhookValidatorTest extends TestCase
+final class WebhookStripeValidatorTest extends TestCase
 {
     public function testImplementsProviderValidatorContract(): void
     {
-        $validator = new StripeWebhookValidator('whsec_test_secret');
+        $validator = new WebhookStripeValidator('whsec_test_secret');
 
         $this->assertInstanceOf(WebhookProviderValidatorInterface::class, $validator);
         $this->assertSame('stripe', $validator->getProviderId());
@@ -25,12 +25,12 @@ final class StripeWebhookValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Stripe webhook signing secret must be a non-empty string.');
 
-        new StripeWebhookValidator('   ');
+        new WebhookStripeValidator('   ');
     }
 
     public function testSkeletonFailsClosedUntilSignatureValidationIsImplemented(): void
     {
-        $validator = new StripeWebhookValidator('whsec_test_secret');
+        $validator = new WebhookStripeValidator('whsec_test_secret');
 
         $result = $validator->validate(new WebhookInput(
             rawBody: '{"id":"evt_123","type":"payment_intent.succeeded"}',

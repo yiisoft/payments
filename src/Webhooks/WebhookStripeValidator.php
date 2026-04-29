@@ -9,7 +9,7 @@ use InvalidArgumentException;
 /**
  * Provider-specific validator for Stripe webhook requests.
  */
-final readonly class StripeWebhookValidator implements WebhookProviderValidatorInterface
+final readonly class WebhookStripeValidator implements WebhookProviderValidatorInterface
 {
     public function __construct(
         private string $signingSecret,
