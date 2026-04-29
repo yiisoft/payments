@@ -1,0 +1,68 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Yiisoft\Payments\Tests\Webhooks;
+
+use PHPUnit\Framework\TestCase;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
+
+final class WebhookCapabilitiesTest extends TestCase
+{
+    public function testWebhookCapabilityStoresNormalizedDeclaration(): void
+    {
+        $capability = new WebhookCapability(
+            eventType: WebhookEventType::PaymentSucceeded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Supported,
+        );
+
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $capability->eventType);
+        $this->assertSame(WebhookEntityKind::Payment, $capability->entityKind);
+        $this->assertSame(WebhookSupportStatus::Supported, $capability->supportStatus);
+    }
+
+    public function testWebhookCapabilitiesReturnsDeclaredCapabilities(): void
+    {
+        $first = new WebhookCapability(
+            eventType: WebhookEventType::PaymentSucceeded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Supported,
+        );
+        $second = new WebhookCapability(
+            eventType: WebhookEventType::PaymentRefunded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::PartiallySupported,
+        );
+
+        $capabilities = new WebhookCapabilities($first, $second);
+
+        $this->assertCount(2, $capabilities);
+        $this->assertSame([$first, $second], $capabilities->all());
+        $this->assertSame([$first, $second], iterator_to_array($capabilities));
+    }
+
+    public function testWebhookCapabilitiesDoesNotExposeInternalStorage(): void
+    {
+        $capability = new WebhookCapability(
+            eventType: WebhookEventType::PaymentFailed,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Unsupported,
+        );
+
+        $capabilities = new WebhookCapabilities($capability);
+        $declaredCapabilities = $capabilities->all();
+        $declaredCapabilities[] = new WebhookCapability(
+            eventType: WebhookEventType::PaymentCanceled,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Unsupported,
+        );
+
+        $this->assertCount(1, $capabilities);
+        $this->assertSame([$capability], $capabilities->all());
+    }
+}
