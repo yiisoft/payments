@@ -24,4 +24,14 @@ final class WebhookProcessingResultTest extends TestCase
         );
         $this->assertSame('payment_intent.partially_refunded', $result->reason->providerEventType);
     }
+
+    public function testValidUnknownProviderEventTypeDoesNotThrowException(): void
+    {
+        $result = WebhookProcessingResult::unknownEvent('provider.event.not_in_mapping');
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('provider.event.not_in_mapping', $result->reason->providerEventType);
+    }
 }
