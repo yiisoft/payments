@@ -9,6 +9,17 @@ namespace Yiisoft\Payments\Webhooks;
  */
 final readonly class WebhookPayPalValidator implements WebhookProviderValidatorInterface
 {
+    /**
+     * @var list<string>
+     */
+    private const REQUIRED_TRANSMISSION_HEADERS = [
+        'PayPal-Transmission-Id',
+        'PayPal-Transmission-Time',
+        'PayPal-Cert-Url',
+        'PayPal-Auth-Algo',
+        'PayPal-Transmission-Sig',
+    ];
+
     public function getProviderId(): string
     {
         return 'paypal';
@@ -16,6 +27,24 @@ final readonly class WebhookPayPalValidator implements WebhookProviderValidatorI
 
     public function validate(WebhookInput $input): WebhookValidationResult
     {
+        foreach (self::REQUIRED_TRANSMISSION_HEADERS as $headerName) {
+            $hasHeader = false;
+
+            foreach ($input->getHeader($headerName) as $headerValue) {
+                if (trim($headerValue) !== '') {
+                    $hasHeader = true;
+                    break;
+                }
+            }
+
+            if (!$hasHeader) {
+                return WebhookValidationResult::failure(new WebhookReason(
+                    code: new WebhookReasonCode('paypal_required_transmission_header_missing'),
+                    message: sprintf('Required PayPal transmission header "%s" is missing or empty.', $headerName),
+                ));
+            }
+        }
+
         return WebhookValidationResult::failure(new WebhookReason(
             code: new WebhookReasonCode('paypal_webhook_validation_not_implemented'),
             message: 'PayPal webhook validation is not implemented yet.',
