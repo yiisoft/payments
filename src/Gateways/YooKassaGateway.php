@@ -14,8 +14,14 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Yiisoft\Payments\Endpoints\YooKassaEndpoints;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
-class YooKassaGateway extends AbstractGateway
+class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     public function __construct(
         private string $shopId,
@@ -206,6 +212,52 @@ class YooKassaGateway extends AbstractGateway
             'amount' => $amount['value'],
             'currency' => $amount['currency']
         ];
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        return new WebhookCapabilities(
+            new WebhookCapability(
+                WebhookEventType::PaymentCreated,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentProcessing,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRequiresAction,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRequiresCapture,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentSucceeded,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentFailed,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentCanceled,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRefunded,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+        );
     }
 
     protected function createIdempotenceKey()
