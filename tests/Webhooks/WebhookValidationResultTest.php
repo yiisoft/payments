@@ -25,6 +25,20 @@ final class WebhookValidationResultTest extends TestCase
         $this->assertFalse($result->isValid);
     }
 
+    public function testCreatesSuccessfulValidationResult(): void
+    {
+        $result = WebhookValidationResult::success();
+
+        $this->assertTrue($result->isValid);
+    }
+
+    public function testCreatesFailedValidationResult(): void
+    {
+        $result = WebhookValidationResult::failure();
+
+        $this->assertFalse($result->isValid);
+    }
+
     public function testResultIsFinalReadonlyValueObject(): void
     {
         $reflection = new ReflectionClass(WebhookValidationResult::class);

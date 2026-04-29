@@ -97,7 +97,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertTrue($reflection->isFinal());
         $this->assertTrue($reflection->isReadOnly());
-        $this->assertSame(['__construct'], $this->methodNames($reflection));
+        $this->assertSame(['__construct', 'failure', 'success'], $this->methodNames($reflection));
 
         $constructor = $reflection->getConstructor();
 
@@ -112,6 +112,20 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame('bool', $reflection->getProperty('isValid')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('isValid')->isPublic());
         $this->assertTrue($reflection->getProperty('isValid')->isReadOnly());
+
+        $successMethod = $reflection->getMethod('success');
+
+        $this->assertTrue($successMethod->isStatic());
+        $this->assertSame(0, $successMethod->getNumberOfParameters());
+        $this->assertSame('self', $successMethod->getReturnType()?->getName());
+        $this->assertFalse($successMethod->getReturnType()?->allowsNull());
+
+        $failureMethod = $reflection->getMethod('failure');
+
+        $this->assertTrue($failureMethod->isStatic());
+        $this->assertSame(0, $failureMethod->getNumberOfParameters());
+        $this->assertSame('self', $failureMethod->getReturnType()?->getName());
+        $this->assertFalse($failureMethod->getReturnType()?->allowsNull());
     }
 
     public function testWebhookProviderValidatorInterfaceContractIsStable(): void
