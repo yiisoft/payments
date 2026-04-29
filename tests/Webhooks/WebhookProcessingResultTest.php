@@ -9,6 +9,8 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
+use Yiisoft\Payments\Webhooks\WebhookReason;
+use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 
 final class WebhookProcessingResultTest extends TestCase
 {
@@ -32,6 +34,28 @@ final class WebhookProcessingResultTest extends TestCase
             $result->reason->message,
         );
         $this->assertSame('payment_intent.succeeded', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+    }
+
+    public function testValidationFailureCanKeepProviderValidatorReasonAndRawData(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 'invalid-signature'],
+        );
+        $reason = new WebhookReason(
+            code: new WebhookReasonCode('stripe_signature_mismatch'),
+            message: 'Stripe webhook signature does not match the request payload.',
+        );
+
+        $result = WebhookProcessingResult::validationFailed(
+            rawData: $rawData,
+            reason: $reason,
+        );
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertSame($reason, $result->reason);
         $this->assertSame($rawData, $result->rawData);
     }
 

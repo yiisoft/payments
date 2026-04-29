@@ -607,7 +607,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
         $validationFailedMethod = $reflection->getMethod('validationFailed');
 
-        $this->assertSame(['rawData'], array_map(
+        $this->assertSame(['rawData', 'reason'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $validationFailedMethod->getParameters(),
         ));
@@ -615,6 +615,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($validationFailedMethod->getParameters()[0]->getType()?->allowsNull());
         $this->assertTrue($validationFailedMethod->getParameters()[0]->isDefaultValueAvailable());
         $this->assertNull($validationFailedMethod->getParameters()[0]->getDefaultValue());
+        $this->assertSame(WebhookReason::class, $validationFailedMethod->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($validationFailedMethod->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($validationFailedMethod->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($validationFailedMethod->getParameters()[1]->getDefaultValue());
         $this->assertSame('self', $validationFailedMethod->getReturnType()?->getName());
 
         $missingProviderProcessorMethod = $reflection->getMethod('missingProviderProcessor');

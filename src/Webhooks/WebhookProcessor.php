@@ -31,7 +31,10 @@ final class WebhookProcessor implements WebhookProcessorInterface
             if (!$validationResult->isValid) {
                 return $this->createContext(
                     $input,
-                    WebhookProcessingResult::validationFailed(reason: $validationResult->reason),
+                    WebhookProcessingResult::validationFailed(
+                        rawData: $this->createRawData($input),
+                        reason: $validationResult->reason,
+                    ),
                 );
             }
         }
@@ -43,15 +46,20 @@ final class WebhookProcessor implements WebhookProcessorInterface
                 $input,
                 $this->providerProcessorRegistry->missingProcessorResult(
                     $input->providerId,
-                    new WebhookRawData(
-                        rawBody: $input->rawBody,
-                        headers: $input->headers,
-                    ),
+                    $this->createRawData($input),
                 ),
             );
         }
 
         return $this->createContext($input, $providerProcessor->process($input));
+    }
+
+    private function createRawData(WebhookInput $input): WebhookRawData
+    {
+        return new WebhookRawData(
+            rawBody: $input->rawBody,
+            headers: $input->headers,
+        );
     }
 
     private function createContext(WebhookInput $input, WebhookProcessingResult $result): WebhookContext

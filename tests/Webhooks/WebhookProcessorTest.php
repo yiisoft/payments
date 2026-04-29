@@ -127,8 +127,15 @@ final class WebhookProcessorTest extends TestCase
         $context = $processor->process($input);
 
         $this->assertSame(WebhookProcessingStatus::ValidationFailed, $context->status);
+        $this->assertNull($context->eventType);
         $this->assertNotNull($context->validationFailureReason);
         $this->assertSame('test_validation_failed', $context->validationFailureReason->code->value);
+        $this->assertSame($input, $context->rawInput);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('{"type":"payment_intent.succeeded"}', $context->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 'invalid-signature'], $context->rawData->headers);
+        $this->assertNull($context->rawData->payload);
+        $this->assertNull($context->rawData->providerEventType);
         $this->assertSame(1, $providerValidator->validateCalls);
         $this->assertSame($input, $providerValidator->validatedInput);
         $this->assertSame(0, $providerProcessor->processCalls);
