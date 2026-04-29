@@ -6,20 +6,20 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorInterface;
-use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorRegistry;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
-final class ProviderWebhookProcessorRegistryTest extends TestCase
+final class WebhookProviderProcessorRegistryTest extends TestCase
 {
     public function testRegistryResolvesProviderProcessorByProviderId(): void
     {
         $stripeProcessor = $this->createProcessor('stripe');
         $paypalProcessor = $this->createProcessor('paypal');
-        $registry = new ProviderWebhookProcessorRegistry($stripeProcessor, $paypalProcessor);
+        $registry = new WebhookProviderProcessorRegistry($stripeProcessor, $paypalProcessor);
 
         $this->assertTrue($registry->has('stripe'));
         $this->assertTrue($registry->has('paypal'));
@@ -29,7 +29,7 @@ final class ProviderWebhookProcessorRegistryTest extends TestCase
 
     public function testRegistryReturnsNullForUnknownProviderId(): void
     {
-        $registry = new ProviderWebhookProcessorRegistry($this->createProcessor('stripe'));
+        $registry = new WebhookProviderProcessorRegistry($this->createProcessor('stripe'));
 
         $this->assertFalse($registry->has('robokassa'));
         $this->assertNull($registry->get('robokassa'));
@@ -38,7 +38,7 @@ final class ProviderWebhookProcessorRegistryTest extends TestCase
     public function testRegistryDoesNotApplyImplicitProviderNameNormalization(): void
     {
         $stripeProcessor = $this->createProcessor('stripe');
-        $registry = new ProviderWebhookProcessorRegistry($stripeProcessor);
+        $registry = new WebhookProviderProcessorRegistry($stripeProcessor);
 
         $this->assertSame($stripeProcessor, $registry->get('stripe'));
         $this->assertNull($registry->get('Stripe'));
@@ -47,7 +47,7 @@ final class ProviderWebhookProcessorRegistryTest extends TestCase
 
     public function testRegistryReturnsValidationFailedResultForMissingProviderProcessor(): void
     {
-        $registry = new ProviderWebhookProcessorRegistry($this->createProcessor('stripe'));
+        $registry = new WebhookProviderProcessorRegistry($this->createProcessor('stripe'));
 
         $result = $registry->missingProcessorResult('paypal');
 
@@ -63,7 +63,7 @@ final class ProviderWebhookProcessorRegistryTest extends TestCase
 
     public function testRegistryKeepsRawDataForMissingProviderProcessor(): void
     {
-        $registry = new ProviderWebhookProcessorRegistry($this->createProcessor('stripe'));
+        $registry = new WebhookProviderProcessorRegistry($this->createProcessor('stripe'));
         $rawData = new WebhookRawData(
             rawBody: '{"event":"payment.captured"}',
             headers: ['X-Provider' => 'paypal'],
@@ -84,7 +84,7 @@ final class ProviderWebhookProcessorRegistryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Webhook provider processor ID must be a non-empty string.');
 
-        new ProviderWebhookProcessorRegistry($this->createProcessor(''));
+        new WebhookProviderProcessorRegistry($this->createProcessor(''));
     }
 
     public function testRegistryRejectsDuplicateProviderId(): void
@@ -92,15 +92,15 @@ final class ProviderWebhookProcessorRegistryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Webhook provider processor with ID "stripe" is already registered.');
 
-        new ProviderWebhookProcessorRegistry(
+        new WebhookProviderProcessorRegistry(
             $this->createProcessor('stripe'),
             $this->createProcessor('stripe'),
         );
     }
 
-    private function createProcessor(string $providerId): ProviderWebhookProcessorInterface
+    private function createProcessor(string $providerId): WebhookProviderProcessorInterface
     {
-        return new class ($providerId) implements ProviderWebhookProcessorInterface {
+        return new class ($providerId) implements WebhookProviderProcessorInterface {
             public function __construct(
                 private readonly string $providerId,
             ) {

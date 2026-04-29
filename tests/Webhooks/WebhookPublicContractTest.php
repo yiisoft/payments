@@ -9,8 +9,8 @@ use IteratorAggregate;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
-use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorInterface;
-use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorRegistry;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
@@ -42,9 +42,9 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(WebhookProcessingResult::class, $method->getReturnType()?->getName());
     }
 
-    public function testProviderWebhookProcessorInterfaceContractIsStable(): void
+    public function testWebhookProviderProcessorInterfaceContractIsStable(): void
     {
-        $reflection = new ReflectionClass(ProviderWebhookProcessorInterface::class);
+        $reflection = new ReflectionClass(WebhookProviderProcessorInterface::class);
 
         $this->assertTrue($reflection->isInterface());
         $this->assertTrue($reflection->implementsInterface(WebhookProcessorInterface::class));
@@ -64,9 +64,9 @@ final class WebhookPublicContractTest extends TestCase
     }
 
 
-    public function testProviderWebhookProcessorRegistryContractIsStable(): void
+    public function testWebhookProviderProcessorRegistryContractIsStable(): void
     {
-        $reflection = new ReflectionClass(ProviderWebhookProcessorRegistry::class);
+        $reflection = new ReflectionClass(WebhookProviderProcessorRegistry::class);
 
         $this->assertTrue($reflection->isFinal());
         $this->assertSame(['__construct', 'get', 'missingProcessorResult', 'has'], $this->methodNames($reflection));
@@ -76,7 +76,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertNotNull($constructor);
         $this->assertSame(1, $constructor->getNumberOfParameters());
         $this->assertTrue($constructor->getParameters()[0]->isVariadic());
-        $this->assertSame(ProviderWebhookProcessorInterface::class, $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookProviderProcessorInterface::class, $constructor->getParameters()[0]->getType()?->getName());
 
         $getMethod = $reflection->getMethod('get');
 
@@ -85,7 +85,7 @@ final class WebhookPublicContractTest extends TestCase
             $getMethod->getParameters(),
         ));
         $this->assertSame('string', $getMethod->getParameters()[0]->getType()?->getName());
-        $this->assertSame(ProviderWebhookProcessorInterface::class, $getMethod->getReturnType()?->getName());
+        $this->assertSame(WebhookProviderProcessorInterface::class, $getMethod->getReturnType()?->getName());
         $this->assertTrue($getMethod->getReturnType()?->allowsNull());
 
         $missingProcessorResultMethod = $reflection->getMethod('missingProcessorResult');

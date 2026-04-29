@@ -9,14 +9,14 @@ use InvalidArgumentException;
 /**
  * Registry and resolver for provider-specific webhook processors.
  */
-final class ProviderWebhookProcessorRegistry
+final class WebhookProviderProcessorRegistry
 {
     /**
-     * @var array<string, ProviderWebhookProcessorInterface>
+     * @var array<string, WebhookProviderProcessorInterface>
      */
     private array $processors = [];
 
-    public function __construct(ProviderWebhookProcessorInterface ...$processors)
+    public function __construct(WebhookProviderProcessorInterface ...$processors)
     {
         foreach ($processors as $processor) {
             $providerId = $processor->getProviderId();
@@ -36,7 +36,7 @@ final class ProviderWebhookProcessorRegistry
         }
     }
 
-    public function get(string $providerId): ?ProviderWebhookProcessorInterface
+    public function get(string $providerId): ?WebhookProviderProcessorInterface
     {
         return $this->processors[$providerId] ?? null;
     }

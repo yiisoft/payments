@@ -6,16 +6,16 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
-use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorInterface;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 
-final class ProviderWebhookProcessorInterfaceTest extends TestCase
+final class WebhookProviderProcessorInterfaceTest extends TestCase
 {
     public function testProviderProcessorExtendsPublicProcessorInterface(): void
     {
-        $processor = new class implements ProviderWebhookProcessorInterface {
+        $processor = new class implements WebhookProviderProcessorInterface {
             public function getProviderId(): string
             {
                 return 'stripe';
@@ -33,7 +33,7 @@ final class ProviderWebhookProcessorInterfaceTest extends TestCase
 
     public function testProviderIdReturnTypeIsFixedToString(): void
     {
-        $method = new ReflectionMethod(ProviderWebhookProcessorInterface::class, 'getProviderId');
+        $method = new ReflectionMethod(WebhookProviderProcessorInterface::class, 'getProviderId');
         $returnType = $method->getReturnType();
 
         $this->assertNotNull($returnType);
@@ -44,7 +44,7 @@ final class ProviderWebhookProcessorInterfaceTest extends TestCase
 
     public function testProcessSignatureIsInheritedFromPublicProcessorInterface(): void
     {
-        $method = new ReflectionMethod(ProviderWebhookProcessorInterface::class, 'process');
+        $method = new ReflectionMethod(WebhookProviderProcessorInterface::class, 'process');
         $parameters = $method->getParameters();
         $returnType = $method->getReturnType();
 
