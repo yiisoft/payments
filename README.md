@@ -764,25 +764,43 @@ The library validates the provider request, processes the payment webhook throug
   "secondaryColor":"#052e16",
   "tertiaryColor":"#1e293b",
   "clusterBkg":"#0b1220",
-  "clusterBorder":"#334155"
+  "clusterBorder":"#334155",
+  "activationBkgColor":"#1e293b",
+  "activationBorderColor":"#94a3b8",
+  "noteBkgColor":"#111827",
+  "noteTextColor":"#e5e7eb",
+  "noteBorderColor":"#94a3b8"
 }}}%%
 sequenceDiagram
     participant A as Application Endpoint
     participant I as WebhookInput
-    participant P as Provider WebhookProcessor
-    participant V as Validator / Recognizer / Parser / Mapper
+    participant C as WebhookProcessorInterface
+    participant V as Provider Validator
+    participant P as Provider Processor
+    participant F as Recognizer / Parser / Mapper
     participant R as WebhookContext
 
     A->>A: Receive HTTP request for one configured provider
-    A->>I: Build WebhookInput from raw body, headers, query params, form body params
-    A->>P: process(input)
-    P->>V: validate request
-    P->>V: recognize payment event
-    P->>V: parse payload
-    P->>V: map to PaymentIntent and common payment status
-    V-->>R: normalized result
-    R-->>A: WebhookContext
-    A->>A: Use normalized payment data and raw request data
+    A->>I: Build from raw body, headers, query params, form body params
+    A->>C: process(input)
+    C->>C: Preserve raw request data
+    C->>V: validate(input)
+    alt Validation fails
+        V-->>C: WebhookValidationResult::failure(reason)
+        C->>R: Build ValidationFailed context with raw input and raw data
+        R-->>A: WebhookContext
+    else Validation succeeds
+        V-->>C: WebhookValidationResult::success()
+        C->>P: process(input)
+        P->>F: recognize payment event
+        P->>F: parse provider payload
+        P->>F: map to common payment event and status
+        F-->>P: WebhookProcessingResult
+        P-->>C: WebhookProcessingResult
+        C->>R: Build normalized context with raw input and raw data
+        R-->>A: WebhookContext
+    end
+    A->>A: Use normalized payment data and preserved raw request data
 ```
 
 The main idea is:
