@@ -932,9 +932,26 @@ final class WebhookProviderValidatorRegistry
 }
 ```
 
+#### Provider processing stages
+
+After provider-specific validation succeeds, the provider processor runs the R1 payment webhook
+pipeline. These stages are provider-specific implementation details behind
+`WebhookProviderProcessorInterface`; application code should pass `WebhookInput` to the common
+processor and handle the returned `WebhookContext`, not build these intermediate objects itself.
+
+The target provider processing flow is:
+
+1. recognize whether the provider event is a payment-related webhook event;
+2. parse the provider payload from the original request data;
+3. represent parsed provider data as an intermediate `WebhookPayload`;
+4. map the intermediate payload to the common processing result used to build `WebhookContext`;
+5. extract the common payment status when the provider payload contains payment state.
+
 #### `WebhookEventRecognizerInterface`
 
-Recognition of payment-related webhook events in a provider-specific payload.
+Recognition of payment-related webhook events from the original provider request data.
+The recognizer decides whether the provider event can enter the R1 payment webhook processing path
+and keeps the raw provider event name available for diagnostics and unsupported/unknown handling.
 
 ```php
 interface WebhookEventRecognizerInterface
@@ -946,7 +963,9 @@ interface WebhookEventRecognizerInterface
 
 #### `WebhookPayloadParserInterface`
 
-Parsing of the incoming webhook data into normalized internal webhook payload.
+Parsing of original provider request data into an intermediate provider payload used by the
+provider processing pipeline. The parser reads from `WebhookInput`; it does not replace
+`WebhookInput` as the application-owned boundary object.
 
 ```php
 interface WebhookPayloadParserInterface
@@ -957,7 +976,9 @@ interface WebhookPayloadParserInterface
 
 #### `PaymentWebhookMapperInterface`
 
-Mapping of parsed webhook data into the common payment-oriented result shape.
+Mapping of the intermediate provider payload into the common payment-oriented processing result.
+The mapper is responsible for converting provider-specific payment data and payment state into
+the common model that is later exposed through `WebhookContext`.
 
 ```php
 use Yiisoft\Payments\Models\PaymentIntent;
@@ -1076,7 +1097,10 @@ readonly class WebhookReason
 
 #### `WebhookPayload`
 
-A normalized internal representation of the parsed webhook payload.
+Intermediate internal representation of the parsed provider webhook payload. `WebhookPayload` is
+used inside the provider processing pipeline between payload parsing and payment mapping. It is
+not the application-owned input object and it is not the final result returned to application code;
+applications receive `WebhookContext` from the common processor.
 
 ```php
 readonly class WebhookPayload
