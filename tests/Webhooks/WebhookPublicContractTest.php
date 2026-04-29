@@ -331,7 +331,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->isFinal());
         $this->assertTrue($reflection->isReadOnly());
         $this->assertTrue($reflection->implementsInterface(WebhookProviderValidatorInterface::class));
-        $this->assertSame(['getProviderId', 'validate'], $this->methodNames($reflection));
+        $this->assertSame(['getProviderId', 'validate'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
         $this->assertNull($reflection->getConstructor());
 
         $providerIdMethod = $reflection->getMethod('getProviderId');
