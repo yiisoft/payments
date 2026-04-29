@@ -776,7 +776,7 @@ sequenceDiagram
     participant R as WebhookContext
 
     A->>A: Receive HTTP request for one configured provider
-    A->>I: Build WebhookInput from body, headers, query, parsed body
+    A->>I: Build WebhookInput from raw body, headers, query params, form body params
     A->>P: process(input)
     P->>V: validate request
     P->>V: recognize payment event
@@ -874,14 +874,24 @@ interface WebhookCapabilitiesInterface
 
 The application-owned input object passed into the library.
 
+`WebhookInput` must contain the original request data that provider-specific validators and processors need.
+Do not map provider fields to application-specific names before passing them to this object.
+
+- `rawBody` is the exact HTTP request body string. For JSON webhooks, keep the JSON payload here.
+- `headers` contains HTTP request headers.
+- `queryParams` contains original provider fields from the HTTP query string.
+- `bodyParams` contains original provider fields from a form-like request body, such as
+  `application/x-www-form-urlencoded` or `multipart/form-data`. For JSON webhooks, pass an empty array.
+
 ```php
 readonly class WebhookInput
 {
     public function __construct(
-        public string $body = '',
+        public string $rawBody,
         public array $headers = [],
         public array $queryParams = [],
-        public ?array $parsedBody = null,
+        public array $bodyParams = [],
+        public ?string $providerId = null,
     ) {
     }
 }
@@ -1019,8 +1029,8 @@ function createStripeWebhookProcessor(string $signingSecret): WebhookProcessorIn
 
 /** @var string $rawBody */
 /** @var array<string, string|list<string>> $rawHeaders */
-/** @var array<string, mixed> $queryParams */
-/** @var array<string, mixed> $bodyParams */
+/** @var array<string, mixed> $queryParams Original provider fields from the HTTP query string. */
+/** @var array<string, mixed> $bodyParams Original provider fields from a form-like request body; use [] for JSON webhooks. */
 
 $processor = createStripeWebhookProcessor('YOUR_STRIPE_WEBHOOK_SECRET');
 $input = new WebhookInput(
