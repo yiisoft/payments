@@ -47,6 +47,17 @@ final class WebhookValidationResultTest extends TestCase
         new WebhookValidationResult(isValid: false);
     }
 
+    public function testFailedValidationResultCarriesSingleFailureReason(): void
+    {
+        $reason = $this->reason();
+        $result = WebhookValidationResult::failure($reason);
+        $reflection = new ReflectionClass($result);
+
+        $this->assertSame($reason, $result->reason);
+        $this->assertFalse($reflection->hasProperty('errors'));
+        $this->assertFalse($reflection->hasProperty('reasons'));
+    }
+
     public function testCreatesSuccessfulValidationResult(): void
     {
         $result = WebhookValidationResult::success();
