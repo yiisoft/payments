@@ -192,7 +192,7 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['providerId', 'eventType', 'status', 'validationFailureReason'], array_map(
+        $this->assertSame(['providerId', 'eventType', 'status', 'validationFailureReason', 'unsupportedEventReason', 'unknownEventReason'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
@@ -212,6 +212,14 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($constructor->getParameters()[3]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[3]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[3]->getDefaultValue());
+        $this->assertSame(WebhookReason::class, $constructor->getParameters()[4]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[4]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[4]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[4]->getDefaultValue());
+        $this->assertSame(WebhookReason::class, $constructor->getParameters()[5]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[5]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[5]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[5]->getDefaultValue());
 
         $this->assertSame('string', $reflection->getProperty('providerId')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('providerId')->getType()?->allowsNull());
@@ -229,6 +237,14 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('validationFailureReason')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('validationFailureReason')->isPublic());
         $this->assertTrue($reflection->getProperty('validationFailureReason')->isReadOnly());
+        $this->assertSame(WebhookReason::class, $reflection->getProperty('unsupportedEventReason')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('unsupportedEventReason')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('unsupportedEventReason')->isPublic());
+        $this->assertTrue($reflection->getProperty('unsupportedEventReason')->isReadOnly());
+        $this->assertSame(WebhookReason::class, $reflection->getProperty('unknownEventReason')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('unknownEventReason')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('unknownEventReason')->isPublic());
+        $this->assertTrue($reflection->getProperty('unknownEventReason')->isReadOnly());
     }
 
     public function testWebhookProcessingStatusContractIsStable(): void

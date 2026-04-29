@@ -21,18 +21,32 @@ final class WebhookContextTest extends TestCase
             message: 'Webhook signature is invalid.',
             providerEventType: 'payment_intent.succeeded',
         );
+        $unsupportedEventReason = new WebhookReason(
+            code: new WebhookReasonCode('unsupported_event_type'),
+            message: 'Webhook event type is recognized but is not supported by the current webhook contract.',
+            providerEventType: 'charge.dispute.created',
+        );
+        $unknownEventReason = new WebhookReason(
+            code: new WebhookReasonCode('unknown_event_type'),
+            message: 'Provider event type is not recognized by the webhook event mapping.',
+            providerEventType: 'invoice.unmapped_event',
+        );
 
         $context = new WebhookContext(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             status: WebhookProcessingStatus::Processed,
             validationFailureReason: $validationFailureReason,
+            unsupportedEventReason: $unsupportedEventReason,
+            unknownEventReason: $unknownEventReason,
         );
 
         $this->assertSame('stripe', $context->providerId);
         $this->assertSame(WebhookEventType::PaymentSucceeded, $context->eventType);
         $this->assertSame(WebhookProcessingStatus::Processed, $context->status);
         $this->assertSame($validationFailureReason, $context->validationFailureReason);
+        $this->assertSame($unsupportedEventReason, $context->unsupportedEventReason);
+        $this->assertSame($unknownEventReason, $context->unknownEventReason);
     }
 
     public function testContextCanBeCreatedWithoutNormalizedEventDataYet(): void
@@ -43,6 +57,8 @@ final class WebhookContextTest extends TestCase
         $this->assertNull($context->eventType);
         $this->assertNull($context->status);
         $this->assertNull($context->validationFailureReason);
+        $this->assertNull($context->unsupportedEventReason);
+        $this->assertNull($context->unknownEventReason);
     }
 
     public function testContextIsImmutableValueObject(): void
@@ -55,5 +71,7 @@ final class WebhookContextTest extends TestCase
         $this->assertTrue($reflection->getProperty('eventType')->isReadOnly());
         $this->assertTrue($reflection->getProperty('status')->isReadOnly());
         $this->assertTrue($reflection->getProperty('validationFailureReason')->isReadOnly());
+        $this->assertTrue($reflection->getProperty('unsupportedEventReason')->isReadOnly());
+        $this->assertTrue($reflection->getProperty('unknownEventReason')->isReadOnly());
     }
 }

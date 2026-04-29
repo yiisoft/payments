@@ -14,6 +14,8 @@ final readonly class WebhookContext
         public ?WebhookEventType $eventType = null,
         public ?WebhookProcessingStatus $status = null,
         public ?WebhookReason $validationFailureReason = null,
+        public ?WebhookReason $unsupportedEventReason = null,
+        public ?WebhookReason $unknownEventReason = null,
     ) {
     }
 }
