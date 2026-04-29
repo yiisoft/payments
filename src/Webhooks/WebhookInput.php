@@ -19,6 +19,7 @@ final readonly class WebhookInput
         public array $headers = [],
         public array $queryParams = [],
         public array $bodyParams = [],
+        public ?string $providerId = null,
     ) {
     }
 }
