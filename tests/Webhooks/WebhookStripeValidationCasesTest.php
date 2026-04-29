@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
 
 final class WebhookStripeValidationCasesTest extends TestCase
 {
-    /**
-     * @dataProvider validSignatureProvider
-     */
+    #[DataProvider('validSignatureProvider')]
     public function testAcceptsValidSignatureCases(string $rawBody, array $headers): void
     {
         $result = $this->validator()->validate(new WebhookInput(
@@ -74,9 +73,7 @@ final class WebhookStripeValidationCasesTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider invalidSignatureProvider
-     */
+    #[DataProvider('invalidSignatureProvider')]
     public function testRejectsInvalidSignatureCases(
         string $rawBody,
         array $headers,

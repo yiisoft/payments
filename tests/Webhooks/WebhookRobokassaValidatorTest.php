@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
@@ -143,9 +144,7 @@ final class WebhookRobokassaValidatorTest extends TestCase
         $this->assertNull($result->reason->providerEventType);
     }
 
-    /**
-     * @dataProvider invalidSignatureProvider
-     */
+    #[DataProvider('invalidSignatureProvider')]
     public function testRejectsInvalidSignatureVariants(array $queryParams, array $bodyParams = []): void
     {
         $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
@@ -205,9 +204,7 @@ final class WebhookRobokassaValidatorTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider missingRequiredParameterAcrossRequestPartsProvider
-     */
+    #[DataProvider('missingRequiredParameterAcrossRequestPartsProvider')]
     public function testRejectsMissingRequiredParameterAcrossRequestParts(
         array $queryParams,
         array $bodyParams,
@@ -274,9 +271,7 @@ final class WebhookRobokassaValidatorTest extends TestCase
         new WebhookRobokassaValidator('   ');
     }
 
-    /**
-     * @dataProvider missingRequiredParameterProvider
-     */
+    #[DataProvider('missingRequiredParameterProvider')]
     public function testRejectsMissingRequiredParameter(string $parameterName): void
     {
         $queryParams = [
@@ -312,9 +307,7 @@ final class WebhookRobokassaValidatorTest extends TestCase
         yield 'missing SignatureValue' => ['SignatureValue'];
     }
 
-    /**
-     * @dataProvider emptyRequiredParameterProvider
-     */
+    #[DataProvider('emptyRequiredParameterProvider')]
     public function testRejectsEmptyRequiredParameter(string $parameterName, mixed $value): void
     {
         $queryParams = [

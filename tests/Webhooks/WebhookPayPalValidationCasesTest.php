@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 
 final class WebhookPayPalValidationCasesTest extends TestCase
 {
-    /**
-     * @dataProvider validStructuralInputProvider
-     */
+    #[DataProvider('validStructuralInputProvider')]
     public function testAcceptsValidStructuralCases(array $headers): void
     {
         $result = $this->validator()->validate(new WebhookInput(
@@ -72,9 +71,7 @@ final class WebhookPayPalValidationCasesTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider invalidHeaderInputProvider
-     */
+    #[DataProvider('invalidHeaderInputProvider')]
     public function testRejectsInvalidHeaderCases(
         array $headers,
         string $expectedReasonMessage,

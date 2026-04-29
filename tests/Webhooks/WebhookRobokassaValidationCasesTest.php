@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaValidator;
 
 final class WebhookRobokassaValidationCasesTest extends TestCase
 {
-    /**
-     * @dataProvider validSignatureProvider
-     */
+    #[DataProvider('validSignatureProvider')]
     public function testAcceptsValidSignatureCases(array $queryParams, array $bodyParams = []): void
     {
         $result = $this->validator()->validate(new WebhookInput(
@@ -81,9 +80,7 @@ final class WebhookRobokassaValidationCasesTest extends TestCase
         ]];
     }
 
-    /**
-     * @dataProvider invalidSignatureProvider
-     */
+    #[DataProvider('invalidSignatureProvider')]
     public function testRejectsInvalidSignatureCases(array $queryParams, array $bodyParams = []): void
     {
         $result = $this->validator()->validate(new WebhookInput(
@@ -143,9 +140,7 @@ final class WebhookRobokassaValidationCasesTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider invalidRequiredParameterProvider
-     */
+    #[DataProvider('invalidRequiredParameterProvider')]
     public function testRejectsInvalidRequiredParameterCases(
         array $queryParams,
         array $bodyParams,

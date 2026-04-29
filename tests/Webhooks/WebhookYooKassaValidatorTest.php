@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
@@ -242,9 +243,7 @@ final class WebhookYooKassaValidatorTest extends TestCase
         $this->assertSame('payment.succeeded', $result->reason->providerEventType);
     }
 
-    /**
-     * @dataProvider invalidEventPayloadProvider
-     */
+    #[DataProvider('invalidEventPayloadProvider')]
     public function testRejectsPayloadWithInvalidEventField(string $rawBody): void
     {
         $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
@@ -270,9 +269,7 @@ final class WebhookYooKassaValidatorTest extends TestCase
         yield 'event is array' => ['{"event":["payment.succeeded"],"object":{"id":"payment-id"}}'];
     }
 
-    /**
-     * @dataProvider invalidObjectPayloadProvider
-     */
+    #[DataProvider('invalidObjectPayloadProvider')]
     public function testRejectsPayloadWithAdditionalInvalidObjectFields(string $rawBody): void
     {
         $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(

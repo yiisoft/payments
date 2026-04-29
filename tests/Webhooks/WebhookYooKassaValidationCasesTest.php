@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
 
 final class WebhookYooKassaValidationCasesTest extends TestCase
 {
-    /**
-     * @dataProvider validStructuralPayloadProvider
-     */
+    #[DataProvider('validStructuralPayloadProvider')]
     public function testAcceptsValidStructuralCases(string $rawBody, string $expectedProviderEventType): void
     {
         $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
@@ -95,9 +94,7 @@ final class WebhookYooKassaValidationCasesTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider invalidPayloadProvider
-     */
+    #[DataProvider('invalidPayloadProvider')]
     public function testRejectsInvalidCases(
         string $rawBody,
         string $expectedReasonCode,
