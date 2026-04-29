@@ -15,6 +15,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
+use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class WebhookPublicContractTest extends TestCase
@@ -71,6 +72,29 @@ final class WebhookPublicContractTest extends TestCase
             static fn (WebhookProcessingStatus $status): string => $status->name,
             WebhookProcessingStatus::cases(),
         ));
+    }
+
+    public function testWebhookReasonCodeContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookReasonCode::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertSame(['__construct', '__toString'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(['value'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $constructor->getParameters(),
+        ));
+        $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
+
+        $this->assertSame('string', $reflection->getProperty('value')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('value')->isPublic());
+        $this->assertTrue($reflection->getProperty('value')->isReadOnly());
+        $this->assertSame('string', $reflection->getMethod('__toString')->getReturnType()?->getName());
     }
 
     public function testWebhookCapabilitiesCollectionContractIsStable(): void
