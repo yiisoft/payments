@@ -18,6 +18,16 @@ final class WebhookProcessor implements WebhookProcessorInterface
 
     public function process(WebhookInput $input): WebhookProcessingResult
     {
-        throw new LogicException('Webhook processing flow is not implemented yet.');
+        if ($input->providerId === null) {
+            throw new LogicException('Webhook provider processor resolution is not implemented yet.');
+        }
+
+        $providerProcessor = $this->providerProcessorRegistry->get($input->providerId);
+
+        if ($providerProcessor === null) {
+            throw new LogicException('Missing webhook provider processor flow is not implemented yet.');
+        }
+
+        return $providerProcessor->process($input);
     }
 }

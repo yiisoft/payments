@@ -6,8 +6,12 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Yiisoft\Payments\Webhooks\WebhookInput;
+use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
+use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
 use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
+use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 
 final class WebhookProcessorTest extends TestCase
@@ -36,5 +40,74 @@ final class WebhookProcessorTest extends TestCase
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry());
 
         $this->assertInstanceOf(WebhookProcessorInterface::class, $processor);
+    }
+
+    public function testProcessorDelegatesInputToResolvedProviderProcessor(): void
+    {
+        $expectedResult = new WebhookProcessingResult(WebhookProcessingStatus::Processed);
+        $providerProcessor = $this->createTrackingProviderProcessor('stripe', $expectedResult);
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            providerId: 'stripe',
+        );
+
+        $result = $processor->process($input);
+
+        $this->assertSame($expectedResult, $result);
+        $this->assertSame(1, $providerProcessor->processCalls);
+        $this->assertSame($input, $providerProcessor->processedInput);
+    }
+
+    public function testProcessorUsesInputProviderIdForProviderProcessorResolution(): void
+    {
+        $stripeResult = new WebhookProcessingResult(WebhookProcessingStatus::Processed);
+        $paypalResult = new WebhookProcessingResult(WebhookProcessingStatus::UnsupportedEvent);
+        $stripeProcessor = $this->createTrackingProviderProcessor('stripe', $stripeResult);
+        $paypalProcessor = $this->createTrackingProviderProcessor('paypal', $paypalResult);
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($stripeProcessor, $paypalProcessor));
+
+        $result = $processor->process(new WebhookInput(
+            rawBody: '{"event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+            providerId: 'paypal',
+        ));
+
+        $this->assertSame($paypalResult, $result);
+        $this->assertSame(0, $stripeProcessor->processCalls);
+        $this->assertNull($stripeProcessor->processedInput);
+        $this->assertSame(1, $paypalProcessor->processCalls);
+    }
+
+    /**
+     * @return WebhookProviderProcessorInterface&object{processCalls:int,processedInput:?WebhookInput}
+     */
+    private function createTrackingProviderProcessor(
+        string $providerId,
+        WebhookProcessingResult $result,
+    ): WebhookProviderProcessorInterface {
+        return new class ($providerId, $result) implements WebhookProviderProcessorInterface {
+            public int $processCalls = 0;
+            public ?WebhookInput $processedInput = null;
+
+            public function __construct(
+                private readonly string $providerId,
+                private readonly WebhookProcessingResult $result,
+            ) {
+            }
+
+            public function getProviderId(): string
+            {
+                return $this->providerId;
+            }
+
+            public function process(WebhookInput $input): WebhookProcessingResult
+            {
+                $this->processCalls++;
+                $this->processedInput = $input;
+
+                return $this->result;
+            }
+        };
     }
 }
