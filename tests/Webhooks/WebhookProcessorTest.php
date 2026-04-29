@@ -121,6 +121,8 @@ final class WebhookProcessorTest extends TestCase
         $input = new WebhookInput(
             rawBody: '{"type":"payment_intent.succeeded"}',
             headers: ['Stripe-Signature' => 'invalid-signature'],
+            queryParams: ['source' => 'stripe-webhook'],
+            bodyParams: ['form_field' => 'raw-value'],
             providerId: 'stripe',
         );
 
@@ -134,6 +136,8 @@ final class WebhookProcessorTest extends TestCase
         $this->assertNotNull($context->rawData);
         $this->assertSame('{"type":"payment_intent.succeeded"}', $context->rawData->rawBody);
         $this->assertSame(['Stripe-Signature' => 'invalid-signature'], $context->rawData->headers);
+        $this->assertSame(['source' => 'stripe-webhook'], $context->rawData->queryParams);
+        $this->assertSame(['form_field' => 'raw-value'], $context->rawData->bodyParams);
         $this->assertNull($context->rawData->payload);
         $this->assertNull($context->rawData->providerEventType);
         $this->assertSame(1, $providerValidator->validateCalls);
@@ -242,6 +246,8 @@ final class WebhookProcessorTest extends TestCase
         $context = $processor->process(new WebhookInput(
             rawBody: '{"event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: ['PayPal-Transmission-Id' => 'transmission-id'],
+            queryParams: ['source' => 'paypal-webhook'],
+            bodyParams: ['event_type' => 'PAYMENT.CAPTURE.COMPLETED'],
             providerId: 'paypal',
         ));
 
@@ -257,6 +263,8 @@ final class WebhookProcessorTest extends TestCase
         $this->assertNotNull($context->rawData);
         $this->assertSame('{"event_type":"PAYMENT.CAPTURE.COMPLETED"}', $context->rawData->rawBody);
         $this->assertSame(['PayPal-Transmission-Id' => 'transmission-id'], $context->rawData->headers);
+        $this->assertSame(['source' => 'paypal-webhook'], $context->rawData->queryParams);
+        $this->assertSame(['event_type' => 'PAYMENT.CAPTURE.COMPLETED'], $context->rawData->bodyParams);
         $this->assertNull($context->rawData->payload);
         $this->assertNull($context->rawData->providerEventType);
         $this->assertSame(0, $registeredProcessor->processCalls);

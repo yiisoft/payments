@@ -549,6 +549,42 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
     }
 
+    public function testWebhookRawDataContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookRawData::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertSame(['__construct', 'getBodyParams', 'getHeaders', 'getPayload', 'getProviderEventType', 'getQueryParams'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(['rawBody', 'headers', 'payload', 'providerEventType', 'queryParams', 'bodyParams'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $constructor->getParameters(),
+        ));
+        $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertSame('array', $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertSame('mixed', $constructor->getParameters()[2]->getType()?->getName());
+        $this->assertSame('string', $constructor->getParameters()[3]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[3]->getType()?->allowsNull());
+        $this->assertSame('array', $constructor->getParameters()[4]->getType()?->getName());
+        $this->assertSame('array', $constructor->getParameters()[5]->getType()?->getName());
+
+        foreach ([1, 2, 3, 4, 5] as $index) {
+            $this->assertTrue($constructor->getParameters()[$index]->isDefaultValueAvailable());
+        }
+
+        foreach (['rawBody', 'headers', 'queryParams', 'bodyParams', 'payload', 'providerEventType'] as $propertyName) {
+            $this->assertTrue($reflection->getProperty($propertyName)->isPublic());
+            $this->assertTrue($reflection->getProperty($propertyName)->isReadOnly());
+        }
+
+        $this->assertSame('array', $reflection->getProperty('queryParams')->getType()?->getName());
+        $this->assertSame('array', $reflection->getProperty('bodyParams')->getType()?->getName());
+    }
+
     public function testWebhookProcessingStatusContractIsStable(): void
     {
         $reflection = new ReflectionClass(WebhookProcessingStatus::class);

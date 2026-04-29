@@ -60,6 +60,30 @@ final class WebhookRawDataTest extends TestCase
         $this->assertSame([' value with spaces ', 'second-value'], $rawData->getHeaders()['X-Multi-Value']);
     }
 
+    public function testRawRequestParametersArePreservedWithoutChanges(): void
+    {
+        $queryParams = [
+            'OutSum' => '100.00',
+            'InvId' => '42',
+            'Shp_order' => ' order-123 ',
+        ];
+        $bodyParams = [
+            'SignatureValue' => 'ABCDEF',
+            'Shp_user' => ['first', 'second'],
+        ];
+
+        $rawData = new WebhookRawData(
+            rawBody: '',
+            queryParams: $queryParams,
+            bodyParams: $bodyParams,
+        );
+
+        $this->assertSame($queryParams, $rawData->queryParams);
+        $this->assertSame($queryParams, $rawData->getQueryParams());
+        $this->assertSame($bodyParams, $rawData->bodyParams);
+        $this->assertSame($bodyParams, $rawData->getBodyParams());
+    }
+
     public function testProviderSpecificFieldsArePreservedWithoutInterpretation(): void
     {
         $payload = [

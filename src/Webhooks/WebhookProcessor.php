@@ -59,6 +59,8 @@ final class WebhookProcessor implements WebhookProcessorInterface
         return new WebhookRawData(
             rawBody: $input->rawBody,
             headers: $input->headers,
+            queryParams: $input->queryParams,
+            bodyParams: $input->bodyParams,
         );
     }
 

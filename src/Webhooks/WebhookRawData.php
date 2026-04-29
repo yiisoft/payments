@@ -13,12 +13,16 @@ final readonly class WebhookRawData
      * @param array<string, string|list<string>> $headers
      * @param mixed $payload Provider payload decoded by a later processing step, if available.
      * @param string|null $providerEventType Provider-specific event type extracted by a later processing step, if available.
+     * @param array<string, mixed> $queryParams
+     * @param array<string, mixed> $bodyParams
      */
     public function __construct(
         public string $rawBody,
         public array $headers = [],
         public mixed $payload = null,
         public ?string $providerEventType = null,
+        public array $queryParams = [],
+        public array $bodyParams = [],
     ) {
     }
 
@@ -30,6 +34,26 @@ final readonly class WebhookRawData
     public function getHeaders(): array
     {
         return $this->headers;
+    }
+
+    /**
+     * Returns the original query parameter map without normalizing names or values.
+     *
+     * @return array<string, mixed>
+     */
+    public function getQueryParams(): array
+    {
+        return $this->queryParams;
+    }
+
+    /**
+     * Returns the original body parameter map without normalizing names or values.
+     *
+     * @return array<string, mixed>
+     */
+    public function getBodyParams(): array
+    {
+        return $this->bodyParams;
     }
 
     /**
