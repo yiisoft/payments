@@ -15,6 +15,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
+use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
@@ -95,6 +96,32 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('value')->isPublic());
         $this->assertTrue($reflection->getProperty('value')->isReadOnly());
         $this->assertSame('string', $reflection->getMethod('__toString')->getReturnType()?->getName());
+    }
+
+    public function testWebhookReasonContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookReason::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertSame(['__construct'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(['code', 'message'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $constructor->getParameters(),
+        ));
+        $this->assertSame(WebhookReasonCode::class, $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertSame('string', $constructor->getParameters()[1]->getType()?->getName());
+
+        $this->assertSame(WebhookReasonCode::class, $reflection->getProperty('code')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('code')->isPublic());
+        $this->assertTrue($reflection->getProperty('code')->isReadOnly());
+        $this->assertSame('string', $reflection->getProperty('message')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('message')->isPublic());
+        $this->assertTrue($reflection->getProperty('message')->isReadOnly());
     }
 
     public function testWebhookCapabilitiesCollectionContractIsStable(): void
