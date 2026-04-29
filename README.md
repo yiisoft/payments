@@ -805,12 +805,18 @@ sequenceDiagram
 
 The main idea is:
 
-- the application owns the HTTP endpoint;
-- each webhook endpoint is configured for one payment provider;
+- the application owns the HTTP endpoint and configures each endpoint for one payment provider;
 - the application converts the incoming HTTP request into a library-specific `WebhookInput`;
-- a provider-specific webhook processor validates and parses that input;
-- the library returns a normalized `WebhookContext`;
-- Release 1 covers payment-related webhook events only.
+- the common webhook processor provides one entry point for all supported payment providers;
+- provider-specific validation verifies signatures, secrets, headers, and other authenticity markers before event processing starts;
+- provider-specific processing recognizes payment-related events and selects the correct normalization path;
+- provider payload parsing converts the original request payload into an internal representation instead of requiring application code to read raw provider payloads directly;
+- mapping converts parsed provider data into a common `WebhookContext` that application code can handle consistently;
+- common payment status extraction gives the application one payment-status model across providers;
+- raw request data remains available for logging, diagnostics, fallback handling, and provider-specific application logic;
+- unknown or unsupported events return predictable context instead of breaking the integration;
+- each gateway declares its supported, partially supported, and unsupported webhook capabilities explicitly;
+- Release 1 includes minimal documentation and support matrix information needed to use payment webhook support.
 
 ### Common Contracts
 
