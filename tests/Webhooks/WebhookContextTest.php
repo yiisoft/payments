@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use Error;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Yiisoft\Payments\Webhooks\WebhookContext;
@@ -81,6 +82,28 @@ final class WebhookContextTest extends TestCase
         $this->assertNull($context->rawData);
     }
 
+    public function testContextDefinesExpectedFields(): void
+    {
+        $reflection = new ReflectionClass(WebhookContext::class);
+
+        $this->assertSame(
+            [
+                'providerId',
+                'eventType',
+                'status',
+                'validationFailureReason',
+                'unsupportedEventReason',
+                'unknownEventReason',
+                'rawInput',
+                'rawData',
+            ],
+            array_map(
+                static fn ($property): string => $property->getName(),
+                $reflection->getProperties(),
+            ),
+        );
+    }
+
     public function testContextIsImmutableValueObject(): void
     {
         $reflection = new ReflectionClass(WebhookContext::class);
@@ -95,5 +118,14 @@ final class WebhookContextTest extends TestCase
         $this->assertTrue($reflection->getProperty('unknownEventReason')->isReadOnly());
         $this->assertTrue($reflection->getProperty('rawInput')->isReadOnly());
         $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
+    }
+
+    public function testContextRejectsPropertyReassignment(): void
+    {
+        $context = new WebhookContext(providerId: 'stripe');
+
+        $this->expectException(Error::class);
+
+        $context->providerId = 'paypal';
     }
 }
