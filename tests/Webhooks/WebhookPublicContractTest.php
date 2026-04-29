@@ -67,7 +67,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertTrue($reflection->isEnum());
         $this->assertTrue($reflection->isFinal());
-        $this->assertSame(['Processed', 'ValidationFailed'], array_map(
+        $this->assertSame(['Processed', 'ValidationFailed', 'UnknownEvent'], array_map(
             static fn (WebhookProcessingStatus $status): string => $status->name,
             WebhookProcessingStatus::cases(),
         ));

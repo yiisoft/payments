@@ -18,4 +18,9 @@ enum WebhookProcessingStatus: string
      * The webhook request failed provider-specific validation before event processing.
      */
     case ValidationFailed = 'validation_failed';
+
+    /**
+     * The webhook request was valid, but its event type was not recognized.
+     */
+    case UnknownEvent = 'unknown_event';
 }
