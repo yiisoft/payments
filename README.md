@@ -918,6 +918,41 @@ readonly class WebhookValidationResult
 }
 ```
 
+#### `WebhookReasonCode`
+
+Machine-readable reason code for a webhook validation or processing outcome.
+The value must be a non-empty string and is intended for application branching, logging, and tests.
+
+```php
+readonly class WebhookReasonCode
+{
+    public function __construct(
+        public string $value,
+    ) {
+    }
+
+    public function __toString(): string;
+}
+```
+
+#### `WebhookReason`
+
+Human-readable explanation for a webhook validation or processing outcome.
+Validation and processing failures use a single reason object instead of an array of errors.
+The reason combines a machine-readable `WebhookReasonCode`, a non-empty message, and an optional provider event type when it is known.
+
+```php
+readonly class WebhookReason
+{
+    public function __construct(
+        public WebhookReasonCode $code,
+        public string $message,
+        public ?string $providerEventType = null,
+    ) {
+    }
+}
+```
+
 #### `WebhookPayload`
 
 A normalized internal representation of the parsed webhook payload.
