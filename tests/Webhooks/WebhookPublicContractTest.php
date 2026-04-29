@@ -112,7 +112,14 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('reason')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('reason')->isPublic());
         $this->assertTrue($reflection->getProperty('reason')->isReadOnly());
-        $this->assertSame('self', $reflection->getMethod('unknownEvent')->getReturnType()?->getName());
+        $unknownEventMethod = $reflection->getMethod('unknownEvent');
+
+        $this->assertSame(['providerEventType'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $unknownEventMethod->getParameters(),
+        ));
+        $this->assertSame('string', $unknownEventMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame('self', $unknownEventMethod->getReturnType()?->getName());
     }
 
     public function testWebhookReasonCodeContractIsStable(): void

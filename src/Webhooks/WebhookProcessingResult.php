@@ -19,13 +19,14 @@ final readonly class WebhookProcessingResult
     /**
      * Creates a result for a valid provider webhook event type that is not present in the provider mapping.
      */
-    public static function unknownEvent(): self
+    public static function unknownEvent(string $providerEventType): self
     {
         return new self(
             status: WebhookProcessingStatus::UnknownEvent,
             reason: new WebhookReason(
                 code: new WebhookReasonCode('unknown_event_type'),
                 message: 'Provider event type is not recognized by the webhook event mapping.',
+                providerEventType: $providerEventType,
             ),
         );
     }

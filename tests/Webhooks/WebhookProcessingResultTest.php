@@ -12,7 +12,7 @@ final class WebhookProcessingResultTest extends TestCase
 {
     public function testUnknownProviderEventTypeHasUnknownEventResult(): void
     {
-        $result = WebhookProcessingResult::unknownEvent();
+        $result = WebhookProcessingResult::unknownEvent('payment_intent.partially_refunded');
 
         $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
         $this->assertNull($result->eventType);
@@ -22,6 +22,6 @@ final class WebhookProcessingResultTest extends TestCase
             'Provider event type is not recognized by the webhook event mapping.',
             $result->reason->message,
         );
-        $this->assertNull($result->reason->providerEventType);
+        $this->assertSame('payment_intent.partially_refunded', $result->reason->providerEventType);
     }
 }
