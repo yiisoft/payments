@@ -1137,6 +1137,32 @@ function createJsonWebhookInput(ServerRequestInterface $request, string $provide
 }
 ```
 
+A form or query callback endpoint can also build `WebhookInput` from the original PSR-7
+server request. Provider fields must be passed as received in `queryParams` or `bodyParams`.
+For example, Robokassa fields such as `OutSum`, `InvId`, `SignatureValue`, and `Shp_*`
+custom fields keep their provider names and are not renamed to application-specific names.
+
+```php
+<?php
+
+use Psr\Http\Message\ServerRequestInterface;
+use Yiisoft\Payments\Webhooks\WebhookInput;
+
+function createFormCallbackWebhookInput(ServerRequestInterface $request, string $providerId): WebhookInput
+{
+    $rawBody = $request->getBody()->getContents();
+    $parsedBody = $request->getParsedBody();
+
+    return new WebhookInput(
+        rawBody: $rawBody,
+        headers: $request->getHeaders(),
+        queryParams: $request->getQueryParams(),
+        bodyParams: is_array($parsedBody) ? $parsedBody : [],
+        providerId: $providerId,
+    );
+}
+```
+
 #### `WebhookValidationResult`
 
 Validation result for the incoming webhook request. The result uses a single-reason model:
