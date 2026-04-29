@@ -986,13 +986,15 @@ interface WebhookCapabilitiesInterface
 The application-owned input object passed into the library.
 
 `WebhookInput` must contain the original request data that provider-specific validators and processors need.
-Do not map provider fields to application-specific names before passing them to this object.
+The application builds it at the HTTP boundary and passes provider fields as received from the provider.
+Do not rename, normalize, or map provider fields to application-specific names before passing them to this object.
 
-- `rawBody` is the exact HTTP request body string. For JSON webhooks, keep the JSON payload here.
-- `headers` contains HTTP request headers.
-- `queryParams` contains original provider fields from the HTTP query string.
+- `rawBody` is the exact HTTP request body string. For JSON webhooks, keep the complete JSON payload here.
+- `headers` contains the original HTTP request headers received by the endpoint.
+- `queryParams` contains original provider fields from the HTTP query string, with provider field names preserved.
 - `bodyParams` contains original provider fields from a form-like request body, such as
-  `application/x-www-form-urlencoded` or `multipart/form-data`. For JSON webhooks, pass an empty array.
+  `application/x-www-form-urlencoded` or `multipart/form-data`, with provider field names preserved.
+  For JSON webhooks, pass an empty array and keep the payload in `rawBody`.
 
 ```php
 readonly class WebhookInput
