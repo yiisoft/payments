@@ -1198,9 +1198,17 @@ readonly class WebhookPayload
 
 #### `WebhookContext`
 
-The normalized webhook context returned to user code after validation and provider-specific processing.
-It carries the provider identifier, recognized event type, processing status, optional failure reasons,
-and the original input/raw data for diagnostics and application-level handling.
+`WebhookContext` is the final normalized context returned to application code after validation
+and provider-specific processing. It is the application-facing webhook outcome, while
+`WebhookPayload` remains an intermediate provider-processing representation.
+
+The context exposes the provider identifier, recognized common event type, processing status,
+single failure reason for the matching failure category when processing does not complete, and
+the original input/raw data for diagnostics and application-level handling.
+
+It does not expose the older draft-model fields such as `isValid`, `isSupported`, `provider`,
+`entityKind`, `paymentIntent`, `rawBody`, or `rawHeaders` as direct context fields. Raw request
+data is available through `rawInput` and `rawData`.
 
 ```php
 readonly class WebhookContext
