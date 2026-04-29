@@ -55,4 +55,52 @@ final class WebhookFailFastBehaviorTest extends TestCase
         $this->assertNull($context->rawData->payload);
         $this->assertNull($context->rawData->providerEventType);
     }
+
+    public function testValidationFailureDoesNotStartProviderEventRecognition(): void
+    {
+        $providerProcessor = new class implements WebhookProviderProcessorInterface {
+            public int $processCalls = 0;
+            public int $eventRecognitionCalls = 0;
+
+            public function getProviderId(): string
+            {
+                return 'stripe';
+            }
+
+            public function process(WebhookInput $input): WebhookProcessingResult
+            {
+                $this->processCalls++;
+
+                return $this->recognizeEvent($input);
+            }
+
+            private function recognizeEvent(WebhookInput $input): WebhookProcessingResult
+            {
+                $this->eventRecognitionCalls++;
+
+                throw new LogicException('Provider event recognition must not be started after validation failure.');
+            }
+        };
+        $processor = new WebhookProcessor(
+            new WebhookProviderProcessorRegistry($providerProcessor),
+            new WebhookProviderValidatorRegistry(new FailedWebhookProviderValidator('stripe')),
+        );
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 'invalid-signature'],
+            providerId: 'stripe',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $context->status);
+        $this->assertNull($context->eventType);
+        $this->assertNotNull($context->validationFailureReason);
+        $this->assertSame('test_validation_failed', $context->validationFailureReason->code->value);
+        $this->assertSame(0, $providerProcessor->processCalls);
+        $this->assertSame(0, $providerProcessor->eventRecognitionCalls);
+        $this->assertNotNull($context->rawData);
+        $this->assertNull($context->rawData->payload);
+        $this->assertNull($context->rawData->providerEventType);
+    }
 }
