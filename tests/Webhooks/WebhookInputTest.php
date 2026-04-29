@@ -83,4 +83,53 @@ final class WebhookInputTest extends TestCase
         $this->assertSame(['custom_signature'], $input->getHeader('x-custom-signature'));
         $this->assertSame($headers, $input->getHeaders());
     }
+
+    public function testQueryParamsArePreservedForFormCallbacks(): void
+    {
+        $queryParams = [
+            'OutSum' => '100.00',
+            'InvId' => '42',
+            'SignatureValue' => 'ABC123',
+            'optional' => null,
+        ];
+
+        $input = new WebhookInput(rawBody: '', queryParams: $queryParams);
+
+        $this->assertSame($queryParams, $input->queryParams);
+    }
+
+    public function testBodyParamsArePreservedForFormCallbacks(): void
+    {
+        $bodyParams = [
+            'OutSum' => '100.00',
+            'InvId' => '42',
+            'SignatureValue' => 'ABC123',
+            'Shp_user_id' => 'user-123',
+        ];
+
+        $input = new WebhookInput(rawBody: '', bodyParams: $bodyParams);
+
+        $this->assertSame($bodyParams, $input->bodyParams);
+    }
+
+    public function testQueryAndBodyParamsAreKeptSeparatelyForFormCallbacks(): void
+    {
+        $queryParams = [
+            'source' => 'query',
+            'InvId' => '42',
+        ];
+        $bodyParams = [
+            'source' => 'body',
+            'SignatureValue' => 'ABC123',
+        ];
+
+        $input = new WebhookInput(
+            rawBody: 'OutSum=100.00&InvId=42&SignatureValue=ABC123',
+            queryParams: $queryParams,
+            bodyParams: $bodyParams,
+        );
+
+        $this->assertSame($queryParams, $input->queryParams);
+        $this->assertSame($bodyParams, $input->bodyParams);
+    }
 }
