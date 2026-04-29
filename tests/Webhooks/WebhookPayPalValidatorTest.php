@@ -126,6 +126,60 @@ final class WebhookPayPalValidatorTest extends TestCase
         $this->assertNull($result->reason->providerEventType);
     }
 
+    public function testReturnsValidationFailureForEachMissingRequiredTransmissionHeader(): void
+    {
+        foreach (array_keys($this->requiredTransmissionHeaders()) as $headerName) {
+            $headers = $this->requiredTransmissionHeaders();
+            unset($headers[$headerName]);
+
+            $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
+                rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+                headers: $headers,
+                providerId: 'paypal',
+            ));
+
+            $this->assertFalse($result->isValid, sprintf('Header %s must be required.', $headerName));
+            $this->assertNotNull($result->reason);
+            $this->assertSame('paypal_required_transmission_header_missing', $result->reason->code->value);
+            $this->assertSame(
+                sprintf('Required PayPal transmission header "%s" is missing or empty.', $headerName),
+                $result->reason->message,
+            );
+            $this->assertNull($result->reason->providerEventType);
+        }
+    }
+
+    public function testReturnsValidationFailureForEachEmptyRequiredTransmissionHeader(): void
+    {
+        foreach (array_keys($this->requiredTransmissionHeaders()) as $headerName) {
+            $headers = $this->requiredTransmissionHeaders();
+            $headers[$headerName] = ['', "   \t"];
+
+            $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
+                rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+                headers: $headers,
+                providerId: 'paypal',
+            ));
+
+            $this->assertFalse($result->isValid, sprintf('Header %s must not be empty.', $headerName));
+            $this->assertNotNull($result->reason);
+            $this->assertSame('paypal_required_transmission_header_missing', $result->reason->code->value);
+            $this->assertSame(
+                sprintf('Required PayPal transmission header "%s" is missing or empty.', $headerName),
+                $result->reason->message,
+            );
+            $this->assertNull($result->reason->providerEventType);
+        }
+    }
+
+    public function testRejectsWhitespaceOnlyWebhookIdBeforeValidation(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('PayPal webhook ID must be a non-empty string.');
+
+        new WebhookPayPalValidator(" \t\n ");
+    }
+
     public function testRequiredTransmissionHeadersAreReadCaseInsensitively(): void
     {
         $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
