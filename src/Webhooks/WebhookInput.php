@@ -11,8 +11,10 @@ final readonly class WebhookInput
 {
     /**
      * @param array<string, string|list<string>> $headers
-     * @param array<string, mixed> $queryParams
-     * @param array<string, mixed> $bodyParams
+     * @param array<string, mixed> $queryParams Raw provider request fields from the HTTP query string.
+     *     Keys must remain provider field names as received and must not be mapped to application-specific names.
+     * @param array<string, mixed> $bodyParams Raw provider request fields from a form-like HTTP request body.
+     *     Keys must remain provider field names as received and must not be mapped to application-specific names.
      */
     public function __construct(
         public string $rawBody,
