@@ -56,6 +56,57 @@ final class WebhookFailFastBehaviorTest extends TestCase
         $this->assertNull($context->rawData->providerEventType);
     }
 
+    public function testValidationFailureReturnsPredictableContextResult(): void
+    {
+        $providerProcessor = new class implements WebhookProviderProcessorInterface {
+            public int $processCalls = 0;
+
+            public function getProviderId(): string
+            {
+                return 'stripe';
+            }
+
+            public function process(WebhookInput $input): WebhookProcessingResult
+            {
+                $this->processCalls++;
+
+                throw new LogicException('Provider processor must not be called after validation failure.');
+            }
+        };
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 'invalid-signature'],
+            providerId: 'stripe',
+            queryParams: ['source' => 'query'],
+            bodyParams: ['source' => 'body'],
+        );
+        $processor = new WebhookProcessor(
+            new WebhookProviderProcessorRegistry($providerProcessor),
+            new WebhookProviderValidatorRegistry(new FailedWebhookProviderValidator('stripe')),
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame('stripe', $context->providerId);
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $context->status);
+        $this->assertSame($input, $context->rawInput);
+        $this->assertNull($context->eventType);
+        $this->assertNull($context->unsupportedEventReason);
+        $this->assertNull($context->unknownEventReason);
+        $this->assertNotNull($context->validationFailureReason);
+        $this->assertSame('test_validation_failed', $context->validationFailureReason->code->value);
+        $this->assertSame('Test webhook validation failed.', $context->validationFailureReason->message);
+        $this->assertNull($context->validationFailureReason->providerEventType);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('{"type":"payment_intent.succeeded"}', $context->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 'invalid-signature'], $context->rawData->getHeaders());
+        $this->assertSame(['source' => 'query'], $context->rawData->getQueryParams());
+        $this->assertSame(['source' => 'body'], $context->rawData->getBodyParams());
+        $this->assertNull($context->rawData->getPayload());
+        $this->assertNull($context->rawData->getProviderEventType());
+        $this->assertSame(0, $providerProcessor->processCalls);
+    }
+
     public function testValidationFailureDoesNotStartProviderEventRecognition(): void
     {
         $providerProcessor = new class implements WebhookProviderProcessorInterface {
