@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorInterface;
+use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
@@ -60,6 +61,42 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(1, $processMethod->getNumberOfParameters());
         $this->assertSame(WebhookInput::class, $processMethod->getParameters()[0]->getType()?->getName());
         $this->assertSame(WebhookProcessingResult::class, $processMethod->getReturnType()?->getName());
+    }
+
+
+    public function testProviderWebhookProcessorRegistryContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(ProviderWebhookProcessorRegistry::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertSame(['__construct', 'get', 'has'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(1, $constructor->getNumberOfParameters());
+        $this->assertTrue($constructor->getParameters()[0]->isVariadic());
+        $this->assertSame(ProviderWebhookProcessorInterface::class, $constructor->getParameters()[0]->getType()?->getName());
+
+        $getMethod = $reflection->getMethod('get');
+
+        $this->assertSame(['providerId'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $getMethod->getParameters(),
+        ));
+        $this->assertSame('string', $getMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame(ProviderWebhookProcessorInterface::class, $getMethod->getReturnType()?->getName());
+        $this->assertTrue($getMethod->getReturnType()?->allowsNull());
+
+        $hasMethod = $reflection->getMethod('has');
+
+        $this->assertSame(['providerId'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $hasMethod->getParameters(),
+        ));
+        $this->assertSame('string', $hasMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame('bool', $hasMethod->getReturnType()?->getName());
+        $this->assertFalse($hasMethod->getReturnType()?->allowsNull());
     }
 
     public function testWebhookCapabilitiesProviderInterfaceContractIsStable(): void
