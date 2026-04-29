@@ -4,11 +4,21 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use InvalidArgumentException;
+
 /**
  * Provider-specific validator skeleton for PayPal webhook requests.
  */
 final readonly class WebhookPayPalValidator implements WebhookProviderValidatorInterface
 {
+    public function __construct(
+        private string $webhookId,
+    ) {
+        if (trim($webhookId) === '') {
+            throw new InvalidArgumentException('PayPal webhook ID must be a non-empty string.');
+        }
+    }
+
     /**
      * @var list<string>
      */

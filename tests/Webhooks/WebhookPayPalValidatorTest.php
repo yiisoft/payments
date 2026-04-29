@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
@@ -13,15 +14,23 @@ final class WebhookPayPalValidatorTest extends TestCase
 {
     public function testImplementsProviderValidatorContract(): void
     {
-        $validator = new WebhookPayPalValidator();
+        $validator = new WebhookPayPalValidator('WH-123');
 
         $this->assertInstanceOf(WebhookProviderValidatorInterface::class, $validator);
         $this->assertSame('paypal', $validator->getProviderId());
     }
 
+    public function testRejectsEmptyWebhookId(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('PayPal webhook ID must be a non-empty string.');
+
+        new WebhookPayPalValidator('   ');
+    }
+
     public function testReturnsValidationFailureUntilPayPalValidationIsImplemented(): void
     {
-        $result = (new WebhookPayPalValidator())->validate(new WebhookInput(
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: $this->requiredTransmissionHeaders(),
             providerId: 'paypal',
@@ -39,7 +48,7 @@ final class WebhookPayPalValidatorTest extends TestCase
         $headers = $this->requiredTransmissionHeaders();
         unset($headers['PayPal-Transmission-Sig']);
 
-        $result = (new WebhookPayPalValidator())->validate(new WebhookInput(
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: $headers,
             providerId: 'paypal',
@@ -60,7 +69,7 @@ final class WebhookPayPalValidatorTest extends TestCase
         $headers = $this->requiredTransmissionHeaders();
         $headers['PayPal-Transmission-Id'] = '   ';
 
-        $result = (new WebhookPayPalValidator())->validate(new WebhookInput(
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: $headers,
             providerId: 'paypal',
@@ -78,7 +87,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testRequiredTransmissionHeadersAreReadCaseInsensitively(): void
     {
-        $result = (new WebhookPayPalValidator())->validate(new WebhookInput(
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: [
                 'paypal-transmission-id' => 'transmission-id',
@@ -100,7 +109,7 @@ final class WebhookPayPalValidatorTest extends TestCase
         $headers = $this->requiredTransmissionHeaders();
         $headers['PayPal-Transmission-Sig'] = ['', 'signature'];
 
-        $result = (new WebhookPayPalValidator())->validate(new WebhookInput(
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: $headers,
             providerId: 'paypal',
