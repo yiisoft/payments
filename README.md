@@ -1001,17 +1001,89 @@ interface PaymentWebhookMapperInterface
 }
 ```
 
-#### `WebhookCapabilitiesInterface`
+#### Capability declaration contracts
 
-Explicit declaration of webhook support and supported entity kinds for a provider-specific processor.
+Webhook capabilities are declared explicitly by each gateway/provider. This declaration is separate
+from incoming HTTP routing and from provider-specific webhook processing: it describes which
+normalized payment webhook events the gateway/provider supports, partially supports, or explicitly
+does not support.
+
+A gateway/provider that declares webhook capabilities implements `WebhookCapabilitiesProviderInterface`
+and returns an immutable `WebhookCapabilities` collection. Each `WebhookCapability` describes one
+normalized event for one normalized entity kind and assigns a support status to it.
 
 ```php
-interface WebhookCapabilitiesInterface
+interface WebhookCapabilitiesProviderInterface
 {
-    public function supportsWebhooks(): bool;
-    public function supportsWebhookEntity(string $entityKind): bool;
+    public function getWebhookCapabilities(): WebhookCapabilities;
+}
+
+final readonly class WebhookCapabilities
+{
+    public function __construct(WebhookCapability ...$capabilities)
+    {
+    }
+
+    /**
+     * @return list<WebhookCapability>
+     */
+    public function all(): array;
+
+    public function unsupportedResultFor(
+        WebhookEventType $eventType,
+        WebhookEntityKind $entityKind,
+        ?string $providerEventType = null,
+        ?WebhookRawData $rawData = null,
+    ): ?WebhookProcessingResult;
+}
+
+final readonly class WebhookCapability
+{
+    public function __construct(
+        public WebhookEventType $eventType,
+        public WebhookEntityKind $entityKind,
+        public WebhookSupportStatus $supportStatus,
+    ) {
+    }
+}
+
+enum WebhookEntityKind: string
+{
+    case Payment = 'payment';
+}
+
+enum WebhookSupportStatus: string
+{
+    case Supported = 'supported';
+    case PartiallySupported = 'partially_supported';
+    case Unsupported = 'unsupported';
+}
+
+enum WebhookEventType: string
+{
+    case PaymentCreated = 'payment.created';
+    case PaymentProcessing = 'payment.processing';
+    case PaymentRequiresAction = 'payment.requires_action';
+    case PaymentRequiresCapture = 'payment.requires_capture';
+    case PaymentSucceeded = 'payment.succeeded';
+    case PaymentFailed = 'payment.failed';
+    case PaymentCanceled = 'payment.canceled';
+    case PaymentRefunded = 'payment.refunded';
 }
 ```
+
+The support status has the following meaning:
+
+- `Supported` means the provider-specific webhook processor is expected to validate, recognize,
+  parse, and map this normalized payment event in the common webhook flow.
+- `PartiallySupported` means the event is declared intentionally, but provider-specific behavior may
+  be limited by the provider API, available payload fields, or the current R1 implementation scope.
+- `Unsupported` means the event is known but intentionally not handled as a supported payment
+  webhook event; the common flow can return a predictable unsupported-event result instead of
+  treating the event as an accidental unknown case.
+
+For R1, capability declarations are focused on payment webhook events represented by
+`WebhookEventType` with `WebhookEntityKind::Payment`.
 
 #### `WebhookInput`
 
