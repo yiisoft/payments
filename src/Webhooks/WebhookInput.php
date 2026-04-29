@@ -24,6 +24,16 @@ final readonly class WebhookInput
     }
 
     /**
+     * Returns the original header map without normalizing header names.
+     *
+     * @return array<string, list<string>>
+     */
+    public function getHeaders(): array
+    {
+        return $this->headers;
+    }
+
+    /**
      * @return list<string>
      */
     public function getHeader(string $name): array
