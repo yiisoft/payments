@@ -46,6 +46,35 @@ final class WebhookCapabilitiesTest extends TestCase
         $this->assertSame([$first, $second], iterator_to_array($capabilities));
     }
 
+    public function testUnsupportedCapabilityIsDeclaredExplicitly(): void
+    {
+        $capability = new WebhookCapability(
+            eventType: WebhookEventType::PaymentRefunded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Unsupported,
+        );
+
+        $capabilities = new WebhookCapabilities($capability);
+
+        $this->assertSame([$capability], $capabilities->all());
+        $this->assertSame(WebhookSupportStatus::Unsupported, $capabilities->all()[0]->supportStatus);
+    }
+
+    public function testNotDeclaredCapabilityIsRepresentedByAbsence(): void
+    {
+        $capabilities = new WebhookCapabilities(new WebhookCapability(
+            eventType: WebhookEventType::PaymentSucceeded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Supported,
+        ));
+
+        $this->assertFalse($this->hasCapability(
+            $capabilities,
+            WebhookEventType::PaymentRefunded,
+            WebhookEntityKind::Payment,
+        ));
+    }
+
     public function testWebhookCapabilitiesDoesNotExposeInternalStorage(): void
     {
         $capability = new WebhookCapability(
@@ -64,5 +93,19 @@ final class WebhookCapabilitiesTest extends TestCase
 
         $this->assertCount(1, $capabilities);
         $this->assertSame([$capability], $capabilities->all());
+    }
+
+    private function hasCapability(
+        WebhookCapabilities $capabilities,
+        WebhookEventType $eventType,
+        WebhookEntityKind $entityKind,
+    ): bool {
+        foreach ($capabilities as $capability) {
+            if ($capability->eventType === $eventType && $capability->entityKind === $entityKind) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
