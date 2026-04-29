@@ -897,7 +897,9 @@ final class WebhookProviderProcessorRegistry
 
 #### `WebhookProviderValidatorInterface`
 
-Provider-specific verification of signatures, headers, secrets, and other authenticity markers for one payment provider.
+Provider-specific verification of signatures, secrets, headers, and other authenticity markers for one payment provider.
+Validation is a separate stage that runs before provider event recognition, payload parsing, and mapping.
+A validator is selected by the same provider identifier that the application passes in `WebhookInput::$providerId`.
 
 ```php
 interface WebhookProviderValidatorInterface
@@ -908,10 +910,16 @@ interface WebhookProviderValidatorInterface
 }
 ```
 
+A failed validation result is fail-fast: the common processor returns a `ValidationFailed`
+`WebhookContext` and does not call the provider processor.
+
 #### `WebhookProviderValidatorRegistry`
 
 Registry and resolver for provider-specific webhook validators. The common processor uses it to select
 the validator that matches `WebhookInput::$providerId` before running provider event processing.
+If no validator is registered for a provider, the common processor can continue only when the selected
+provider processing flow does not require a validator; provider-specific authenticity failures must be
+reported by `WebhookValidationResult::failure()`.
 
 ```php
 final class WebhookProviderValidatorRegistry
@@ -1002,8 +1010,12 @@ readonly class WebhookInput
 
 #### `WebhookValidationResult`
 
-Validation result for the incoming webhook request. A successful result must not contain a reason.
-A failed result must contain exactly one `WebhookReason`.
+Validation result for the incoming webhook request. The result uses a single-reason model:
+
+- `success()` creates a successful result without a reason;
+- `failure(WebhookReason $reason)` creates a failed result with exactly one reason;
+- a successful result must not contain a reason;
+- a failed result must contain a `WebhookReason`.
 
 ```php
 readonly class WebhookValidationResult
@@ -1020,10 +1032,15 @@ readonly class WebhookValidationResult
 }
 ```
 
+`WebhookValidationResult` is only for the provider-specific request validation stage. Later
+recognition, parsing, mapping, unknown-event, and unsupported-event outcomes are represented by
+webhook processing results and final `WebhookContext` reasons, not by validation errors.
+
 #### `WebhookReasonCode`
 
 Machine-readable reason code for a webhook validation or processing outcome.
 The value must be a non-empty string and is intended for application branching, logging, and tests.
+Reason codes keep failure handling predictable without exposing provider-specific exception details.
 
 ```php
 readonly class WebhookReasonCode
