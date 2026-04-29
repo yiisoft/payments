@@ -6,14 +6,14 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\UnsupportedWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\ValidationFailedWebhookProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
-use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
 use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
-use Yiisoft\Payments\Webhooks\WebhookRawData;
-use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 
 final class WebhookProcessorTest extends TestCase
@@ -46,8 +46,12 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorDelegatesInputToResolvedProviderProcessor(): void
     {
-        $expectedResult = new WebhookProcessingResult(WebhookProcessingStatus::Processed);
-        $providerProcessor = $this->createTrackingProviderProcessor('stripe', $expectedResult);
+        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            payload: ['type' => 'payment_intent.succeeded'],
+        );
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
         $input = new WebhookInput(
             rawBody: '{"type":"payment_intent.succeeded"}',
@@ -57,44 +61,53 @@ final class WebhookProcessorTest extends TestCase
 
         $result = $processor->process($input);
 
-        $this->assertSame($expectedResult, $result);
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertNotNull($result->rawData);
+        $this->assertSame('{"type":"payment_intent.succeeded"}', $result->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $result->rawData->headers);
+        $this->assertSame(['type' => 'payment_intent.succeeded'], $result->rawData->payload);
+        $this->assertSame('payment_intent.succeeded', $result->rawData->providerEventType);
         $this->assertSame(1, $providerProcessor->processCalls);
         $this->assertSame($input, $providerProcessor->processedInput);
     }
 
     public function testProcessorUsesInputProviderIdForProviderProcessorResolution(): void
     {
-        $stripeResult = new WebhookProcessingResult(WebhookProcessingStatus::Processed);
-        $paypalResult = new WebhookProcessingResult(WebhookProcessingStatus::UnsupportedEvent);
-        $stripeProcessor = $this->createTrackingProviderProcessor('stripe', $stripeResult);
-        $paypalProcessor = $this->createTrackingProviderProcessor('paypal', $paypalResult);
+        $stripeProcessor = new SuccessfulWebhookProviderProcessor(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+        );
+        $paypalProcessor = new SuccessfulWebhookProviderProcessor(
+            providerId: 'paypal',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'PAYMENT.CAPTURE.COMPLETED',
+        );
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($stripeProcessor, $paypalProcessor));
-
-        $result = $processor->process(new WebhookInput(
+        $input = new WebhookInput(
             rawBody: '{"event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             providerId: 'paypal',
-        ));
+        );
 
-        $this->assertSame($paypalResult, $result);
+        $result = $processor->process($input);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame('PAYMENT.CAPTURE.COMPLETED', $result->rawData?->providerEventType);
         $this->assertSame(0, $stripeProcessor->processCalls);
         $this->assertNull($stripeProcessor->processedInput);
         $this->assertSame(1, $paypalProcessor->processCalls);
+        $this->assertSame($input, $paypalProcessor->processedInput);
     }
 
     public function testProcessorReturnsUnsupportedCapabilityResultFromProviderProcessor(): void
     {
-        $rawData = new WebhookRawData(
-            rawBody: '{"type":"charge.refunded"}',
-            headers: ['Stripe-Signature' => 't=123,v1=signature'],
-            payload: ['type' => 'charge.refunded'],
+        $providerProcessor = new UnsupportedWebhookProviderProcessor(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentRefunded,
             providerEventType: 'charge.refunded',
+            payload: ['type' => 'charge.refunded'],
         );
-        $expectedResult = WebhookProcessingResult::unsupportedEvent(
-            WebhookEventType::PaymentRefunded,
-            'charge.refunded',
-            $rawData,
-        );
-        $providerProcessor = $this->createTrackingProviderProcessor('stripe', $expectedResult);
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
         $input = new WebhookInput(
             rawBody: '{"type":"charge.refunded"}',
@@ -104,26 +117,27 @@ final class WebhookProcessorTest extends TestCase
 
         $result = $processor->process($input);
 
-        $this->assertSame($expectedResult, $result);
         $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
         $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
         $this->assertNotNull($result->reason);
         $this->assertSame('unsupported_event_type', $result->reason->code->value);
         $this->assertSame('charge.refunded', $result->reason->providerEventType);
-        $this->assertSame($rawData, $result->rawData);
+        $this->assertNotNull($result->rawData);
+        $this->assertSame('{"type":"charge.refunded"}', $result->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $result->rawData->headers);
+        $this->assertSame(['type' => 'charge.refunded'], $result->rawData->payload);
+        $this->assertSame('charge.refunded', $result->rawData->providerEventType);
         $this->assertSame(1, $providerProcessor->processCalls);
         $this->assertSame($input, $providerProcessor->processedInput);
     }
 
     public function testProcessorReturnsValidationFailureResultFromProviderProcessor(): void
     {
-        $rawData = new WebhookRawData(
-            rawBody: '{"type":"payment_intent.succeeded"}',
-            headers: ['Stripe-Signature' => 'invalid-signature'],
+        $providerProcessor = new ValidationFailedWebhookProviderProcessor(
+            providerId: 'stripe',
             providerEventType: 'payment_intent.succeeded',
+            payload: ['type' => 'payment_intent.succeeded'],
         );
-        $expectedResult = WebhookProcessingResult::validationFailed($rawData);
-        $providerProcessor = $this->createTrackingProviderProcessor('stripe', $expectedResult);
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
         $input = new WebhookInput(
             rawBody: '{"type":"payment_intent.succeeded"}',
@@ -133,23 +147,23 @@ final class WebhookProcessorTest extends TestCase
 
         $result = $processor->process($input);
 
-        $this->assertSame($expectedResult, $result);
         $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
         $this->assertNull($result->eventType);
         $this->assertNotNull($result->reason);
         $this->assertSame('validation_failed', $result->reason->code->value);
         $this->assertSame('payment_intent.succeeded', $result->reason->providerEventType);
-        $this->assertSame($rawData, $result->rawData);
+        $this->assertNotNull($result->rawData);
+        $this->assertSame('{"type":"payment_intent.succeeded"}', $result->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 'invalid-signature'], $result->rawData->headers);
+        $this->assertSame(['type' => 'payment_intent.succeeded'], $result->rawData->payload);
+        $this->assertSame('payment_intent.succeeded', $result->rawData->providerEventType);
         $this->assertSame(1, $providerProcessor->processCalls);
         $this->assertSame($input, $providerProcessor->processedInput);
     }
 
     public function testProcessorReturnsMissingProviderProcessorResultWhenProcessorIsNotRegistered(): void
     {
-        $registeredProcessor = $this->createTrackingProviderProcessor(
-            'stripe',
-            new WebhookProcessingResult(WebhookProcessingStatus::Processed),
-        );
+        $registeredProcessor = new SuccessfulWebhookProviderProcessor('stripe');
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($registeredProcessor));
 
         $result = $processor->process(new WebhookInput(
@@ -173,37 +187,5 @@ final class WebhookProcessorTest extends TestCase
         $this->assertNull($result->rawData->providerEventType);
         $this->assertSame(0, $registeredProcessor->processCalls);
         $this->assertNull($registeredProcessor->processedInput);
-    }
-
-    /**
-     * @return WebhookProviderProcessorInterface&object{processCalls:int,processedInput:?WebhookInput}
-     */
-    private function createTrackingProviderProcessor(
-        string $providerId,
-        WebhookProcessingResult $result,
-    ): WebhookProviderProcessorInterface {
-        return new class ($providerId, $result) implements WebhookProviderProcessorInterface {
-            public int $processCalls = 0;
-            public ?WebhookInput $processedInput = null;
-
-            public function __construct(
-                private readonly string $providerId,
-                private readonly WebhookProcessingResult $result,
-            ) {
-            }
-
-            public function getProviderId(): string
-            {
-                return $this->providerId;
-            }
-
-            public function process(WebhookInput $input): WebhookProcessingResult
-            {
-                $this->processCalls++;
-                $this->processedInput = $input;
-
-                return $this->result;
-            }
-        };
     }
 }
