@@ -25,7 +25,13 @@ final class WebhookProcessor implements WebhookProcessorInterface
         $providerProcessor = $this->providerProcessorRegistry->get($input->providerId);
 
         if ($providerProcessor === null) {
-            throw new LogicException('Missing webhook provider processor flow is not implemented yet.');
+            return $this->providerProcessorRegistry->missingProcessorResult(
+                $input->providerId,
+                new WebhookRawData(
+                    rawBody: $input->rawBody,
+                    headers: $input->headers,
+                ),
+            );
         }
 
         return $providerProcessor->process($input);

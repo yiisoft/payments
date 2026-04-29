@@ -79,6 +79,37 @@ final class WebhookProcessorTest extends TestCase
         $this->assertSame(1, $paypalProcessor->processCalls);
     }
 
+    public function testProcessorReturnsMissingProviderProcessorResultWhenProcessorIsNotRegistered(): void
+    {
+        $registeredProcessor = $this->createTrackingProviderProcessor(
+            'stripe',
+            new WebhookProcessingResult(WebhookProcessingStatus::Processed),
+        );
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($registeredProcessor));
+
+        $result = $processor->process(new WebhookInput(
+            rawBody: '{"event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+            headers: ['PayPal-Transmission-Id' => 'transmission-id'],
+            providerId: 'paypal',
+        ));
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('missing_provider_processor', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook provider processor is not registered for provider "paypal".',
+            $result->reason->message,
+        );
+        $this->assertNotNull($result->rawData);
+        $this->assertSame('{"event_type":"PAYMENT.CAPTURE.COMPLETED"}', $result->rawData->rawBody);
+        $this->assertSame(['PayPal-Transmission-Id' => 'transmission-id'], $result->rawData->headers);
+        $this->assertNull($result->rawData->payload);
+        $this->assertNull($result->rawData->providerEventType);
+        $this->assertSame(0, $registeredProcessor->processCalls);
+        $this->assertNull($registeredProcessor->processedInput);
+    }
+
     /**
      * @return WebhookProviderProcessorInterface&object{processCalls:int,processedInput:?WebhookInput}
      */
