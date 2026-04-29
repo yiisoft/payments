@@ -62,4 +62,45 @@ final class WebhookSuccessfulUnifiedProcessingFlowTest extends TestCase
         $this->assertSame(0, $robokassaProcessor->processCalls);
         $this->assertNull($robokassaProcessor->processedInput);
     }
+
+    public function testWebhookInputIsPassedToSelectedProcessorWithoutRawDataLoss(): void
+    {
+        $selectedProcessor = new SuccessfulWebhookProviderProcessor(providerId: 'stripe');
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($selectedProcessor));
+        $input = new WebhookInput(
+            rawBody: '{"id":"evt_123","data":{"object":{"id":"pi_123"}}}',
+            headers: [
+                'Stripe-Signature' => 't=1700000000,v1=signature',
+                'X-Forwarded-For' => ['203.0.113.10', '198.51.100.20'],
+            ],
+            queryParams: [
+                'endpoint' => 'payments',
+                'debug' => '1',
+            ],
+            bodyParams: [
+                'id' => 'evt_123',
+                'data' => [
+                    'object' => [
+                        'id' => 'pi_123',
+                    ],
+                ],
+            ],
+            providerId: 'stripe',
+        );
+
+        $result = $processor->process($input);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(1, $selectedProcessor->processCalls);
+        $this->assertSame($input, $selectedProcessor->processedInput);
+        $this->assertNotNull($selectedProcessor->processedInput);
+        $this->assertSame($input->rawBody, $selectedProcessor->processedInput->rawBody);
+        $this->assertSame($input->headers, $selectedProcessor->processedInput->headers);
+        $this->assertSame($input->queryParams, $selectedProcessor->processedInput->queryParams);
+        $this->assertSame($input->bodyParams, $selectedProcessor->processedInput->bodyParams);
+        $this->assertSame($input->providerId, $selectedProcessor->processedInput->providerId);
+        $this->assertNotNull($result->rawData);
+        $this->assertSame($input->rawBody, $result->rawData->rawBody);
+        $this->assertSame($input->headers, $result->rawData->headers);
+    }
 }
