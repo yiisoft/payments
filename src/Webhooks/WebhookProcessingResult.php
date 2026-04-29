@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Webhooks;
 
 /**
- * Normalized result of provider webhook event recognition.
+ * Normalized provider webhook processing outcome.
+ *
+ * Represents both event recognition results and pre-processing failures such as
+ * validation failure or missing provider processor.
  */
 final readonly class WebhookProcessingResult
 {
