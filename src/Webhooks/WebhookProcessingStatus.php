@@ -15,7 +15,9 @@ enum WebhookProcessingStatus: string
     case Processed = 'processed';
 
     /**
-     * The webhook request failed provider-specific validation before event processing.
+     * The webhook request failed before provider event processing.
+     *
+     * This includes provider-specific validation failures and missing provider processor failures.
      */
     case ValidationFailed = 'validation_failed';
 

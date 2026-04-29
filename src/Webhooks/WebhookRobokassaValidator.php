@@ -71,8 +71,8 @@ final readonly class WebhookRobokassaValidator implements WebhookProviderValidat
     }
 
     /**
-     * @param array<string, mixed> $queryParams
-     * @param array<string, mixed> $bodyParams
+     * @param array<string, mixed> $queryParams Original Robokassa provider fields from the query string.
+     * @param array<string, mixed> $bodyParams Original Robokassa provider fields from the form body.
      */
     private function conflictingCallbackParameterName(array $queryParams, array $bodyParams): ?string
     {
@@ -99,7 +99,7 @@ final readonly class WebhookRobokassaValidator implements WebhookProviderValidat
     }
 
     /**
-     * @param array<string, mixed> $callbackParams
+     * @param array<string, mixed> $callbackParams Conflict-checked Robokassa callback fields with original provider names.
      */
     private function calculateSignature(array $callbackParams): string
     {
@@ -117,7 +117,7 @@ final readonly class WebhookRobokassaValidator implements WebhookProviderValidat
     }
 
     /**
-     * @param array<string, mixed> $callbackParams
+     * @param array<string, mixed> $callbackParams Conflict-checked Robokassa callback fields with original provider names.
      *
      * @return list<string>
      */
