@@ -7,6 +7,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class WebhookEnumTest extends TestCase
@@ -26,6 +27,11 @@ final class WebhookEnumTest extends TestCase
     public function testWebhookEntityKindValues(): void
     {
         $this->assertSame('payment', WebhookEntityKind::Payment->value);
+    }
+
+    public function testWebhookProcessingStatusValues(): void
+    {
+        $this->assertSame('processed', WebhookProcessingStatus::Processed->value);
     }
 
     public function testWebhookSupportStatusValues(): void

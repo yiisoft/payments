@@ -14,6 +14,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class WebhookPublicContractTest extends TestCase
@@ -58,6 +59,18 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(WebhookSupportStatus::class, $reflection->getProperty('supportStatus')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('supportStatus')->isPublic());
         $this->assertTrue($reflection->getProperty('supportStatus')->isReadOnly());
+    }
+
+    public function testWebhookProcessingStatusContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookProcessingStatus::class);
+
+        $this->assertTrue($reflection->isEnum());
+        $this->assertTrue($reflection->isFinal());
+        $this->assertSame(['Processed'], array_map(
+            static fn (WebhookProcessingStatus $status): string => $status->name,
+            WebhookProcessingStatus::cases(),
+        ));
     }
 
     public function testWebhookCapabilitiesCollectionContractIsStable(): void
