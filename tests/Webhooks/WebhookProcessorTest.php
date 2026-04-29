@@ -115,6 +115,35 @@ final class WebhookProcessorTest extends TestCase
         $this->assertSame($input, $providerProcessor->processedInput);
     }
 
+    public function testProcessorReturnsValidationFailureResultFromProviderProcessor(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 'invalid-signature'],
+            providerEventType: 'payment_intent.succeeded',
+        );
+        $expectedResult = WebhookProcessingResult::validationFailed($rawData);
+        $providerProcessor = $this->createTrackingProviderProcessor('stripe', $expectedResult);
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 'invalid-signature'],
+            providerId: 'stripe',
+        );
+
+        $result = $processor->process($input);
+
+        $this->assertSame($expectedResult, $result);
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('validation_failed', $result->reason->code->value);
+        $this->assertSame('payment_intent.succeeded', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame(1, $providerProcessor->processCalls);
+        $this->assertSame($input, $providerProcessor->processedInput);
+    }
+
     public function testProcessorReturnsMissingProviderProcessorResultWhenProcessorIsNotRegistered(): void
     {
         $registeredProcessor = $this->createTrackingProviderProcessor(

@@ -36,6 +36,10 @@ final class WebhookProcessor implements WebhookProcessorInterface
 
         $result = $providerProcessor->process($input);
 
+        if ($result->status === WebhookProcessingStatus::ValidationFailed) {
+            return $result;
+        }
+
         if ($result->status === WebhookProcessingStatus::UnsupportedEvent) {
             return $result;
         }
