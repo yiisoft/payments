@@ -41,6 +41,7 @@ final readonly class WebhookCapabilities implements Countable, IteratorAggregate
         WebhookEventType $eventType,
         WebhookEntityKind $entityKind,
         ?string $providerEventType = null,
+        ?WebhookRawData $rawData = null,
     ): ?WebhookProcessingResult {
         foreach ($this->capabilities as $capability) {
             if ($capability->eventType !== $eventType || $capability->entityKind !== $entityKind) {
@@ -48,7 +49,7 @@ final readonly class WebhookCapabilities implements Countable, IteratorAggregate
             }
 
             if ($capability->supportStatus === WebhookSupportStatus::Unsupported) {
-                return WebhookProcessingResult::unsupportedEvent($eventType, $providerEventType);
+                return WebhookProcessingResult::unsupportedEvent($eventType, $providerEventType, $rawData);
             }
 
             return null;

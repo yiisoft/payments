@@ -17,6 +17,7 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookReason;
+use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
@@ -87,7 +88,7 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['status', 'eventType', 'reason'], array_map(
+        $this->assertSame(['status', 'eventType', 'reason', 'rawData'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
@@ -100,6 +101,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($constructor->getParameters()[2]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[2]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[2]->getDefaultValue());
+        $this->assertSame(WebhookRawData::class, $constructor->getParameters()[3]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[3]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[3]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[3]->getDefaultValue());
 
         $this->assertSame(WebhookProcessingStatus::class, $reflection->getProperty('status')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('status')->isPublic());
@@ -112,6 +117,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('reason')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('reason')->isPublic());
         $this->assertTrue($reflection->getProperty('reason')->isReadOnly());
+        $this->assertSame(WebhookRawData::class, $reflection->getProperty('rawData')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('rawData')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('rawData')->isPublic());
+        $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
         $unknownEventMethod = $reflection->getMethod('unknownEvent');
 
         $this->assertSame(['providerEventType'], array_map(
@@ -123,7 +132,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $unsupportedEventMethod = $reflection->getMethod('unsupportedEvent');
 
-        $this->assertSame(['eventType', 'providerEventType'], array_map(
+        $this->assertSame(['eventType', 'providerEventType', 'rawData'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $unsupportedEventMethod->getParameters(),
         ));
@@ -132,6 +141,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($unsupportedEventMethod->getParameters()[1]->getType()?->allowsNull());
         $this->assertTrue($unsupportedEventMethod->getParameters()[1]->isDefaultValueAvailable());
         $this->assertNull($unsupportedEventMethod->getParameters()[1]->getDefaultValue());
+        $this->assertSame(WebhookRawData::class, $unsupportedEventMethod->getParameters()[2]->getType()?->getName());
+        $this->assertTrue($unsupportedEventMethod->getParameters()[2]->getType()?->allowsNull());
+        $this->assertTrue($unsupportedEventMethod->getParameters()[2]->isDefaultValueAvailable());
+        $this->assertNull($unsupportedEventMethod->getParameters()[2]->getDefaultValue());
         $this->assertSame('self', $unsupportedEventMethod->getReturnType()?->getName());
     }
 
@@ -210,7 +223,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $unsupportedResultForMethod = $reflection->getMethod('unsupportedResultFor');
 
-        $this->assertSame(['eventType', 'entityKind', 'providerEventType'], array_map(
+        $this->assertSame(['eventType', 'entityKind', 'providerEventType', 'rawData'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $unsupportedResultForMethod->getParameters(),
         ));
@@ -220,6 +233,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($unsupportedResultForMethod->getParameters()[2]->getType()?->allowsNull());
         $this->assertTrue($unsupportedResultForMethod->getParameters()[2]->isDefaultValueAvailable());
         $this->assertNull($unsupportedResultForMethod->getParameters()[2]->getDefaultValue());
+        $this->assertSame(WebhookRawData::class, $unsupportedResultForMethod->getParameters()[3]->getType()?->getName());
+        $this->assertTrue($unsupportedResultForMethod->getParameters()[3]->getType()?->allowsNull());
+        $this->assertTrue($unsupportedResultForMethod->getParameters()[3]->isDefaultValueAvailable());
+        $this->assertNull($unsupportedResultForMethod->getParameters()[3]->getDefaultValue());
         $this->assertSame(WebhookProcessingResult::class, $unsupportedResultForMethod->getReturnType()?->getName());
         $this->assertTrue($unsupportedResultForMethod->getReturnType()?->allowsNull());
 

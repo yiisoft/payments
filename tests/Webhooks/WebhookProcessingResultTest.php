@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
+use Yiisoft\Payments\Webhooks\WebhookRawData;
 
 final class WebhookProcessingResultTest extends TestCase
 {
@@ -86,6 +87,33 @@ final class WebhookProcessingResultTest extends TestCase
             $result->reason->message,
         );
         $this->assertNull($result->reason->providerEventType);
+    }
+
+
+    public function testKnownUnsupportedEventTypeCanKeepRawDataForFallbackDebug(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"charge.refunded","data":{"object":{"id":"ch_123"}}}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: [
+                'type' => 'charge.refunded',
+                'data' => ['object' => ['id' => 'ch_123']],
+            ],
+            providerEventType: 'charge.refunded',
+        );
+
+        $result = WebhookProcessingResult::unsupportedEvent(
+            WebhookEventType::PaymentRefunded,
+            'charge.refunded',
+            $rawData,
+        );
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame('{"type":"charge.refunded","data":{"object":{"id":"ch_123"}}}', $result->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $result->rawData->headers);
+        $this->assertSame('charge.refunded', $result->rawData->providerEventType);
     }
 
     public function testKnownUnsupportedEventTypeCanKeepProviderEventType(): void

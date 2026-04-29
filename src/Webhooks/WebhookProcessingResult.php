@@ -13,6 +13,7 @@ final readonly class WebhookProcessingResult
         public WebhookProcessingStatus $status,
         public ?WebhookEventType $eventType = null,
         public ?WebhookReason $reason = null,
+        public ?WebhookRawData $rawData = null,
     ) {
     }
 
@@ -34,7 +35,11 @@ final readonly class WebhookProcessingResult
     /**
      * Creates a result for a known webhook event type that is recognized but not supported by the current contract.
      */
-    public static function unsupportedEvent(WebhookEventType $eventType, ?string $providerEventType = null): self
+    public static function unsupportedEvent(
+        WebhookEventType $eventType,
+        ?string $providerEventType = null,
+        ?WebhookRawData $rawData = null,
+    ): self
     {
         return new self(
             status: WebhookProcessingStatus::UnsupportedEvent,
@@ -44,6 +49,7 @@ final readonly class WebhookProcessingResult
                 message: 'Webhook event type is recognized but is not supported by the current webhook contract.',
                 providerEventType: $providerEventType,
             ),
+            rawData: $rawData,
         );
     }
 }

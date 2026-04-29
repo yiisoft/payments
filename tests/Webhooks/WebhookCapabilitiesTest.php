@@ -10,6 +10,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
+use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class WebhookCapabilitiesTest extends TestCase
@@ -96,6 +97,32 @@ final class WebhookCapabilitiesTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('unsupported_event_type', $result->reason->code->value);
         $this->assertSame('charge.refunded', $result->reason->providerEventType);
+    }
+
+
+    public function testUnsupportedCapabilityPassesRawDataToUnsupportedProcessingResult(): void
+    {
+        $capabilities = new WebhookCapabilities(new WebhookCapability(
+            eventType: WebhookEventType::PaymentRefunded,
+            entityKind: WebhookEntityKind::Payment,
+            supportStatus: WebhookSupportStatus::Unsupported,
+        ));
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"charge.refunded"}',
+            payload: ['type' => 'charge.refunded'],
+            providerEventType: 'charge.refunded',
+        );
+
+        $result = $capabilities->unsupportedResultFor(
+            WebhookEventType::PaymentRefunded,
+            WebhookEntityKind::Payment,
+            'charge.refunded',
+            $rawData,
+        );
+
+        $this->assertNotNull($result);
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame($rawData, $result->rawData);
     }
 
     public function testSupportedCapabilityDoesNotCreateUnsupportedProcessingResult(): void
