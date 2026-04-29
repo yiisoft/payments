@@ -41,6 +41,11 @@ final class ProviderWebhookProcessorRegistry
         return $this->processors[$providerId] ?? null;
     }
 
+    public function missingProcessorResult(string $providerId, ?WebhookRawData $rawData = null): WebhookProcessingResult
+    {
+        return WebhookProcessingResult::missingProviderProcessor($providerId, $rawData);
+    }
+
     public function has(string $providerId): bool
     {
         return isset($this->processors[$providerId]);

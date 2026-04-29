@@ -34,6 +34,25 @@ final readonly class WebhookProcessingResult
     }
 
     /**
+     * Creates a result for a webhook request whose provider processor is not registered.
+     */
+    public static function missingProviderProcessor(string $providerId, ?WebhookRawData $rawData = null): self
+    {
+        return new self(
+            status: WebhookProcessingStatus::ValidationFailed,
+            reason: new WebhookReason(
+                code: new WebhookReasonCode('missing_provider_processor'),
+                message: sprintf(
+                    'Webhook provider processor is not registered for provider "%s".',
+                    $providerId,
+                ),
+                providerEventType: $rawData?->providerEventType,
+            ),
+            rawData: $rawData,
+        );
+    }
+
+    /**
      * Creates a result for a valid provider webhook event type that is not present in the provider mapping.
      */
     public static function unknownEvent(string $providerEventType): self

@@ -202,4 +202,43 @@ final class WebhookProcessingResultTest extends TestCase
             $this->assertSame('unsupported_event_type', $result->reason->code->value);
         }
     }
+
+    public function testMissingProviderProcessorHasValidationFailedResult(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: ['type' => 'payment_intent.succeeded'],
+            providerEventType: 'payment_intent.succeeded',
+        );
+
+        $result = WebhookProcessingResult::missingProviderProcessor('stripe', $rawData);
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('missing_provider_processor', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook provider processor is not registered for provider "stripe".',
+            $result->reason->message,
+        );
+        $this->assertSame('payment_intent.succeeded', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+    }
+
+    public function testMissingProviderProcessorCanBeReturnedWithoutRawData(): void
+    {
+        $result = WebhookProcessingResult::missingProviderProcessor('robokassa');
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('missing_provider_processor', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook provider processor is not registered for provider "robokassa".',
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
+        $this->assertNull($result->rawData);
+    }
 }

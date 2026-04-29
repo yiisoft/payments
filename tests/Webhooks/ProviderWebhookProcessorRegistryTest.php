@@ -11,6 +11,7 @@ use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
+use Yiisoft\Payments\Webhooks\WebhookRawData;
 
 final class ProviderWebhookProcessorRegistryTest extends TestCase
 {
@@ -42,6 +43,40 @@ final class ProviderWebhookProcessorRegistryTest extends TestCase
         $this->assertSame($stripeProcessor, $registry->get('stripe'));
         $this->assertNull($registry->get('Stripe'));
         $this->assertNull($registry->get(' stripe '));
+    }
+
+    public function testRegistryReturnsValidationFailedResultForMissingProviderProcessor(): void
+    {
+        $registry = new ProviderWebhookProcessorRegistry($this->createProcessor('stripe'));
+
+        $result = $registry->missingProcessorResult('paypal');
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('missing_provider_processor', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook provider processor is not registered for provider "paypal".',
+            $result->reason->message,
+        );
+    }
+
+    public function testRegistryKeepsRawDataForMissingProviderProcessor(): void
+    {
+        $registry = new ProviderWebhookProcessorRegistry($this->createProcessor('stripe'));
+        $rawData = new WebhookRawData(
+            rawBody: '{"event":"payment.captured"}',
+            headers: ['X-Provider' => 'paypal'],
+            payload: ['event' => 'payment.captured'],
+            providerEventType: 'payment.captured',
+        );
+
+        $result = $registry->missingProcessorResult('paypal', $rawData);
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('payment.captured', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
     }
 
     public function testRegistryRejectsEmptyProviderId(): void
