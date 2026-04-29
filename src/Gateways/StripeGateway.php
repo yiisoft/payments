@@ -12,8 +12,14 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Yiisoft\Payments\Endpoints\StripeEndpoints;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
-class StripeGateway extends AbstractGateway
+class StripeGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     private string $apiVersion = '2023-10-16';
 
@@ -324,6 +330,52 @@ class StripeGateway extends AbstractGateway
             metadata: $response['metadata'],
             status: $response['status'],
             createdAt: $response['created'],
+        );
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        return new WebhookCapabilities(
+            new WebhookCapability(
+                WebhookEventType::PaymentCreated,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentProcessing,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRequiresAction,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRequiresCapture,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentSucceeded,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentFailed,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentCanceled,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRefunded,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
         );
     }
 }
