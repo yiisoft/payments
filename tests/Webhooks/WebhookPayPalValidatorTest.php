@@ -28,7 +28,7 @@ final class WebhookPayPalValidatorTest extends TestCase
         new WebhookPayPalValidator('   ');
     }
 
-    public function testReturnsValidationFailureUntilPayPalValidationIsImplemented(): void
+    public function testReturnsValidationFailureForR1LimitationWithoutLiveVerification(): void
     {
         $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
@@ -38,8 +38,11 @@ final class WebhookPayPalValidatorTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('paypal_webhook_validation_not_implemented', $result->reason->code->value);
-        $this->assertSame('PayPal webhook validation is not implemented yet.', $result->reason->message);
+        $this->assertSame('paypal_live_verification_not_supported_in_r1', $result->reason->code->value);
+        $this->assertSame(
+            'PayPal webhook validation in R1 does not perform live certificate or PayPal API verification.',
+            $result->reason->message,
+        );
         $this->assertNull($result->reason->providerEventType);
     }
 
@@ -101,7 +104,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('paypal_webhook_validation_not_implemented', $result->reason->code->value);
+        $this->assertSame('paypal_live_verification_not_supported_in_r1', $result->reason->code->value);
     }
 
     public function testRequiredTransmissionHeadersMayUseMultiValueHeaders(): void
@@ -117,7 +120,20 @@ final class WebhookPayPalValidatorTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('paypal_webhook_validation_not_implemented', $result->reason->code->value);
+        $this->assertSame('paypal_live_verification_not_supported_in_r1', $result->reason->code->value);
+    }
+
+    public function testDoesNotExposeSuccessWithoutExplicitLiveVerificationSupport(): void
+    {
+        $result = (new WebhookPayPalValidator('WH-123'))->validate(new WebhookInput(
+            rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+            headers: $this->requiredTransmissionHeaders(),
+            providerId: 'paypal',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_live_verification_not_supported_in_r1', $result->reason->code->value);
     }
 
     /**

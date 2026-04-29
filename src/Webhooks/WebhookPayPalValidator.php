@@ -8,9 +8,16 @@ use InvalidArgumentException;
 
 /**
  * Provider-specific validator skeleton for PayPal webhook requests.
+ *
+ * R1 only checks the local validation preconditions required to identify a
+ * PayPal webhook validation attempt. It intentionally does not perform live
+ * certificate or PayPal API verification until that behavior is agreed and
+ * introduced explicitly.
  */
 final readonly class WebhookPayPalValidator implements WebhookProviderValidatorInterface
 {
+    private const R1_LIMITATION_REASON_CODE = 'paypal_live_verification_not_supported_in_r1';
+
     public function __construct(
         private string $webhookId,
     ) {
@@ -56,8 +63,8 @@ final readonly class WebhookPayPalValidator implements WebhookProviderValidatorI
         }
 
         return WebhookValidationResult::failure(new WebhookReason(
-            code: new WebhookReasonCode('paypal_webhook_validation_not_implemented'),
-            message: 'PayPal webhook validation is not implemented yet.',
+            code: new WebhookReasonCode(self::R1_LIMITATION_REASON_CODE),
+            message: 'PayPal webhook validation in R1 does not perform live certificate or PayPal API verification.',
         ));
     }
 }
