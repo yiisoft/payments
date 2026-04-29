@@ -6,11 +6,13 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
 use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
+use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 
@@ -77,6 +79,40 @@ final class WebhookProcessorTest extends TestCase
         $this->assertSame(0, $stripeProcessor->processCalls);
         $this->assertNull($stripeProcessor->processedInput);
         $this->assertSame(1, $paypalProcessor->processCalls);
+    }
+
+    public function testProcessorReturnsUnsupportedCapabilityResultFromProviderProcessor(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"charge.refunded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: ['type' => 'charge.refunded'],
+            providerEventType: 'charge.refunded',
+        );
+        $expectedResult = WebhookProcessingResult::unsupportedEvent(
+            WebhookEventType::PaymentRefunded,
+            'charge.refunded',
+            $rawData,
+        );
+        $providerProcessor = $this->createTrackingProviderProcessor('stripe', $expectedResult);
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
+        $input = new WebhookInput(
+            rawBody: '{"type":"charge.refunded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            providerId: 'stripe',
+        );
+
+        $result = $processor->process($input);
+
+        $this->assertSame($expectedResult, $result);
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame('charge.refunded', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame(1, $providerProcessor->processCalls);
+        $this->assertSame($input, $providerProcessor->processedInput);
     }
 
     public function testProcessorReturnsMissingProviderProcessorResultWhenProcessorIsNotRegistered(): void
