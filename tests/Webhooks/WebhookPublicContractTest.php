@@ -12,6 +12,7 @@ use ReflectionMethod;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
+use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
@@ -179,6 +180,35 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame('signingSecret', $constructor->getParameters()[0]->getName());
         $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
         $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+
+        $providerIdMethod = $reflection->getMethod('getProviderId');
+
+        $this->assertSame(0, $providerIdMethod->getNumberOfParameters());
+        $this->assertSame('string', $providerIdMethod->getReturnType()?->getName());
+        $this->assertFalse($providerIdMethod->getReturnType()?->allowsNull());
+
+        $validateMethod = $reflection->getMethod('validate');
+
+        $this->assertSame(1, $validateMethod->getNumberOfParameters());
+        $this->assertSame('input', $validateMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookInput::class, $validateMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($validateMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame(WebhookValidationResult::class, $validateMethod->getReturnType()?->getName());
+        $this->assertFalse($validateMethod->getReturnType()?->allowsNull());
+    }
+
+    public function testWebhookPayPalValidatorContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookPayPalValidator::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertTrue($reflection->implementsInterface(WebhookProviderValidatorInterface::class));
+        $this->assertSame(['getProviderId', 'validate'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNull($constructor);
 
         $providerIdMethod = $reflection->getMethod('getProviderId');
 
