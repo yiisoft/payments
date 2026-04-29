@@ -12,11 +12,13 @@ final readonly class WebhookRawData
     /**
      * @param array<string, string|list<string>> $headers
      * @param mixed $payload Provider payload decoded by a later processing step, if available.
+     * @param string|null $providerEventType Provider-specific event type extracted by a later processing step, if available.
      */
     public function __construct(
         public string $rawBody,
         public array $headers = [],
         public mixed $payload = null,
+        public ?string $providerEventType = null,
     ) {
     }
 
@@ -36,5 +38,13 @@ final readonly class WebhookRawData
     public function getPayload(): mixed
     {
         return $this->payload;
+    }
+
+    /**
+     * Returns the provider-specific event type extracted by a later processing step, if available.
+     */
+    public function getProviderEventType(): ?string
+    {
+        return $this->providerEventType;
     }
 }
