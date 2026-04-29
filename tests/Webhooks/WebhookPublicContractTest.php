@@ -82,7 +82,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertTrue($reflection->isFinal());
         $this->assertTrue($reflection->isReadOnly());
-        $this->assertSame(['__construct', 'unknownEvent'], $this->methodNames($reflection));
+        $this->assertSame(['__construct', 'unknownEvent', 'unsupportedEvent'], $this->methodNames($reflection));
 
         $constructor = $reflection->getConstructor();
 
@@ -120,6 +120,19 @@ final class WebhookPublicContractTest extends TestCase
         ));
         $this->assertSame('string', $unknownEventMethod->getParameters()[0]->getType()?->getName());
         $this->assertSame('self', $unknownEventMethod->getReturnType()?->getName());
+
+        $unsupportedEventMethod = $reflection->getMethod('unsupportedEvent');
+
+        $this->assertSame(['eventType', 'providerEventType'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $unsupportedEventMethod->getParameters(),
+        ));
+        $this->assertSame(WebhookEventType::class, $unsupportedEventMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame('string', $unsupportedEventMethod->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($unsupportedEventMethod->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($unsupportedEventMethod->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($unsupportedEventMethod->getParameters()[1]->getDefaultValue());
+        $this->assertSame('self', $unsupportedEventMethod->getReturnType()?->getName());
     }
 
     public function testWebhookReasonCodeContractIsStable(): void

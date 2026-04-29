@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 
@@ -71,4 +72,33 @@ final class WebhookProcessingResultTest extends TestCase
             $this->assertSame($providerEventType, $result->reason->providerEventType);
         }
     }
+
+    public function testKnownUnsupportedEventTypeHasUnsupportedEventResult(): void
+    {
+        $result = WebhookProcessingResult::unsupportedEvent(WebhookEventType::PaymentRefunded);
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook event type is recognized but is not supported by the current webhook contract.',
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testKnownUnsupportedEventTypeCanKeepProviderEventType(): void
+    {
+        $result = WebhookProcessingResult::unsupportedEvent(
+            WebhookEventType::PaymentRefunded,
+            'charge.refunded',
+        );
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('charge.refunded', $result->reason->providerEventType);
+    }
+
 }

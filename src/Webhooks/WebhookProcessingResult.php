@@ -30,4 +30,20 @@ final readonly class WebhookProcessingResult
             ),
         );
     }
+
+    /**
+     * Creates a result for a known webhook event type that is recognized but not supported by the current contract.
+     */
+    public static function unsupportedEvent(WebhookEventType $eventType, ?string $providerEventType = null): self
+    {
+        return new self(
+            status: WebhookProcessingStatus::UnsupportedEvent,
+            eventType: $eventType,
+            reason: new WebhookReason(
+                code: new WebhookReasonCode('unsupported_event_type'),
+                message: 'Webhook event type is recognized but is not supported by the current webhook contract.',
+                providerEventType: $providerEventType,
+            ),
+        );
+    }
 }
