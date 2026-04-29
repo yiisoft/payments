@@ -13,9 +13,15 @@ final readonly class WebhookStripeValidator implements WebhookProviderValidatorI
 {
     public function __construct(
         private string $signingSecret,
+        private int $timestampToleranceSeconds = 300,
+        private ?int $currentTimestamp = null,
     ) {
         if (trim($signingSecret) === '') {
             throw new InvalidArgumentException('Stripe webhook signing secret must be a non-empty string.');
+        }
+
+        if ($timestampToleranceSeconds < 1) {
+            throw new InvalidArgumentException('Stripe webhook timestamp tolerance must be a positive integer.');
         }
     }
 
@@ -92,6 +98,13 @@ final readonly class WebhookStripeValidator implements WebhookProviderValidatorI
             ));
         }
 
+        if (abs($this->getCurrentTimestamp() - (int) $timestamp) > $this->timestampToleranceSeconds) {
+            return WebhookValidationResult::failure(new WebhookReason(
+                code: new WebhookReasonCode('stripe_signature_timestamp_out_of_tolerance'),
+                message: 'Stripe-Signature header timestamp is outside the allowed tolerance.',
+            ));
+        }
+
         $expectedSignature = hash_hmac('sha256', $timestamp . '.' . $input->rawBody, $this->signingSecret);
 
         foreach ($signatures as $signature) {
@@ -104,5 +117,10 @@ final readonly class WebhookStripeValidator implements WebhookProviderValidatorI
             code: new WebhookReasonCode('stripe_signature_mismatch'),
             message: 'Stripe webhook signature does not match the request payload.',
         ));
+    }
+
+    private function getCurrentTimestamp(): int
+    {
+        return $this->currentTimestamp ?? time();
     }
 }

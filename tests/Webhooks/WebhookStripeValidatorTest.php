@@ -28,6 +28,14 @@ final class WebhookStripeValidatorTest extends TestCase
         new WebhookStripeValidator('   ');
     }
 
+    public function testTimestampToleranceMustBePositive(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Stripe webhook timestamp tolerance must be a positive integer.');
+
+        new WebhookStripeValidator('whsec_test_secret', 0);
+    }
+
     public function testReturnsValidationFailureWhenSignatureHeaderIsMissing(): void
     {
         $result = $this->validator()->validate(new WebhookInput(
@@ -107,6 +115,27 @@ final class WebhookStripeValidatorTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('stripe_signature_missing', $result->reason->code->value);
         $this->assertSame('Stripe-Signature header does not contain a v1 signature.', $result->reason->message);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testReturnsValidationFailureWhenSignatureTimestampIsOutsideTolerance(): void
+    {
+        $rawBody = '{"id":"evt_123","type":"payment_intent.succeeded"}';
+        $timestamp = '1699999699';
+        $signature = hash_hmac('sha256', $timestamp . '.' . $rawBody, 'whsec_test_secret');
+
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: [
+                'Stripe-Signature' => 't=' . $timestamp . ',v1=' . $signature,
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('stripe_signature_timestamp_out_of_tolerance', $result->reason->code->value);
+        $this->assertSame('Stripe-Signature header timestamp is outside the allowed tolerance.', $result->reason->message);
         $this->assertNull($result->reason->providerEventType);
     }
 
@@ -202,6 +231,10 @@ final class WebhookStripeValidatorTest extends TestCase
 
     private function validator(): WebhookStripeValidator
     {
-        return new WebhookStripeValidator('whsec_test_secret');
+        return new WebhookStripeValidator(
+            signingSecret: 'whsec_test_secret',
+            timestampToleranceSeconds: 300,
+            currentTimestamp: 1700000000,
+        );
     }
 }
