@@ -390,7 +390,7 @@ final class WebhookPublicContractTest extends TestCase
         $reflection = new ReflectionClass(WebhookProviderProcessorRegistry::class);
 
         $this->assertTrue($reflection->isFinal());
-        $this->assertSame(['__construct', 'get', 'missingProcessorResult', 'has'], $this->methodNames($reflection));
+        $this->assertSame(['__construct', 'get', 'has', 'missingProcessorResult'], $this->methodNames($reflection));
 
         $constructor = $reflection->getConstructor();
 
