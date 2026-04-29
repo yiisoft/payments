@@ -185,10 +185,19 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(1, $constructor->getNumberOfParameters());
+        $this->assertSame(3, $constructor->getNumberOfParameters());
+        $this->assertSame(1, $constructor->getNumberOfRequiredParameters());
         $this->assertSame('signingSecret', $constructor->getParameters()[0]->getName());
         $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
         $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('timestampToleranceSeconds', $constructor->getParameters()[1]->getName());
+        $this->assertSame('int', $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertFalse($constructor->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertSame('currentTimestamp', $constructor->getParameters()[2]->getName());
+        $this->assertSame('int', $constructor->getParameters()[2]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[2]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[2]->isDefaultValueAvailable());
 
         $providerIdMethod = $reflection->getMethod('getProviderId');
 
