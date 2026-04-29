@@ -809,6 +809,38 @@ interface WebhookProcessorInterface
 }
 ```
 
+#### `WebhookProviderProcessorInterface`
+
+Provider-specific webhook event processor registered under a stable provider identifier.
+It runs only after provider-specific request validation succeeds.
+
+```php
+interface WebhookProviderProcessorInterface
+{
+    public function getProviderId(): string;
+
+    public function process(WebhookInput $input): WebhookProcessingResult;
+}
+```
+
+#### `WebhookProviderProcessorRegistry`
+
+Registry and resolver for provider-specific webhook processors. The common processor uses it to select
+the processor that matches `WebhookInput::$providerId`.
+
+```php
+final class WebhookProviderProcessorRegistry
+{
+    public function __construct(WebhookProviderProcessorInterface ...$processors);
+
+    public function get(string $providerId): ?WebhookProviderProcessorInterface;
+
+    public function missingProcessorResult(string $providerId, ?WebhookRawData $rawData = null): WebhookProcessingResult;
+
+    public function has(string $providerId): bool;
+}
+```
+
 #### `WebhookProviderValidatorInterface`
 
 Provider-specific verification of signatures, headers, secrets, and other authenticity markers for one payment provider.
@@ -819,6 +851,22 @@ interface WebhookProviderValidatorInterface
     public function getProviderId(): string;
 
     public function validate(WebhookInput $input): WebhookValidationResult;
+}
+```
+
+#### `WebhookProviderValidatorRegistry`
+
+Registry and resolver for provider-specific webhook validators. The common processor uses it to select
+the validator that matches `WebhookInput::$providerId` before running provider event processing.
+
+```php
+final class WebhookProviderValidatorRegistry
+{
+    public function __construct(WebhookProviderValidatorInterface ...$validators);
+
+    public function get(string $providerId): ?WebhookProviderValidatorInterface;
+
+    public function has(string $providerId): bool;
 }
 ```
 
