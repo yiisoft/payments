@@ -56,4 +56,31 @@ final class WebhookInputTest extends TestCase
 
         $this->assertSame($headers, $input->getHeaders());
     }
+
+    public function testHeaderLookupSupportsDifferentHeaderNameCases(): void
+    {
+        $input = new WebhookInput(
+            rawBody: '{}',
+            headers: [
+                'Stripe-Signature' => 'test_signature',
+            ],
+        );
+
+        foreach (['stripe-signature', 'STRIPE-SIGNATURE', 'Stripe-Signature', 'sTrIpE-sIgNaTuRe'] as $lookupName) {
+            $this->assertSame(['test_signature'], $input->getHeader($lookupName));
+        }
+    }
+
+    public function testHeaderLookupKeepsOriginalHeaderNamesWhenUsingDifferentCases(): void
+    {
+        $headers = [
+            'Stripe-Signature' => 'test_signature',
+            'X-Custom-Signature' => 'custom_signature',
+        ];
+        $input = new WebhookInput(rawBody: '{}', headers: $headers);
+
+        $this->assertSame(['test_signature'], $input->getHeader('stripe-signature'));
+        $this->assertSame(['custom_signature'], $input->getHeader('x-custom-signature'));
+        $this->assertSame($headers, $input->getHeaders());
+    }
 }
