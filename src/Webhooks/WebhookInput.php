@@ -10,7 +10,7 @@ namespace Yiisoft\Payments\Webhooks;
 final readonly class WebhookInput
 {
     /**
-     * @param array<string, list<string>> $headers
+     * @param array<string, string|list<string>> $headers
      * @param array<string, mixed> $queryParams
      * @param array<string, mixed> $bodyParams
      */
@@ -24,9 +24,9 @@ final readonly class WebhookInput
     }
 
     /**
-     * Returns the original header map without normalizing header names.
+     * Returns the original header map without normalizing header names or values.
      *
-     * @return array<string, list<string>>
+     * @return array<string, string|list<string>>
      */
     public function getHeaders(): array
     {
@@ -43,10 +43,18 @@ final readonly class WebhookInput
 
         foreach ($this->headers as $headerName => $headerValues) {
             if (strtolower($headerName) === $normalizedName) {
-                array_push($values, ...$headerValues);
+                array_push($values, ...$this->normalizeHeaderValues($headerValues));
             }
         }
 
         return $values;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizeHeaderValues(string|array $headerValues): array
+    {
+        return is_string($headerValues) ? [$headerValues] : array_values($headerValues);
     }
 }
