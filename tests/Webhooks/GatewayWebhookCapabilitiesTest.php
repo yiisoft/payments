@@ -14,6 +14,9 @@ use Yiisoft\Payments\Gateways\YooKassaGateway;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class GatewayWebhookCapabilitiesTest extends TestCase
 {
@@ -26,6 +29,23 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
 
             $this->assertGreaterThan(0, $capabilities->count());
             $this->assertContainsOnlyInstancesOf(WebhookCapability::class, $capabilities->all());
+        }
+    }
+
+    public function testAllGatewaysDeclareR1PaymentRelatedScope(): void
+    {
+        foreach ($this->createGateways() as $gateway) {
+            $capabilities = $gateway->getWebhookCapabilities()->all();
+
+            $this->assertSame($this->expectedR1PaymentEventTypes(), array_map(
+                static fn (WebhookCapability $capability): WebhookEventType => $capability->eventType,
+                $capabilities,
+            ));
+
+            foreach ($capabilities as $capability) {
+                $this->assertSame(WebhookEntityKind::Payment, $capability->entityKind);
+                $this->assertSame(WebhookSupportStatus::Supported, $capability->supportStatus);
+            }
         }
     }
 
@@ -74,6 +94,23 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
                 $psr17Factory,
                 $logger,
             ),
+        ];
+    }
+
+    /**
+     * @return list<WebhookEventType>
+     */
+    private function expectedR1PaymentEventTypes(): array
+    {
+        return [
+            WebhookEventType::PaymentCreated,
+            WebhookEventType::PaymentProcessing,
+            WebhookEventType::PaymentRequiresAction,
+            WebhookEventType::PaymentRequiresCapture,
+            WebhookEventType::PaymentSucceeded,
+            WebhookEventType::PaymentFailed,
+            WebhookEventType::PaymentCanceled,
+            WebhookEventType::PaymentRefunded,
         ];
     }
 }
