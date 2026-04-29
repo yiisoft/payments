@@ -204,6 +204,47 @@ final class WebhookRobokassaValidatorTest extends TestCase
         ];
     }
 
+    #[DataProvider('conflictingRequiredParameterAcrossRequestPartsProvider')]
+    public function testRejectsConflictingRequiredParameterAcrossRequestParts(string $parameterName): void
+    {
+        $queryParams = [
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'SignatureValue' => md5('100.00:123:pass2'),
+        ];
+        $bodyParams = [
+            $parameterName => $parameterName === 'SignatureValue'
+                ? md5('100.00:123:another-pass2')
+                : 'different-value',
+        ];
+
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: $queryParams,
+            bodyParams: $bodyParams,
+            providerId: 'robokassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('robokassa_callback_parameter_conflict', $result->reason->code->value);
+        $this->assertSame(
+            sprintf('Robokassa callback parameter "%s" is present in query and body with different values.', $parameterName),
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function conflictingRequiredParameterAcrossRequestPartsProvider(): iterable
+    {
+        yield 'conflicting OutSum' => ['OutSum'];
+        yield 'conflicting InvId' => ['InvId'];
+        yield 'conflicting SignatureValue' => ['SignatureValue'];
+    }
+
     #[DataProvider('missingRequiredParameterAcrossRequestPartsProvider')]
     public function testRejectsMissingRequiredParameterAcrossRequestParts(
         array $queryParams,
