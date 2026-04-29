@@ -72,6 +72,78 @@ final class WebhookYooKassaValidatorTest extends TestCase
         $this->assertSame('payment.succeeded', $result->reason->providerEventType);
     }
 
+    public function testAcceptsValidPaymentSucceededRequestStructureBeforeR1AuthenticityLimitation(): void
+    {
+        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+            rawBody: json_encode([
+                'type' => 'notification',
+                'event' => 'payment.succeeded',
+                'object' => [
+                    'id' => 'payment-id',
+                    'status' => 'succeeded',
+                    'paid' => true,
+                ],
+            ], JSON_THROW_ON_ERROR),
+            headers: ['Content-Type' => ['application/json']],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
+        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+    }
+
+    public function testAcceptsValidRefundSucceededRequestStructureBeforeR1AuthenticityLimitation(): void
+    {
+        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+            rawBody: json_encode([
+                'type' => 'notification',
+                'event' => 'refund.succeeded',
+                'object' => [
+                    'id' => 'refund-id',
+                    'status' => 'succeeded',
+                    'payment_id' => 'payment-id',
+                ],
+            ], JSON_THROW_ON_ERROR),
+            headers: ['Content-Type' => ['application/json']],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
+        $this->assertSame('refund.succeeded', $result->reason->providerEventType);
+    }
+
+    public function testAcceptsValidRequestStructureWithAdditionalPayloadFieldsBeforeR1AuthenticityLimitation(): void
+    {
+        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+            rawBody: json_encode([
+                'type' => 'notification',
+                'event' => 'payment.canceled',
+                'object' => [
+                    'id' => 'payment-id',
+                    'status' => 'canceled',
+                    'metadata' => [
+                        'order_id' => 'order-123',
+                    ],
+                ],
+                'extra_provider_field' => 'extra-value',
+            ], JSON_THROW_ON_ERROR),
+            headers: [
+                'Content-Type' => ['application/json'],
+                'User-Agent' => ['YooKassa'],
+            ],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
+        $this->assertSame('payment.canceled', $result->reason->providerEventType);
+    }
+
     public function testRejectsEmptyPayload(): void
     {
         $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
