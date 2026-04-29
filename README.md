@@ -974,24 +974,22 @@ readonly class WebhookPayload
 
 #### `WebhookContext`
 
-The normalized webhook context returned to user code after validation, event recognition, payload parsing, and mapping.
+The normalized webhook context returned to user code after validation and provider-specific processing.
+It carries the provider identifier, recognized event type, processing status, optional failure reasons,
+and the original input/raw data for diagnostics and application-level handling.
 
 ```php
-use Yiisoft\Payments\Models\PaymentIntent;
-
 readonly class WebhookContext
 {
     public function __construct(
-        public bool $isValid,
-        public bool $isSupported,
-        public ?string $provider = null,
-        public ?string $entityKind = null,
-        public ?string $eventName = null,
-        public ?string $rawEventName = null,
-        public ?string $paymentStatus = null,
-        public ?PaymentIntent $paymentIntent = null,
-        public string $rawBody = '',
-        public array $rawHeaders = [],
+        public ?string $providerId = null,
+        public ?WebhookEventType $eventType = null,
+        public ?WebhookProcessingStatus $status = null,
+        public ?WebhookReason $validationFailureReason = null,
+        public ?WebhookReason $unsupportedEventReason = null,
+        public ?WebhookReason $unknownEventReason = null,
+        public ?WebhookInput $rawInput = null,
+        public ?WebhookRawData $rawData = null,
     ) {
     }
 }
