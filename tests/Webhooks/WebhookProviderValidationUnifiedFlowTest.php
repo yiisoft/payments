@@ -94,6 +94,56 @@ final class WebhookProviderValidationUnifiedFlowTest extends TestCase
         $this->assertNull($providerProcessor->processedInput);
     }
 
+    public function testConflictingRobokassaCallbackParameterReturnsSingleValidationFailureReasonBeforeProviderProcessing(): void
+    {
+        $providerProcessor = new SuccessfulWebhookProviderProcessor('robokassa');
+        $processor = new WebhookProcessor(
+            new WebhookProviderProcessorRegistry($providerProcessor),
+            new WebhookProviderValidatorRegistry(new WebhookRobokassaValidator('pass2')),
+        );
+        $input = new WebhookInput(
+            rawBody: 'OutSum=100.00&InvId=123&SignatureValue=' . md5('100.00:123:pass2'),
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => md5('100.00:123:pass2'),
+            ],
+            bodyParams: [
+                'OutSum' => '200.00',
+            ],
+            providerId: 'robokassa',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $context->status);
+        $this->assertNull($context->eventType);
+        $this->assertNotNull($context->validationFailureReason);
+        $this->assertSame('robokassa_callback_parameter_conflict', $context->validationFailureReason->code->value);
+        $this->assertSame(
+            'Robokassa callback parameter "OutSum" is present in query and body with different values.',
+            $context->validationFailureReason->message,
+        );
+        $this->assertNull($context->validationFailureReason->providerEventType);
+        $this->assertNull($context->unsupportedEventReason);
+        $this->assertNull($context->unknownEventReason);
+        $this->assertSame($input, $context->rawInput);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('OutSum=100.00&InvId=123&SignatureValue=' . md5('100.00:123:pass2'), $context->rawData->rawBody);
+        $this->assertSame(['Content-Type' => 'application/x-www-form-urlencoded'], $context->rawData->headers);
+        $this->assertSame([
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'SignatureValue' => md5('100.00:123:pass2'),
+        ], $context->rawData->queryParams);
+        $this->assertSame(['OutSum' => '200.00'], $context->rawData->bodyParams);
+        $this->assertNull($context->rawData->payload);
+        $this->assertNull($context->rawData->providerEventType);
+        $this->assertSame(0, $providerProcessor->processCalls);
+        $this->assertNull($providerProcessor->processedInput);
+    }
+
     public function testMissingRobokassaRequiredParameterReturnsValidationFailedContextBeforeProviderProcessing(): void
     {
         $providerProcessor = new SuccessfulWebhookProviderProcessor('robokassa');
