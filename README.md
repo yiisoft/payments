@@ -1151,7 +1151,9 @@ function handleWebhookProcessingFailure(WebhookContext $context): void
 }
 ```
 
-If the context status is `WebhookProcessingStatus::ValidationFailed`, the request failed provider-specific validation.
+If the context status is `WebhookProcessingStatus::ValidationFailed`, the request failed before provider event processing.
+This includes provider-specific request validation failures and missing provider processors, for example with the
+`missing_provider_processor` reason code.
 If the context status is `WebhookProcessingStatus::UnknownEvent` or `WebhookProcessingStatus::UnsupportedEvent`,
 the request is valid but the event is unknown, unsupported, or outside the current normalization scope.
 In these cases, the context still exposes the raw request data needed for diagnostics or custom fallback handling.
