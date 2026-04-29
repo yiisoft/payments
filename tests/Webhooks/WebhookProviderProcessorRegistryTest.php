@@ -15,6 +15,14 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 
 final class WebhookProviderProcessorRegistryTest extends TestCase
 {
+    public function testEmptyRegistryDoesNotResolveAnyProviderProcessor(): void
+    {
+        $registry = new WebhookProviderProcessorRegistry();
+
+        $this->assertFalse($registry->has('stripe'));
+        $this->assertNull($registry->get('stripe'));
+    }
+
     public function testRegistryResolvesProviderProcessorByProviderId(): void
     {
         $stripeProcessor = $this->createProcessor('stripe');
@@ -43,6 +51,22 @@ final class WebhookProviderProcessorRegistryTest extends TestCase
         $this->assertSame($stripeProcessor, $registry->get('stripe'));
         $this->assertNull($registry->get('Stripe'));
         $this->assertNull($registry->get(' stripe '));
+    }
+
+    public function testRegistryResolvesExactProviderIdsIndependently(): void
+    {
+        $lowercaseStripeProcessor = $this->createProcessor('stripe');
+        $uppercaseStripeProcessor = $this->createProcessor('Stripe');
+        $spacedStripeProcessor = $this->createProcessor(' stripe ');
+        $registry = new WebhookProviderProcessorRegistry(
+            $lowercaseStripeProcessor,
+            $uppercaseStripeProcessor,
+            $spacedStripeProcessor,
+        );
+
+        $this->assertSame($lowercaseStripeProcessor, $registry->get('stripe'));
+        $this->assertSame($uppercaseStripeProcessor, $registry->get('Stripe'));
+        $this->assertSame($spacedStripeProcessor, $registry->get(' stripe '));
     }
 
     public function testRegistryReturnsValidationFailedResultForMissingProviderProcessor(): void
@@ -85,6 +109,14 @@ final class WebhookProviderProcessorRegistryTest extends TestCase
         $this->expectExceptionMessage('Webhook provider processor ID must be a non-empty string.');
 
         new WebhookProviderProcessorRegistry($this->createProcessor(''));
+    }
+
+    public function testRegistryRejectsWhitespaceOnlyProviderId(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Webhook provider processor ID must be a non-empty string.');
+
+        new WebhookProviderProcessorRegistry($this->createProcessor('   '));
     }
 
     public function testRegistryRejectsDuplicateProviderId(): void
