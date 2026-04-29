@@ -13,6 +13,12 @@ use Yiisoft\Payments\Exceptions\PaymentException;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 /**
  * Robokassa gateway implementation.
@@ -40,7 +46,7 @@ use Yiisoft\Payments\Models\PaymentMethod;
  * - Internally this library uses integer minor units (e.g. cents). Robokassa expects decimal strings (e.g. "10.00").
  * - This gateway converts between these representations assuming 2 decimal places.
  */
-final class RobokassaGateway extends AbstractGateway
+final class RobokassaGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     private const STATUS_SUCCEEDED = 'SUCCEEDED';
     private const STATUS_PENDING = 'PENDING';
@@ -528,6 +534,52 @@ final class RobokassaGateway extends AbstractGateway
         }
 
         return $data;
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        return new WebhookCapabilities(
+            new WebhookCapability(
+                WebhookEventType::PaymentCreated,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentProcessing,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRequiresAction,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRequiresCapture,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentSucceeded,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentFailed,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentCanceled,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+            new WebhookCapability(
+                WebhookEventType::PaymentRefunded,
+                WebhookEntityKind::Payment,
+                WebhookSupportStatus::Supported,
+            ),
+        );
     }
 
     private function extractRobokassaErrorMessage(array $data): ?string
