@@ -900,16 +900,21 @@ readonly class WebhookInput
 
 #### `WebhookValidationResult`
 
-Validation result for the incoming webhook request.
+Validation result for the incoming webhook request. A successful result must not contain a reason.
+A failed result must contain exactly one `WebhookReason`.
 
 ```php
 readonly class WebhookValidationResult
 {
     public function __construct(
         public bool $isValid,
-        public ?string $reason = null,
+        public ?WebhookReason $reason = null,
     ) {
     }
+
+    public static function success(): self;
+
+    public static function failure(WebhookReason $reason): self;
 }
 ```
 
