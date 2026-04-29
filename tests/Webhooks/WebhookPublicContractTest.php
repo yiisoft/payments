@@ -14,6 +14,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
@@ -73,6 +74,45 @@ final class WebhookPublicContractTest extends TestCase
             static fn (WebhookProcessingStatus $status): string => $status->name,
             WebhookProcessingStatus::cases(),
         ));
+    }
+
+    public function testWebhookProcessingResultContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookProcessingResult::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertSame(['__construct', 'unknownEvent'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(['status', 'eventType', 'reason'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $constructor->getParameters(),
+        ));
+        $this->assertSame(WebhookProcessingStatus::class, $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookEventType::class, $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[1]->getDefaultValue());
+        $this->assertSame(WebhookReason::class, $constructor->getParameters()[2]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[2]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[2]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[2]->getDefaultValue());
+
+        $this->assertSame(WebhookProcessingStatus::class, $reflection->getProperty('status')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('status')->isPublic());
+        $this->assertTrue($reflection->getProperty('status')->isReadOnly());
+        $this->assertSame(WebhookEventType::class, $reflection->getProperty('eventType')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('eventType')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('eventType')->isPublic());
+        $this->assertTrue($reflection->getProperty('eventType')->isReadOnly());
+        $this->assertSame(WebhookReason::class, $reflection->getProperty('reason')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('reason')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('reason')->isPublic());
+        $this->assertTrue($reflection->getProperty('reason')->isReadOnly());
+        $this->assertSame('self', $reflection->getMethod('unknownEvent')->getReturnType()?->getName());
     }
 
     public function testWebhookReasonCodeContractIsStable(): void
