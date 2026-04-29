@@ -11,10 +11,12 @@ final readonly class WebhookRawData
 {
     /**
      * @param array<string, string|list<string>> $headers
+     * @param mixed $payload Provider payload decoded by a later processing step, if available.
      */
     public function __construct(
         public string $rawBody,
         public array $headers = [],
+        public mixed $payload = null,
     ) {
     }
 
@@ -26,5 +28,13 @@ final readonly class WebhookRawData
     public function getHeaders(): array
     {
         return $this->headers;
+    }
+
+    /**
+     * Returns the provider payload decoded by a later processing step, if available.
+     */
+    public function getPayload(): mixed
+    {
+        return $this->payload;
     }
 }
