@@ -1480,35 +1480,93 @@ function handleStripeHttpRequest(ServerRequestInterface $httpRequest): void
         headers: $httpRequest->getHeaders(),
     );
 
-    if ($context->status === WebhookProcessingStatus::Processed) {
-        $eventType = $context->eventType;
-        $rawData = $context->rawData;
-
-        // Application-specific handling:
-        // - update the local payment record;
-        // - use the normalized payment event type;
-        // - store raw webhook data for diagnostics when needed.
-        return;
-    }
-
-    handleWebhookProcessingFailure($context);
+    handleWebhookContext($context);
 }
 
-function handleWebhookProcessingFailure(WebhookContext $context): void
+function handleWebhookContext(WebhookContext $context): void
 {
+    $rawData = $context->rawData;
+    $providerEventType = $rawData?->providerEventType;
+
+    switch ($context->status) {
+        case WebhookProcessingStatus::Processed:
+            handleProcessedWebhookContext($context);
+            return;
+
+        case WebhookProcessingStatus::ValidationFailed:
+            logWebhookDiagnostic(
+                reason: $context->validationFailureReason?->message ?? 'Webhook validation failed.',
+                providerEventType: $providerEventType,
+                rawData: $rawData,
+            );
+            return;
+
+        case WebhookProcessingStatus::UnknownEvent:
+            logWebhookDiagnostic(
+                reason: $context->unknownEventReason?->message ?? 'Unknown provider webhook event type.',
+                providerEventType: $providerEventType,
+                rawData: $rawData,
+            );
+            return;
+
+        case WebhookProcessingStatus::UnsupportedEvent:
+            handleUnsupportedWebhookContext($context);
+            return;
+
+        default:
+            logWebhookDiagnostic(
+                reason: 'Webhook processing finished without a known status.',
+                providerEventType: $providerEventType,
+                rawData: $rawData,
+            );
+    }
+}
+
+function handleProcessedWebhookContext(WebhookContext $context): void
+{
+    $eventType = $context->eventType;
+    $rawData = $context->rawData;
+
+    // Application-specific handling:
+    // - update the local payment record using the normalized payment event type;
+    // - use provider payload fields only when additional provider-specific details are needed;
+    // - keep raw webhook data for diagnostics and audit logs when appropriate.
+}
+
+function handleUnsupportedWebhookContext(WebhookContext $context): void
+{
+    $eventType = $context->eventType;
+    $rawData = $context->rawData;
+
     // Application-specific fallback handling:
-    // - log validation failures;
-    // - ignore unknown or unsupported events;
-    // - keep raw webhook data for diagnostics when available.
+    // - keep the raw request data for diagnostics;
+    // - use the normalized event type to decide whether a provider-specific fallback is needed;
+    // - ignore the event safely when it is outside the application scope.
+}
+
+function logWebhookDiagnostic(string $reason, ?string $providerEventType, ?WebhookRawData $rawData): void
+{
+    // Application-specific diagnostics:
+    // - log the reason and provider event type;
+    // - include raw headers, query/body provider fields, or decoded payload when useful;
+    // - avoid treating raw provider fields as normalized payment data.
 }
 ```
 
-If the context status is `WebhookProcessingStatus::ValidationFailed`, the request failed before provider event processing.
+`WebhookProcessingStatus::Processed` means the request was validated, recognized, parsed, and mapped successfully.
+Application code should use `WebhookContext::$eventType` as the normalized payment event type and may inspect
+`WebhookContext::$rawData` for provider-specific diagnostics or audit logs.
+
+`WebhookProcessingStatus::ValidationFailed` means processing stopped before provider event processing started.
 This includes provider-specific request validation failures and missing provider processors, for example with the
-`missing_provider_processor` reason code.
-If the context status is `WebhookProcessingStatus::UnknownEvent` or `WebhookProcessingStatus::UnsupportedEvent`,
-the request is valid but the event is unknown, unsupported, or outside the current normalization scope.
-In these cases, the context still exposes the raw request data needed for diagnostics or custom fallback handling.
+`missing_provider_processor` reason code. The context can still expose raw input/raw data for diagnostics.
+
+`WebhookProcessingStatus::UnknownEvent` means the request is valid, but the provider event type is not recognized
+by the provider mapping. The provider event type and raw data can be logged or used for fallback analysis.
+
+`WebhookProcessingStatus::UnsupportedEvent` means the request is valid and recognized, but the normalized event is
+outside the current R1 payment webhook scope. Application code can use the normalized event type/status and raw data
+to decide whether to ignore the event, log it, or apply custom provider-specific fallback logic.
 
 ### Out of Scope for Release 1
 
