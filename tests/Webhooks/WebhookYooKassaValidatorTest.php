@@ -19,7 +19,7 @@ final class WebhookYooKassaValidatorTest extends TestCase
         $this->assertSame('yookassa', $validator->getProviderId());
     }
 
-    public function testReturnsFailClosedSkeletonValidationResult(): void
+    public function testReturnsFailClosedWhenAuthenticityIndicatorsAreNotAvailable(): void
     {
         $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
             rawBody: '{"type":"notification","event":"payment.succeeded","object":{"id":"payment-id"}}',
@@ -29,8 +29,28 @@ final class WebhookYooKassaValidatorTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_webhook_validation_not_implemented', $result->reason->code->value);
-        $this->assertSame('YooKassa webhook validation is not implemented yet.', $result->reason->message);
+        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
+        $this->assertSame(
+            'YooKassa webhook validation cannot be completed because the current API/config does not expose a webhook-specific authenticity indicator.',
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testCurrentApiAndConfigDoNotExposeWebhookSpecificAuthenticityIndicator(): void
+    {
+        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: [
+                'Content-Type' => ['application/json'],
+                'User-Agent' => ['YooKassa'],
+            ],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
         $this->assertNull($result->reason->providerEventType);
     }
 }
