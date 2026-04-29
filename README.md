@@ -857,7 +857,9 @@ outbound `PaymentGatewayInterface` instance.
 #### `WebhookProviderProcessorInterface`
 
 Provider-specific webhook event processor registered under a stable provider identifier.
-It runs only after provider-specific request validation succeeds.
+The identifier returned by `getProviderId()` is the value used by the common processor to
+match the processor with `WebhookInput::$providerId`. The provider processor is called only
+after the matching provider validator returns a successful `WebhookValidationResult`.
 
 ```php
 interface WebhookProviderProcessorInterface
@@ -868,10 +870,17 @@ interface WebhookProviderProcessorInterface
 }
 ```
 
+`process()` runs the provider-specific payment webhook pipeline and returns
+`WebhookProcessingResult`. The common processor then wraps that processing outcome into the
+final `WebhookContext` returned to application code.
+
 #### `WebhookProviderProcessorRegistry`
 
-Registry and resolver for provider-specific webhook processors. The common processor uses it to select
-the processor that matches `WebhookInput::$providerId`.
+Registry and resolver for provider-specific webhook processors. The common processor uses it
+to select the processor that matches `WebhookInput::$providerId` after validation succeeds.
+When no processor is registered for the selected provider, the registry provides a predictable
+missing-provider processing result instead of letting the integration fail with an ambiguous
+null dereference or framework error.
 
 ```php
 final class WebhookProviderProcessorRegistry
