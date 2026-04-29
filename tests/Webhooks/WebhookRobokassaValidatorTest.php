@@ -143,6 +143,129 @@ final class WebhookRobokassaValidatorTest extends TestCase
         $this->assertNull($result->reason->providerEventType);
     }
 
+    /**
+     * @dataProvider invalidSignatureProvider
+     */
+    public function testRejectsInvalidSignatureVariants(array $queryParams, array $bodyParams = []): void
+    {
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: $queryParams,
+            bodyParams: $bodyParams,
+            providerId: 'robokassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('robokassa_signature_mismatch', $result->reason->code->value);
+        $this->assertSame('Robokassa callback signature does not match the request parameters.', $result->reason->message);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    /**
+     * @return iterable<string, array{array<string, mixed>, 1?: array<string, mixed>}>
+     */
+    public static function invalidSignatureProvider(): iterable
+    {
+        yield 'plain invalid signature value' => [[
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'SignatureValue' => 'invalid-signature',
+        ]];
+
+        yield 'signature created with another password2' => [[
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'SignatureValue' => md5('100.00:123:another-pass2'),
+        ]];
+
+        yield 'signature does not include provided Shp parameter' => [[
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'Shp_order' => 'abc',
+            'SignatureValue' => md5('100.00:123:pass2'),
+        ]];
+
+        yield 'signature includes different Shp parameter value' => [[
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'Shp_order' => 'abc',
+            'SignatureValue' => md5('100.00:123:pass2:Shp_order=xyz'),
+        ]];
+
+        yield 'signature does not match params split across query and body' => [
+            [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'Shp_user' => '42',
+            ],
+            [
+                'SignatureValue' => md5('100.00:123:pass2'),
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider missingRequiredParameterAcrossRequestPartsProvider
+     */
+    public function testRejectsMissingRequiredParameterAcrossRequestParts(
+        array $queryParams,
+        array $bodyParams,
+        string $missingParameterName,
+    ): void {
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: $queryParams,
+            bodyParams: $bodyParams,
+            providerId: 'robokassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('robokassa_required_parameter_missing', $result->reason->code->value);
+        $this->assertSame(
+            sprintf('Required Robokassa callback parameter "%s" is missing or empty.', $missingParameterName),
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    /**
+     * @return iterable<string, array{array<string, mixed>, array<string, mixed>, string}>
+     */
+    public static function missingRequiredParameterAcrossRequestPartsProvider(): iterable
+    {
+        yield 'missing OutSum when other required params are split across body and query' => [
+            [
+                'InvId' => '123',
+            ],
+            [
+                'SignatureValue' => md5('100.00:123:pass2'),
+            ],
+            'OutSum',
+        ];
+
+        yield 'missing InvId when other required params are split across body and query' => [
+            [
+                'OutSum' => '100.00',
+            ],
+            [
+                'SignatureValue' => md5('100.00:123:pass2'),
+            ],
+            'InvId',
+        ];
+
+        yield 'missing SignatureValue when OutSum and InvId are split across body and query' => [
+            [
+                'OutSum' => '100.00',
+            ],
+            [
+                'InvId' => '123',
+            ],
+            'SignatureValue',
+        ];
+    }
+
     public function testRejectsEmptyPassword2(): void
     {
         $this->expectException(InvalidArgumentException::class);
