@@ -809,13 +809,15 @@ interface WebhookProcessorInterface
 }
 ```
 
-#### `WebhookRequestValidatorInterface`
+#### `WebhookProviderValidatorInterface`
 
-Provider-specific verification of signatures, headers, secrets, and other authenticity markers.
+Provider-specific verification of signatures, headers, secrets, and other authenticity markers for one payment provider.
 
 ```php
-interface WebhookRequestValidatorInterface
+interface WebhookProviderValidatorInterface
 {
+    public function getProviderId(): string;
+
     public function validate(WebhookInput $input): WebhookValidationResult;
 }
 ```
