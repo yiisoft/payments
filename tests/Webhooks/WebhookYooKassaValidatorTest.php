@@ -241,4 +241,59 @@ final class WebhookYooKassaValidatorTest extends TestCase
         $this->assertSame('yookassa_object_missing', $result->reason->code->value);
         $this->assertSame('payment.succeeded', $result->reason->providerEventType);
     }
+
+    /**
+     * @dataProvider invalidEventPayloadProvider
+     */
+    public function testRejectsPayloadWithInvalidEventField(string $rawBody): void
+    {
+        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: ['Content-Type' => ['application/json']],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_event_missing', $result->reason->code->value);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidEventPayloadProvider(): iterable
+    {
+        yield 'event is null' => ['{"event":null,"object":{"id":"payment-id"}}'];
+        yield 'event is boolean' => ['{"event":true,"object":{"id":"payment-id"}}'];
+        yield 'event is number' => ['{"event":123,"object":{"id":"payment-id"}}'];
+        yield 'event is array' => ['{"event":["payment.succeeded"],"object":{"id":"payment-id"}}'];
+    }
+
+    /**
+     * @dataProvider invalidObjectPayloadProvider
+     */
+    public function testRejectsPayloadWithAdditionalInvalidObjectFields(string $rawBody): void
+    {
+        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: ['Content-Type' => ['application/json']],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_object_missing', $result->reason->code->value);
+        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidObjectPayloadProvider(): iterable
+    {
+        yield 'object is null' => ['{"event":"payment.succeeded","object":null}'];
+        yield 'object is boolean' => ['{"event":"payment.succeeded","object":false}'];
+        yield 'object is number' => ['{"event":"payment.succeeded","object":123}'];
+    }
 }
