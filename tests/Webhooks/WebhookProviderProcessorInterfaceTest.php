@@ -13,7 +13,7 @@ use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 
 final class WebhookProviderProcessorInterfaceTest extends TestCase
 {
-    public function testProviderProcessorExtendsPublicProcessorInterface(): void
+    public function testProviderProcessorExposesProviderIdAndProcessingResult(): void
     {
         $processor = new class implements WebhookProviderProcessorInterface {
             public function getProviderId(): string
@@ -42,7 +42,7 @@ final class WebhookProviderProcessorInterfaceTest extends TestCase
         $this->assertSame(0, $method->getNumberOfParameters());
     }
 
-    public function testProcessSignatureIsInheritedFromPublicProcessorInterface(): void
+    public function testProcessSignatureReturnsProviderProcessingResult(): void
     {
         $method = new ReflectionMethod(WebhookProviderProcessorInterface::class, 'process');
         $parameters = $method->getParameters();

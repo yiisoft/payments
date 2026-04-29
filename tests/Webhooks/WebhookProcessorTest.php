@@ -10,6 +10,7 @@ use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
 use Yiisoft\Payments\Tests\Webhooks\Support\UnsupportedWebhookProviderProcessor;
 use Yiisoft\Payments\Tests\Webhooks\Support\ValidationFailedWebhookProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
@@ -59,15 +60,16 @@ final class WebhookProcessorTest extends TestCase
             providerId: 'stripe',
         );
 
-        $result = $processor->process($input);
+        $context = $processor->process($input);
 
-        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
-        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
-        $this->assertNotNull($result->rawData);
-        $this->assertSame('{"type":"payment_intent.succeeded"}', $result->rawData->rawBody);
-        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $result->rawData->headers);
-        $this->assertSame(['type' => 'payment_intent.succeeded'], $result->rawData->payload);
-        $this->assertSame('payment_intent.succeeded', $result->rawData->providerEventType);
+        $this->assertInstanceOf(WebhookContext::class, $context);
+        $this->assertSame(WebhookProcessingStatus::Processed, $context->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $context->eventType);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('{"type":"payment_intent.succeeded"}', $context->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $context->rawData->headers);
+        $this->assertSame(['type' => 'payment_intent.succeeded'], $context->rawData->payload);
+        $this->assertSame('payment_intent.succeeded', $context->rawData->providerEventType);
         $this->assertSame(1, $providerProcessor->processCalls);
         $this->assertSame($input, $providerProcessor->processedInput);
     }
@@ -90,10 +92,11 @@ final class WebhookProcessorTest extends TestCase
             providerId: 'paypal',
         );
 
-        $result = $processor->process($input);
+        $context = $processor->process($input);
 
-        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
-        $this->assertSame('PAYMENT.CAPTURE.COMPLETED', $result->rawData?->providerEventType);
+        $this->assertInstanceOf(WebhookContext::class, $context);
+        $this->assertSame(WebhookProcessingStatus::Processed, $context->status);
+        $this->assertSame('PAYMENT.CAPTURE.COMPLETED', $context->rawData?->providerEventType);
         $this->assertSame(0, $stripeProcessor->processCalls);
         $this->assertNull($stripeProcessor->processedInput);
         $this->assertSame(1, $paypalProcessor->processCalls);
@@ -115,18 +118,19 @@ final class WebhookProcessorTest extends TestCase
             providerId: 'stripe',
         );
 
-        $result = $processor->process($input);
+        $context = $processor->process($input);
 
-        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
-        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('charge.refunded', $result->reason->providerEventType);
-        $this->assertNotNull($result->rawData);
-        $this->assertSame('{"type":"charge.refunded"}', $result->rawData->rawBody);
-        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $result->rawData->headers);
-        $this->assertSame(['type' => 'charge.refunded'], $result->rawData->payload);
-        $this->assertSame('charge.refunded', $result->rawData->providerEventType);
+        $this->assertInstanceOf(WebhookContext::class, $context);
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $context->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $context->eventType);
+        $this->assertNotNull($context->unsupportedEventReason);
+        $this->assertSame('unsupported_event_type', $context->unsupportedEventReason->code->value);
+        $this->assertSame('charge.refunded', $context->unsupportedEventReason->providerEventType);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('{"type":"charge.refunded"}', $context->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $context->rawData->headers);
+        $this->assertSame(['type' => 'charge.refunded'], $context->rawData->payload);
+        $this->assertSame('charge.refunded', $context->rawData->providerEventType);
         $this->assertSame(1, $providerProcessor->processCalls);
         $this->assertSame($input, $providerProcessor->processedInput);
     }
@@ -145,18 +149,19 @@ final class WebhookProcessorTest extends TestCase
             providerId: 'stripe',
         );
 
-        $result = $processor->process($input);
+        $context = $processor->process($input);
 
-        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
-        $this->assertNull($result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('validation_failed', $result->reason->code->value);
-        $this->assertSame('payment_intent.succeeded', $result->reason->providerEventType);
-        $this->assertNotNull($result->rawData);
-        $this->assertSame('{"type":"payment_intent.succeeded"}', $result->rawData->rawBody);
-        $this->assertSame(['Stripe-Signature' => 'invalid-signature'], $result->rawData->headers);
-        $this->assertSame(['type' => 'payment_intent.succeeded'], $result->rawData->payload);
-        $this->assertSame('payment_intent.succeeded', $result->rawData->providerEventType);
+        $this->assertInstanceOf(WebhookContext::class, $context);
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $context->status);
+        $this->assertNull($context->eventType);
+        $this->assertNotNull($context->validationFailureReason);
+        $this->assertSame('validation_failed', $context->validationFailureReason->code->value);
+        $this->assertSame('payment_intent.succeeded', $context->validationFailureReason->providerEventType);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('{"type":"payment_intent.succeeded"}', $context->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 'invalid-signature'], $context->rawData->headers);
+        $this->assertSame(['type' => 'payment_intent.succeeded'], $context->rawData->payload);
+        $this->assertSame('payment_intent.succeeded', $context->rawData->providerEventType);
         $this->assertSame(1, $providerProcessor->processCalls);
         $this->assertSame($input, $providerProcessor->processedInput);
     }
@@ -166,25 +171,26 @@ final class WebhookProcessorTest extends TestCase
         $registeredProcessor = new SuccessfulWebhookProviderProcessor('stripe');
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($registeredProcessor));
 
-        $result = $processor->process(new WebhookInput(
+        $context = $processor->process(new WebhookInput(
             rawBody: '{"event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: ['PayPal-Transmission-Id' => 'transmission-id'],
             providerId: 'paypal',
         ));
 
-        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
-        $this->assertNull($result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('missing_provider_processor', $result->reason->code->value);
+        $this->assertInstanceOf(WebhookContext::class, $context);
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $context->status);
+        $this->assertNull($context->eventType);
+        $this->assertNotNull($context->validationFailureReason);
+        $this->assertSame('missing_provider_processor', $context->validationFailureReason->code->value);
         $this->assertSame(
             'Webhook provider processor is not registered for provider "paypal".',
-            $result->reason->message,
+            $context->validationFailureReason->message,
         );
-        $this->assertNotNull($result->rawData);
-        $this->assertSame('{"event_type":"PAYMENT.CAPTURE.COMPLETED"}', $result->rawData->rawBody);
-        $this->assertSame(['PayPal-Transmission-Id' => 'transmission-id'], $result->rawData->headers);
-        $this->assertNull($result->rawData->payload);
-        $this->assertNull($result->rawData->providerEventType);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('{"event_type":"PAYMENT.CAPTURE.COMPLETED"}', $context->rawData->rawBody);
+        $this->assertSame(['PayPal-Transmission-Id' => 'transmission-id'], $context->rawData->headers);
+        $this->assertNull($context->rawData->payload);
+        $this->assertNull($context->rawData->providerEventType);
         $this->assertSame(0, $registeredProcessor->processCalls);
         $this->assertNull($registeredProcessor->processedInput);
     }

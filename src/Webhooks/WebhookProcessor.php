@@ -16,7 +16,7 @@ final class WebhookProcessor implements WebhookProcessorInterface
     ) {
     }
 
-    public function process(WebhookInput $input): WebhookProcessingResult
+    public function process(WebhookInput $input): WebhookContext
     {
         if ($input->providerId === null) {
             throw new LogicException('Webhook provider processor resolution is not implemented yet.');
@@ -25,25 +25,32 @@ final class WebhookProcessor implements WebhookProcessorInterface
         $providerProcessor = $this->providerProcessorRegistry->get($input->providerId);
 
         if ($providerProcessor === null) {
-            return $this->providerProcessorRegistry->missingProcessorResult(
-                $input->providerId,
-                new WebhookRawData(
-                    rawBody: $input->rawBody,
-                    headers: $input->headers,
+            return $this->createContext(
+                $input,
+                $this->providerProcessorRegistry->missingProcessorResult(
+                    $input->providerId,
+                    new WebhookRawData(
+                        rawBody: $input->rawBody,
+                        headers: $input->headers,
+                    ),
                 ),
             );
         }
 
-        $result = $providerProcessor->process($input);
+        return $this->createContext($input, $providerProcessor->process($input));
+    }
 
-        if ($result->status === WebhookProcessingStatus::ValidationFailed) {
-            return $result;
-        }
-
-        if ($result->status === WebhookProcessingStatus::UnsupportedEvent) {
-            return $result;
-        }
-
-        return $result;
+    private function createContext(WebhookInput $input, WebhookProcessingResult $result): WebhookContext
+    {
+        return new WebhookContext(
+            providerId: $input->providerId,
+            eventType: $result->eventType,
+            status: $result->status,
+            validationFailureReason: $result->status === WebhookProcessingStatus::ValidationFailed ? $result->reason : null,
+            unsupportedEventReason: $result->status === WebhookProcessingStatus::UnsupportedEvent ? $result->reason : null,
+            unknownEventReason: $result->status === WebhookProcessingStatus::UnknownEvent ? $result->reason : null,
+            rawInput: $input,
+            rawData: $result->rawData,
+        );
     }
 }

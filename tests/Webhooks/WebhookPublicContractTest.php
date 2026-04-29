@@ -49,7 +49,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertSame(1, $processMethod->getNumberOfParameters());
         $this->assertSame(WebhookInput::class, $processMethod->getParameters()[0]->getType()?->getName());
-        $this->assertSame(WebhookProcessingResult::class, $processMethod->getReturnType()?->getName());
+        $this->assertSame(WebhookContext::class, $processMethod->getReturnType()?->getName());
         $this->assertFalse($processMethod->getReturnType()?->allowsNull());
     }
 
@@ -65,7 +65,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(1, $method->getNumberOfParameters());
         $this->assertSame('input', $method->getParameters()[0]->getName());
         $this->assertSame(WebhookInput::class, $method->getParameters()[0]->getType()?->getName());
-        $this->assertSame(WebhookProcessingResult::class, $method->getReturnType()?->getName());
+        $this->assertSame(WebhookContext::class, $method->getReturnType()?->getName());
     }
 
     public function testWebhookProviderProcessorInterfaceContractIsStable(): void
@@ -73,7 +73,6 @@ final class WebhookPublicContractTest extends TestCase
         $reflection = new ReflectionClass(WebhookProviderProcessorInterface::class);
 
         $this->assertTrue($reflection->isInterface());
-        $this->assertTrue($reflection->implementsInterface(WebhookProcessorInterface::class));
         $this->assertSame(['getProviderId', 'process'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
 
         $providerIdMethod = $reflection->getMethod('getProviderId');

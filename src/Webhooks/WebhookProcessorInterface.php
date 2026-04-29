@@ -9,5 +9,5 @@ namespace Yiisoft\Payments\Webhooks;
  */
 interface WebhookProcessorInterface
 {
-    public function process(WebhookInput $input): WebhookProcessingResult;
+    public function process(WebhookInput $input): WebhookContext;
 }
