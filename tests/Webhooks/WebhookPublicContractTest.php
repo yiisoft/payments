@@ -109,12 +109,16 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['code', 'message'], array_map(
+        $this->assertSame(['code', 'message', 'providerEventType'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame(WebhookReasonCode::class, $constructor->getParameters()[0]->getType()?->getName());
         $this->assertSame('string', $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertSame('string', $constructor->getParameters()[2]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[2]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[2]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[2]->getDefaultValue());
 
         $this->assertSame(WebhookReasonCode::class, $reflection->getProperty('code')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('code')->isPublic());
@@ -122,6 +126,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame('string', $reflection->getProperty('message')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('message')->isPublic());
         $this->assertTrue($reflection->getProperty('message')->isReadOnly());
+        $this->assertSame('string', $reflection->getProperty('providerEventType')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('providerEventType')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('providerEventType')->isPublic());
+        $this->assertTrue($reflection->getProperty('providerEventType')->isReadOnly());
     }
 
     public function testWebhookCapabilitiesCollectionContractIsStable(): void
