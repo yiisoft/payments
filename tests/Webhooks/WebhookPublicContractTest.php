@@ -192,7 +192,7 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['providerId', 'eventType'], array_map(
+        $this->assertSame(['providerId', 'eventType', 'status'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
@@ -204,6 +204,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($constructor->getParameters()[1]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[1]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[1]->getDefaultValue());
+        $this->assertSame(WebhookProcessingStatus::class, $constructor->getParameters()[2]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[2]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[2]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[2]->getDefaultValue());
 
         $this->assertSame('string', $reflection->getProperty('providerId')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('providerId')->getType()?->allowsNull());
@@ -213,6 +217,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('eventType')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('eventType')->isPublic());
         $this->assertTrue($reflection->getProperty('eventType')->isReadOnly());
+        $this->assertSame(WebhookProcessingStatus::class, $reflection->getProperty('status')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('status')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('status')->isPublic());
+        $this->assertTrue($reflection->getProperty('status')->isReadOnly());
     }
 
     public function testWebhookProcessingStatusContractIsStable(): void
