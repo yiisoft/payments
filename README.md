@@ -1570,13 +1570,16 @@ to decide whether to ignore the event, log it, or apply custom provider-specific
 
 ### Out of Scope for Release 1
 
-- refund-specific webhook normalization;
+Release 1 intentionally stays focused on the common payment webhook processing contract described above.
+The following areas are not part of the R1 public API:
+
+- dedicated refund-specific entity/result/status normalization beyond the R1 payment webhook event model;
 - subscription / recurring webhook normalization;
 - framework controllers, routing, and endpoint wiring inside this library;
-- provider auto-detection or account resolution from the incoming HTTP request;
-- provider-specific extras API;
-- rich error hierarchy beyond practical minimum;
-- heavy webhook testing toolkit.
+- provider auto-detection from the incoming HTTP request, including account or endpoint resolution inferred from raw request data;
+- provider-specific extras API for exposing provider-only fields as a separate typed API beyond preserved `WebhookRawData`;
+- rich error hierarchy beyond the practical minimum represented by `WebhookReason` and `WebhookReasonCode`;
+- heavy webhook testing toolkit beyond the unit-level contract tests needed for R1 behavior.
 
 ### Planned Webhook Releases
 
