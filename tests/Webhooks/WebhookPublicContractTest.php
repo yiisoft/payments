@@ -14,7 +14,9 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
+use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
@@ -23,6 +25,21 @@ use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class WebhookPublicContractTest extends TestCase
 {
+    public function testWebhookProcessorInterfaceContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookProcessorInterface::class);
+
+        $this->assertTrue($reflection->isInterface());
+        $this->assertSame(['process'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
+
+        $method = $reflection->getMethod('process');
+
+        $this->assertSame(1, $method->getNumberOfParameters());
+        $this->assertSame('input', $method->getParameters()[0]->getName());
+        $this->assertSame(WebhookInput::class, $method->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookProcessingResult::class, $method->getReturnType()?->getName());
+    }
+
     public function testWebhookCapabilitiesProviderInterfaceContractIsStable(): void
     {
         $reflection = new ReflectionClass(WebhookCapabilitiesProviderInterface::class);
