@@ -27,6 +27,7 @@ use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 use Yiisoft\Payments\Webhooks\WebhookValidationResult;
@@ -229,6 +230,49 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertFalse($validateMethod->getParameters()[0]->getType()?->allowsNull());
         $this->assertSame(WebhookValidationResult::class, $validateMethod->getReturnType()?->getName());
         $this->assertFalse($validateMethod->getReturnType()?->allowsNull());
+    }
+
+    public function testWebhookRobokassaCallbackFormatContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookRobokassaCallbackFormat::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertSame(['__construct', 'isCustomParameter', 'isRequiredParameter', 'requiredParameters'], $this->methodNames($reflection));
+        $this->assertTrue($reflection->getConstructor()?->isPrivate());
+
+        $this->assertSame('robokassa', $reflection->getConstant('PROVIDER_ID'));
+        $this->assertSame('result_url', $reflection->getConstant('CALLBACK_TYPE'));
+        $this->assertSame('SignatureValue', $reflection->getConstant('SIGNATURE_PARAMETER'));
+        $this->assertSame('password2', $reflection->getConstant('SIGNATURE_SECRET'));
+        $this->assertSame('md5', $reflection->getConstant('SIGNATURE_ALGORITHM'));
+        $this->assertSame('Shp_', $reflection->getConstant('CUSTOM_PARAMETER_PREFIX'));
+
+        $requiredParametersMethod = $reflection->getMethod('requiredParameters');
+
+        $this->assertTrue($requiredParametersMethod->isStatic());
+        $this->assertSame(0, $requiredParametersMethod->getNumberOfParameters());
+        $this->assertSame('array', $requiredParametersMethod->getReturnType()?->getName());
+        $this->assertFalse($requiredParametersMethod->getReturnType()?->allowsNull());
+
+        $isRequiredParameterMethod = $reflection->getMethod('isRequiredParameter');
+
+        $this->assertTrue($isRequiredParameterMethod->isStatic());
+        $this->assertSame(1, $isRequiredParameterMethod->getNumberOfParameters());
+        $this->assertSame('name', $isRequiredParameterMethod->getParameters()[0]->getName());
+        $this->assertSame('string', $isRequiredParameterMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($isRequiredParameterMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('bool', $isRequiredParameterMethod->getReturnType()?->getName());
+        $this->assertFalse($isRequiredParameterMethod->getReturnType()?->allowsNull());
+
+        $isCustomParameterMethod = $reflection->getMethod('isCustomParameter');
+
+        $this->assertTrue($isCustomParameterMethod->isStatic());
+        $this->assertSame(1, $isCustomParameterMethod->getNumberOfParameters());
+        $this->assertSame('name', $isCustomParameterMethod->getParameters()[0]->getName());
+        $this->assertSame('string', $isCustomParameterMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($isCustomParameterMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('bool', $isCustomParameterMethod->getReturnType()?->getName());
+        $this->assertFalse($isCustomParameterMethod->getReturnType()?->allowsNull());
     }
 
     public function testWebhookYooKassaValidatorContractIsStable(): void
