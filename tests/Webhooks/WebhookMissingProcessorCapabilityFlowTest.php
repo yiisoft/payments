@@ -6,7 +6,9 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\UnsupportedWebhookProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookContext;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
@@ -114,6 +116,45 @@ final class WebhookMissingProcessorCapabilityFlowTest extends TestCase
         $this->assertSame($input->headers, $context->rawData->headers);
         $this->assertSame(['event_type' => 'PAYMENT.CAPTURE.PENDING'], $context->rawData->payload);
         $this->assertSame('PAYMENT.CAPTURE.PENDING', $context->rawData->providerEventType);
+    }
+
+    public function testExistingProviderWithUnsupportedEventReturnsUnsupportedContext(): void
+    {
+        $providerProcessor = new UnsupportedWebhookProviderProcessor(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentRefunded,
+            providerEventType: 'charge.dispute.created',
+            payload: ['type' => 'charge.dispute.created'],
+        );
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
+        $input = new WebhookInput(
+            rawBody: '{"type":"charge.dispute.created"}',
+            headers: ['Stripe-Signature' => 'signature'],
+            providerId: 'stripe',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame(1, $providerProcessor->processCalls);
+        $this->assertSame($input, $providerProcessor->processedInput);
+        $this->assertSame('stripe', $context->providerId);
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $context->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $context->eventType);
+        $this->assertNull($context->validationFailureReason);
+        $this->assertNotNull($context->unsupportedEventReason);
+        $this->assertSame('unsupported_event_type', $context->unsupportedEventReason->code->value);
+        $this->assertSame(
+            'Webhook event type is recognized but is not supported by the current webhook contract.',
+            $context->unsupportedEventReason->message,
+        );
+        $this->assertSame('charge.dispute.created', $context->unsupportedEventReason->providerEventType);
+        $this->assertNull($context->unknownEventReason);
+        $this->assertSame($input, $context->rawInput);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame($input->rawBody, $context->rawData->rawBody);
+        $this->assertSame($input->headers, $context->rawData->headers);
+        $this->assertSame(['type' => 'charge.dispute.created'], $context->rawData->payload);
+        $this->assertSame('charge.dispute.created', $context->rawData->providerEventType);
     }
 
     public function testMissingProviderProcessorDoesNotFallbackToAnotherRegisteredProcessor(): void
