@@ -245,6 +245,45 @@ final class WebhookRobokassaValidatorTest extends TestCase
         yield 'conflicting SignatureValue' => ['SignatureValue'];
     }
 
+    #[DataProvider('conflictingCustomParameterAcrossRequestPartsProvider')]
+    public function testRejectsConflictingCustomParameterAcrossRequestParts(string $parameterName): void
+    {
+        $queryParams = [
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            $parameterName => 'query-value',
+            'SignatureValue' => md5(sprintf('100.00:123:pass2:%s=query-value', $parameterName)),
+        ];
+        $bodyParams = [
+            $parameterName => 'body-value',
+        ];
+
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: $queryParams,
+            bodyParams: $bodyParams,
+            providerId: 'robokassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('robokassa_callback_parameter_conflict', $result->reason->code->value);
+        $this->assertSame(
+            sprintf('Robokassa callback parameter "%s" is present in query and body with different values.', $parameterName),
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function conflictingCustomParameterAcrossRequestPartsProvider(): iterable
+    {
+        yield 'conflicting Shp_order' => ['Shp_order'];
+        yield 'conflicting Shp_user' => ['Shp_user'];
+    }
+
     #[DataProvider('missingRequiredParameterAcrossRequestPartsProvider')]
     public function testRejectsMissingRequiredParameterAcrossRequestParts(
         array $queryParams,
