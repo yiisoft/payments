@@ -11,6 +11,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
+use Yiisoft\Payments\Webhooks\StripeWebhookValidator;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
@@ -145,6 +146,39 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertTrue($reflection->isInterface());
         $this->assertSame(['getProviderId', 'validate'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
+
+        $providerIdMethod = $reflection->getMethod('getProviderId');
+
+        $this->assertSame(0, $providerIdMethod->getNumberOfParameters());
+        $this->assertSame('string', $providerIdMethod->getReturnType()?->getName());
+        $this->assertFalse($providerIdMethod->getReturnType()?->allowsNull());
+
+        $validateMethod = $reflection->getMethod('validate');
+
+        $this->assertSame(1, $validateMethod->getNumberOfParameters());
+        $this->assertSame('input', $validateMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookInput::class, $validateMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($validateMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame(WebhookValidationResult::class, $validateMethod->getReturnType()?->getName());
+        $this->assertFalse($validateMethod->getReturnType()?->allowsNull());
+    }
+
+    public function testStripeWebhookValidatorContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(StripeWebhookValidator::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertTrue($reflection->implementsInterface(WebhookProviderValidatorInterface::class));
+        $this->assertSame(['__construct', 'getProviderId', 'validate'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(1, $constructor->getNumberOfParameters());
+        $this->assertSame('signingSecret', $constructor->getParameters()[0]->getName());
+        $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
 
         $providerIdMethod = $reflection->getMethod('getProviderId');
 
