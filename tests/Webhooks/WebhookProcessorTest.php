@@ -32,7 +32,7 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorDependsOnProviderProcessorAndValidatorRegistries(): void
     {
-        $constructor = new ReflectionClass(WebhookProcessor::class)->getConstructor();
+        $constructor = (new ReflectionClass(WebhookProcessor::class))->getConstructor();
 
         $this->assertNotNull($constructor);
         $this->assertSame(2, $constructor->getNumberOfParameters());
