@@ -102,16 +102,24 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['isValid'], array_map(
+        $this->assertSame(['isValid', 'reason'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame('bool', $constructor->getParameters()[0]->getType()?->getName());
         $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame(WebhookReason::class, $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[1]->getDefaultValue());
 
         $this->assertSame('bool', $reflection->getProperty('isValid')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('isValid')->isPublic());
         $this->assertTrue($reflection->getProperty('isValid')->isReadOnly());
+        $this->assertSame(WebhookReason::class, $reflection->getProperty('reason')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('reason')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('reason')->isPublic());
+        $this->assertTrue($reflection->getProperty('reason')->isReadOnly());
 
         $successMethod = $reflection->getMethod('success');
 
@@ -123,7 +131,10 @@ final class WebhookPublicContractTest extends TestCase
         $failureMethod = $reflection->getMethod('failure');
 
         $this->assertTrue($failureMethod->isStatic());
-        $this->assertSame(0, $failureMethod->getNumberOfParameters());
+        $this->assertSame(1, $failureMethod->getNumberOfParameters());
+        $this->assertSame('reason', $failureMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookReason::class, $failureMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($failureMethod->getParameters()[0]->getType()?->allowsNull());
         $this->assertSame('self', $failureMethod->getReturnType()?->getName());
         $this->assertFalse($failureMethod->getReturnType()?->allowsNull());
     }
