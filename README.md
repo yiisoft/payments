@@ -806,7 +806,6 @@ The common public entry point for webhook processing.
 interface WebhookProcessorInterface
 {
     public function process(WebhookInput $input): WebhookContext;
-    public function getCapabilities(): WebhookCapabilitiesInterface;
 }
 ```
 
