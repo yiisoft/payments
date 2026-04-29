@@ -612,7 +612,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertTrue($reflection->isFinal());
         $this->assertTrue($reflection->isReadOnly());
-        $this->assertSame(['__construct', 'validationFailed', 'missingProviderProcessor', 'unknownEvent', 'unsupportedEvent'], $this->methodNames($reflection));
+        $this->assertSame(['__construct', 'missingProviderProcessor', 'unknownEvent', 'unsupportedEvent', 'validationFailed'], $this->methodNames($reflection));
 
         $constructor = $reflection->getConstructor();
 
