@@ -87,8 +87,21 @@ final class WebhookProcessingResultTest extends TestCase
             $result->reason->message,
         );
         $this->assertNull($result->reason->providerEventType);
+        $this->assertNull($result->rawData);
     }
 
+    public function testKnownUnsupportedEventTypeDoesNotThrowException(): void
+    {
+        $result = WebhookProcessingResult::unsupportedEvent(
+            WebhookEventType::PaymentRefunded,
+            'charge.refunded',
+        );
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('charge.refunded', $result->reason->providerEventType);
+    }
 
     public function testKnownUnsupportedEventTypeCanKeepRawDataForFallbackDebug(): void
     {
@@ -114,6 +127,13 @@ final class WebhookProcessingResultTest extends TestCase
         $this->assertSame('{"type":"charge.refunded","data":{"object":{"id":"ch_123"}}}', $result->rawData->rawBody);
         $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $result->rawData->headers);
         $this->assertSame('charge.refunded', $result->rawData->providerEventType);
+        $this->assertSame(
+            [
+                'type' => 'charge.refunded',
+                'data' => ['object' => ['id' => 'ch_123']],
+            ],
+            $result->rawData->payload,
+        );
     }
 
     public function testKnownUnsupportedEventTypeCanKeepProviderEventType(): void
@@ -129,4 +149,22 @@ final class WebhookProcessingResultTest extends TestCase
         $this->assertSame('charge.refunded', $result->reason->providerEventType);
     }
 
+    public function testKnownUnsupportedEventTypeKeepsNormalizedEventTypeForDifferentKnownEvents(): void
+    {
+        $eventTypes = [
+            WebhookEventType::PaymentCreated,
+            WebhookEventType::PaymentFailed,
+            WebhookEventType::PaymentCanceled,
+            WebhookEventType::PaymentRefunded,
+        ];
+
+        foreach ($eventTypes as $eventType) {
+            $result = WebhookProcessingResult::unsupportedEvent($eventType);
+
+            $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+            $this->assertSame($eventType, $result->eventType);
+            $this->assertNotNull($result->reason);
+            $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        }
+    }
 }
