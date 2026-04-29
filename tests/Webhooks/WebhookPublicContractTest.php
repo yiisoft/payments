@@ -20,6 +20,7 @@ use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
+use Yiisoft\Payments\Webhooks\WebhookProcessor;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
@@ -27,6 +28,30 @@ use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class WebhookPublicContractTest extends TestCase
 {
+    public function testWebhookProcessorContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookProcessor::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->implementsInterface(WebhookProcessorInterface::class));
+        $this->assertSame(['__construct', 'process'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(1, $constructor->getNumberOfParameters());
+        $this->assertSame('providerProcessorRegistry', $constructor->getParameters()[0]->getName());
+        $this->assertSame(WebhookProviderProcessorRegistry::class, $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+
+        $processMethod = $reflection->getMethod('process');
+
+        $this->assertSame(1, $processMethod->getNumberOfParameters());
+        $this->assertSame(WebhookInput::class, $processMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookProcessingResult::class, $processMethod->getReturnType()?->getName());
+        $this->assertFalse($processMethod->getReturnType()?->allowsNull());
+    }
+
     public function testWebhookProcessorInterfaceContractIsStable(): void
     {
         $reflection = new ReflectionClass(WebhookProcessorInterface::class);
