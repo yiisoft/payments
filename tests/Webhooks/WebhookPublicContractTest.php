@@ -9,6 +9,7 @@ use IteratorAggregate;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use Yiisoft\Payments\Webhooks\ProviderWebhookProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
@@ -38,6 +39,27 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame('input', $method->getParameters()[0]->getName());
         $this->assertSame(WebhookInput::class, $method->getParameters()[0]->getType()?->getName());
         $this->assertSame(WebhookProcessingResult::class, $method->getReturnType()?->getName());
+    }
+
+    public function testProviderWebhookProcessorInterfaceContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(ProviderWebhookProcessorInterface::class);
+
+        $this->assertTrue($reflection->isInterface());
+        $this->assertTrue($reflection->implementsInterface(WebhookProcessorInterface::class));
+        $this->assertSame(['getProviderId', 'process'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
+
+        $providerIdMethod = $reflection->getMethod('getProviderId');
+
+        $this->assertSame(0, $providerIdMethod->getNumberOfParameters());
+        $this->assertSame('string', $providerIdMethod->getReturnType()?->getName());
+        $this->assertFalse($providerIdMethod->getReturnType()?->allowsNull());
+
+        $processMethod = $reflection->getMethod('process');
+
+        $this->assertSame(1, $processMethod->getNumberOfParameters());
+        $this->assertSame(WebhookInput::class, $processMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookProcessingResult::class, $processMethod->getReturnType()?->getName());
     }
 
     public function testWebhookCapabilitiesProviderInterfaceContractIsStable(): void
