@@ -14,6 +14,7 @@ use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
@@ -178,6 +179,40 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(WebhookSupportStatus::class, $reflection->getProperty('supportStatus')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('supportStatus')->isPublic());
         $this->assertTrue($reflection->getProperty('supportStatus')->isReadOnly());
+    }
+
+    public function testWebhookContextContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookContext::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertTrue($reflection->isReadOnly());
+        $this->assertSame(['__construct'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(['providerId', 'eventType'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $constructor->getParameters(),
+        ));
+        $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[0]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[0]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[0]->getDefaultValue());
+        $this->assertSame(WebhookEventType::class, $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[1]->getDefaultValue());
+
+        $this->assertSame('string', $reflection->getProperty('providerId')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('providerId')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('providerId')->isPublic());
+        $this->assertTrue($reflection->getProperty('providerId')->isReadOnly());
+        $this->assertSame(WebhookEventType::class, $reflection->getProperty('eventType')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('eventType')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('eventType')->isPublic());
+        $this->assertTrue($reflection->getProperty('eventType')->isReadOnly());
     }
 
     public function testWebhookProcessingStatusContractIsStable(): void
