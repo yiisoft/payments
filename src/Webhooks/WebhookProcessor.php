@@ -13,6 +13,7 @@ final class WebhookProcessor implements WebhookProcessorInterface
 {
     public function __construct(
         private readonly WebhookProviderProcessorRegistry $providerProcessorRegistry,
+        private readonly ?WebhookProviderValidatorRegistry $providerValidatorRegistry = null,
     ) {
     }
 
@@ -20,6 +21,19 @@ final class WebhookProcessor implements WebhookProcessorInterface
     {
         if ($input->providerId === null) {
             throw new LogicException('Webhook provider processor resolution is not implemented yet.');
+        }
+
+        $providerValidator = $this->providerValidatorRegistry?->get($input->providerId);
+
+        if ($providerValidator !== null) {
+            $validationResult = $providerValidator->validate($input);
+
+            if (!$validationResult->isValid) {
+                return $this->createContext(
+                    $input,
+                    WebhookProcessingResult::validationFailed(reason: $validationResult->reason),
+                );
+            }
         }
 
         $providerProcessor = $this->providerProcessorRegistry->get($input->providerId);

@@ -14,6 +14,7 @@ use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
+use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
@@ -47,10 +48,15 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(1, $constructor->getNumberOfParameters());
+        $this->assertSame(2, $constructor->getNumberOfParameters());
         $this->assertSame('providerProcessorRegistry', $constructor->getParameters()[0]->getName());
         $this->assertSame(WebhookProviderProcessorRegistry::class, $constructor->getParameters()[0]->getType()?->getName());
         $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('providerValidatorRegistry', $constructor->getParameters()[1]->getName());
+        $this->assertSame(WebhookProviderValidatorRegistry::class, $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[1]->getDefaultValue());
 
         $processMethod = $reflection->getMethod('process');
 
@@ -333,6 +339,41 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertFalse($validateMethod->getParameters()[0]->getType()?->allowsNull());
         $this->assertSame(WebhookValidationResult::class, $validateMethod->getReturnType()?->getName());
         $this->assertFalse($validateMethod->getReturnType()?->allowsNull());
+    }
+
+    public function testWebhookProviderValidatorRegistryContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookProviderValidatorRegistry::class);
+
+        $this->assertTrue($reflection->isFinal());
+        $this->assertSame(['__construct', 'get', 'has'], $this->methodNames($reflection));
+
+        $constructor = $reflection->getConstructor();
+
+        $this->assertNotNull($constructor);
+        $this->assertSame(1, $constructor->getNumberOfParameters());
+        $this->assertTrue($constructor->getParameters()[0]->isVariadic());
+        $this->assertSame(WebhookProviderValidatorInterface::class, $constructor->getParameters()[0]->getType()?->getName());
+
+        $getMethod = $reflection->getMethod('get');
+
+        $this->assertSame(['providerId'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $getMethod->getParameters(),
+        ));
+        $this->assertSame('string', $getMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookProviderValidatorInterface::class, $getMethod->getReturnType()?->getName());
+        $this->assertTrue($getMethod->getReturnType()?->allowsNull());
+
+        $hasMethod = $reflection->getMethod('has');
+
+        $this->assertSame(['providerId'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $hasMethod->getParameters(),
+        ));
+        $this->assertSame('string', $hasMethod->getParameters()[0]->getType()?->getName());
+        $this->assertSame('bool', $hasMethod->getReturnType()?->getName());
+        $this->assertFalse($hasMethod->getReturnType()?->allowsNull());
     }
 
     public function testWebhookProviderProcessorRegistryContractIsStable(): void

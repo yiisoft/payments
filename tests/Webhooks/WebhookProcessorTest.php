@@ -6,7 +6,9 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Yiisoft\Payments\Tests\Webhooks\Support\FailedWebhookProviderValidator;
 use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderValidator;
 use Yiisoft\Payments\Tests\Webhooks\Support\UnsupportedWebhookProviderProcessor;
 use Yiisoft\Payments\Tests\Webhooks\Support\ValidationFailedWebhookProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
@@ -16,6 +18,7 @@ use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
 use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
+use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
 
 final class WebhookProcessorTest extends TestCase
 {
@@ -27,15 +30,20 @@ final class WebhookProcessorTest extends TestCase
         $this->assertTrue($reflection->implementsInterface(WebhookProcessorInterface::class));
     }
 
-    public function testProcessorDependsOnProviderProcessorRegistry(): void
+    public function testProcessorDependsOnProviderProcessorAndValidatorRegistries(): void
     {
         $constructor = new ReflectionClass(WebhookProcessor::class)->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(1, $constructor->getNumberOfParameters());
+        $this->assertSame(2, $constructor->getNumberOfParameters());
         $this->assertSame('providerProcessorRegistry', $constructor->getParameters()[0]->getName());
         $this->assertSame(WebhookProviderProcessorRegistry::class, $constructor->getParameters()[0]->getType()?->getName());
         $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('providerValidatorRegistry', $constructor->getParameters()[1]->getName());
+        $this->assertSame(WebhookProviderValidatorRegistry::class, $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[1]->getDefaultValue());
     }
 
     public function testProcessorCanBeInstantiatedWithRegistry(): void
@@ -72,6 +80,59 @@ final class WebhookProcessorTest extends TestCase
         $this->assertSame('payment_intent.succeeded', $context->rawData->providerEventType);
         $this->assertSame(1, $providerProcessor->processCalls);
         $this->assertSame($input, $providerProcessor->processedInput);
+    }
+
+    public function testProcessorCallsProviderValidatorBeforeProviderProcessor(): void
+    {
+        $providerValidator = new SuccessfulWebhookProviderValidator('stripe');
+        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            payload: ['type' => 'payment_intent.succeeded'],
+        );
+        $processor = new WebhookProcessor(
+            new WebhookProviderProcessorRegistry($providerProcessor),
+            new WebhookProviderValidatorRegistry($providerValidator),
+        );
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            providerId: 'stripe',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $context->status);
+        $this->assertSame(1, $providerValidator->validateCalls);
+        $this->assertSame($input, $providerValidator->validatedInput);
+        $this->assertSame(1, $providerProcessor->processCalls);
+        $this->assertSame($input, $providerProcessor->processedInput);
+    }
+
+    public function testProcessorDoesNotCallProviderProcessorWhenProviderValidatorFails(): void
+    {
+        $providerValidator = new FailedWebhookProviderValidator('stripe');
+        $providerProcessor = new SuccessfulWebhookProviderProcessor('stripe');
+        $processor = new WebhookProcessor(
+            new WebhookProviderProcessorRegistry($providerProcessor),
+            new WebhookProviderValidatorRegistry($providerValidator),
+        );
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 'invalid-signature'],
+            providerId: 'stripe',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $context->status);
+        $this->assertNotNull($context->validationFailureReason);
+        $this->assertSame('test_validation_failed', $context->validationFailureReason->code->value);
+        $this->assertSame(1, $providerValidator->validateCalls);
+        $this->assertSame($input, $providerValidator->validatedInput);
+        $this->assertSame(0, $providerProcessor->processCalls);
+        $this->assertNull($providerProcessor->processedInput);
     }
 
     public function testProcessorUsesInputProviderIdForProviderProcessorResolution(): void
