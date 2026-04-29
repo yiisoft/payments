@@ -31,9 +31,27 @@ final class WebhookYooKassaValidatorTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
         $this->assertSame(
-            'YooKassa webhook validation cannot be completed because the current API/config does not expose a webhook-specific authenticity indicator.',
+            'YooKassa webhook signature-level validation is not supported in R1 because the current API/config does not expose a webhook-specific authenticity indicator.',
             $result->reason->message,
         );
+        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+    }
+
+    public function testDoesNotReturnSuccessWhenSignatureLevelValidationIsUnavailableInR1(): void
+    {
+        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: [
+                'Content-Type' => ['application/json'],
+                'User-Agent' => ['YooKassa'],
+            ],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
+        $this->assertStringContainsString('signature-level validation is not supported in R1', $result->reason->message);
         $this->assertSame('payment.succeeded', $result->reason->providerEventType);
     }
 

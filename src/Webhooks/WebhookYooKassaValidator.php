@@ -15,12 +15,16 @@ use JsonException;
  * exposes YooKassa API credentials for outgoing API requests, but it does not
  * expose a webhook-specific signing secret, shared callback token, certificate
  * chain, signature header, or a provider-side verification endpoint contract
- * that can be used for local authenticity validation. Until a concrete
- * authenticity indicator is added to the public configuration, this validator
- * must stay fail-closed after structural request/payload validation passes.
+ * that can be used for local authenticity validation. Signature-level
+ * validation is therefore intentionally not supported in R1 and must be added
+ * only as a separate, explicitly agreed provider-specific contract. Until then,
+ * this validator must stay fail-closed after structural request/payload
+ * validation passes.
  */
 final readonly class WebhookYooKassaValidator implements WebhookProviderValidatorInterface
 {
+    private const R1_LIMITATION_REASON_CODE = 'yookassa_authenticity_indicators_not_available';
+
     public function getProviderId(): string
     {
         return 'yookassa';
@@ -50,8 +54,8 @@ final readonly class WebhookYooKassaValidator implements WebhookProviderValidato
         }
 
         return WebhookValidationResult::failure(new WebhookReason(
-            code: new WebhookReasonCode('yookassa_authenticity_indicators_not_available'),
-            message: 'YooKassa webhook validation cannot be completed because the current API/config does not expose a webhook-specific authenticity indicator.',
+            code: new WebhookReasonCode(self::R1_LIMITATION_REASON_CODE),
+            message: 'YooKassa webhook signature-level validation is not supported in R1 because the current API/config does not expose a webhook-specific authenticity indicator.',
             providerEventType: $payload['event'],
         ));
     }
