@@ -1106,6 +1106,70 @@ readonly class WebhookReason
 }
 ```
 
+#### `WebhookProcessingStatus`
+
+Normalized status of the provider webhook processing outcome. These statuses describe the result
+of the common processor plus the provider-specific payment webhook pipeline:
+
+- `Processed` means the request was validated, recognized, parsed, and mapped successfully;
+- `ValidationFailed` means processing stopped before provider event processing started. This
+  includes provider-specific validation failures and missing provider processors;
+- `UnknownEvent` means the request was valid, but the provider event type is not recognized by
+  the payment webhook mapping;
+- `UnsupportedEvent` means the request was valid and recognized, but the event is outside the
+  supported R1 payment webhook normalization scope.
+
+```php
+enum WebhookProcessingStatus: string
+{
+    case Processed = 'processed';
+    case ValidationFailed = 'validation_failed';
+    case UnknownEvent = 'unknown_event';
+    case UnsupportedEvent = 'unsupported_event';
+}
+```
+
+#### `WebhookProcessingResult`
+
+Provider webhook processing outcome returned by `WebhookProviderProcessorInterface` and then
+wrapped by the common processor into `WebhookContext`. It represents both successful payment
+webhook processing and predictable non-success outcomes such as validation failure, unknown
+events, unsupported events, or a missing provider processor.
+
+`WebhookProcessingResult` is not the final application-facing context. Application code receives
+`WebhookContext`; provider processors return `WebhookProcessingResult` so the common processor
+can attach the original `WebhookInput` and preserved `WebhookRawData` consistently.
+
+```php
+readonly class WebhookProcessingResult
+{
+    public function __construct(
+        public WebhookProcessingStatus $status,
+        public ?WebhookEventType $eventType = null,
+        public ?WebhookReason $reason = null,
+        public ?WebhookRawData $rawData = null,
+    ) {
+    }
+
+    public static function validationFailed(?WebhookRawData $rawData = null, ?WebhookReason $reason = null): self;
+
+    public static function missingProviderProcessor(string $providerId, ?WebhookRawData $rawData = null): self;
+
+    public static function unknownEvent(string $providerEventType): self;
+
+    public static function unsupportedEvent(
+        WebhookEventType $eventType,
+        ?string $providerEventType = null,
+        ?WebhookRawData $rawData = null,
+    ): self;
+}
+```
+
+Validation failures are limited to failures before provider event processing starts. Later
+recognition, parsing, and mapping outcomes must not be added to `WebhookValidationResult`; they
+are represented by `WebhookProcessingResult` statuses and the corresponding reason on
+`WebhookContext`.
+
 #### `WebhookPayload`
 
 Intermediate internal representation of the parsed provider webhook payload. `WebhookPayload` is
