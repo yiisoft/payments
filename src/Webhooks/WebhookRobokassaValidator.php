@@ -30,6 +30,18 @@ final readonly class WebhookRobokassaValidator implements WebhookProviderValidat
 
     public function validate(WebhookInput $input): WebhookValidationResult
     {
+        $conflictingParameterName = $this->conflictingCallbackParameterName($input->queryParams, $input->bodyParams);
+
+        if ($conflictingParameterName !== null) {
+            return WebhookValidationResult::failure(new WebhookReason(
+                code: new WebhookReasonCode('robokassa_callback_parameter_conflict'),
+                message: sprintf(
+                    'Robokassa callback parameter "%s" is present in query and body with different values.',
+                    $conflictingParameterName,
+                ),
+            ));
+        }
+
         $callbackParams = $input->queryParams + $input->bodyParams;
 
         foreach (WebhookRobokassaCallbackFormat::requiredParameters() as $parameterName) {
@@ -56,6 +68,34 @@ final readonly class WebhookRobokassaValidator implements WebhookProviderValidat
         }
 
         return WebhookValidationResult::success();
+    }
+
+    /**
+     * @param array<string, mixed> $queryParams
+     * @param array<string, mixed> $bodyParams
+     */
+    private function conflictingCallbackParameterName(array $queryParams, array $bodyParams): ?string
+    {
+        foreach ($queryParams as $parameterName => $queryValue) {
+            if (
+                !array_key_exists($parameterName, $bodyParams)
+                || !$this->isRobokassaCallbackParameter($parameterName)
+            ) {
+                continue;
+            }
+
+            if ($queryValue !== $bodyParams[$parameterName]) {
+                return $parameterName;
+            }
+        }
+
+        return null;
+    }
+
+    private function isRobokassaCallbackParameter(string $parameterName): bool
+    {
+        return WebhookRobokassaCallbackFormat::isRequiredParameter($parameterName)
+            || WebhookRobokassaCallbackFormat::isCustomParameter($parameterName);
     }
 
     /**
