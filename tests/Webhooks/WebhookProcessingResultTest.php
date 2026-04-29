@@ -34,4 +34,41 @@ final class WebhookProcessingResultTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('provider.event.not_in_mapping', $result->reason->providerEventType);
     }
+
+    public function testUnknownProviderEventTypeKeepsRawProviderValueUnchanged(): void
+    {
+        $result = WebhookProcessingResult::unknownEvent('PAYMENT.CAPTURE.PENDING');
+
+        $this->assertNotNull($result->reason);
+        $this->assertSame('PAYMENT.CAPTURE.PENDING', $result->reason->providerEventType);
+    }
+
+    public function testUnknownProviderEventTypeDoesNotCreateNormalizedEventType(): void
+    {
+        $result = WebhookProcessingResult::unknownEvent('invoice.payment_succeeded.extra');
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unknown_event_type', $result->reason->code->value);
+    }
+
+    public function testUnknownProviderEventTypeResultCanBeCreatedForDifferentProviderFormats(): void
+    {
+        $providerEventTypes = [
+            'payment_intent.requires_action.unmapped',
+            'PAYMENT.CAPTURE.REVERSED.UNMAPPED',
+            'payment.waiting_for_capture.unmapped',
+            'robokassa.operation.unmapped',
+        ];
+
+        foreach ($providerEventTypes as $providerEventType) {
+            $result = WebhookProcessingResult::unknownEvent($providerEventType);
+
+            $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+            $this->assertNull($result->eventType);
+            $this->assertNotNull($result->reason);
+            $this->assertSame($providerEventType, $result->reason->providerEventType);
+        }
+    }
 }
