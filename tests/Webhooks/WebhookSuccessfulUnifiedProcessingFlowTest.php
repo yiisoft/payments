@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
+use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 
 final class WebhookSuccessfulUnifiedProcessingFlowTest extends TestCase
@@ -137,5 +139,41 @@ final class WebhookSuccessfulUnifiedProcessingFlowTest extends TestCase
         $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $context->rawData->headers);
         $this->assertSame(['type' => 'payment_intent.succeeded'], $context->rawData->payload);
         $this->assertSame('payment_intent.succeeded', $context->rawData->providerEventType);
+    }
+
+    public function testSuccessfulFlowUsesStablePublicProcessorApi(): void
+    {
+        $method = new ReflectionMethod(WebhookProcessorInterface::class, 'process');
+
+        $this->assertTrue($method->isPublic());
+        $this->assertSame('input', $method->getParameters()[0]->getName());
+        $this->assertSame(WebhookInput::class, $method->getParameters()[0]->getType()?->getName());
+        $this->assertSame(WebhookContext::class, $method->getReturnType()?->getName());
+        $this->assertFalse($method->getReturnType()?->allowsNull());
+
+        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            payload: ['type' => 'payment_intent.succeeded'],
+        );
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
+        $this->assertInstanceOf(WebhookProcessorInterface::class, $processor);
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            providerId: 'stripe',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertInstanceOf(WebhookContext::class, $context);
+        $this->assertSame('stripe', $context->providerId);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $context->eventType);
+        $this->assertSame(WebhookProcessingStatus::Processed, $context->status);
+        $this->assertSame($input, $context->rawInput);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame('{"type":"payment_intent.succeeded"}', $context->rawData->rawBody);
+        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $context->rawData->headers);
     }
 }
