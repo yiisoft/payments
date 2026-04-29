@@ -286,6 +286,87 @@ final class WebhookStripeValidatorTest extends TestCase
         $this->assertNull($result->reason->providerEventType);
     }
 
+    public function testReturnsValidationFailureWhenSignatureMatchesDifferentPayload(): void
+    {
+        $rawBody = '{"id":"evt_123","type":"payment_intent.succeeded"}';
+        $differentRawBody = '{"id":"evt_456","type":"payment_intent.succeeded"}';
+        $timestamp = '1700000000';
+        $signature = hash_hmac('sha256', $timestamp . '.' . $differentRawBody, 'whsec_test_secret');
+
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: [
+                'Stripe-Signature' => 't=' . $timestamp . ',v1=' . $signature,
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('stripe_signature_mismatch', $result->reason->code->value);
+        $this->assertSame('Stripe webhook signature does not match the request payload.', $result->reason->message);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testReturnsValidationFailureWhenSignatureHeaderIsEmpty(): void
+    {
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: '{"id":"evt_123","type":"payment_intent.succeeded"}',
+            headers: [
+                'Stripe-Signature' => '   ',
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('stripe_signature_header_malformed', $result->reason->code->value);
+        $this->assertSame('Stripe-Signature header is malformed.', $result->reason->message);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testReturnsValidationFailureWhenSignatureTimestampIsTooOldDespiteValidSignature(): void
+    {
+        $rawBody = '{"id":"evt_123","type":"payment_intent.succeeded"}';
+        $timestamp = '1699999699';
+        $signature = hash_hmac('sha256', $timestamp . '.' . $rawBody, 'whsec_test_secret');
+
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: [
+                'Stripe-Signature' => 't=' . $timestamp . ',v1=' . $signature,
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('stripe_signature_timestamp_out_of_tolerance', $result->reason->code->value);
+        $this->assertSame('Stripe-Signature header timestamp is outside the allowed tolerance.', $result->reason->message);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testReturnsValidationFailureWhenSignatureTimestampIsTooFarInFutureDespiteValidSignature(): void
+    {
+        $rawBody = '{"id":"evt_123","type":"payment_intent.succeeded"}';
+        $timestamp = '1700000301';
+        $signature = hash_hmac('sha256', $timestamp . '.' . $rawBody, 'whsec_test_secret');
+
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: [
+                'Stripe-Signature' => 't=' . $timestamp . ',v1=' . $signature,
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('stripe_signature_timestamp_out_of_tolerance', $result->reason->code->value);
+        $this->assertSame('Stripe-Signature header timestamp is outside the allowed tolerance.', $result->reason->message);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
     public function testReturnsSuccessWhenOneOfMultipleV1SignaturesMatchesPayload(): void
     {
         $rawBody = '{"id":"evt_123","type":"payment_intent.succeeded"}';
