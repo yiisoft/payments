@@ -59,4 +59,28 @@ final class WebhookRawDataTest extends TestCase
         $this->assertSame('application/x-www-form-urlencoded', $rawData->getHeaders()['content-type']);
         $this->assertSame([' value with spaces ', 'second-value'], $rawData->getHeaders()['X-Multi-Value']);
     }
+
+    public function testProviderSpecificFieldsArePreservedWithoutInterpretation(): void
+    {
+        $payload = [
+            'type' => 'payment_intent.succeeded',
+            'event' => 'PAYMENT.CAPTURE.COMPLETED',
+            'OutSum' => '100.00',
+            'InvId' => '42',
+        ];
+
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: [
+                'Stripe-Signature' => 't=123,v1=abc',
+                'PayPal-Transmission-Id' => 'paypal-transmission-id',
+            ],
+            payload: $payload,
+            providerEventType: 'payment_intent.succeeded',
+        );
+
+        $this->assertSame($payload, $rawData->getPayload());
+        $this->assertSame('payment_intent.succeeded', $rawData->getProviderEventType());
+        $this->assertArrayNotHasKey('eventType', $rawData->getPayload());
+    }
 }
