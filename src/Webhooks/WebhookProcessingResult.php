@@ -18,6 +18,22 @@ final readonly class WebhookProcessingResult
     }
 
     /**
+     * Creates a result for a webhook request that failed provider-specific validation.
+     */
+    public static function validationFailed(?WebhookRawData $rawData = null): self
+    {
+        return new self(
+            status: WebhookProcessingStatus::ValidationFailed,
+            reason: new WebhookReason(
+                code: new WebhookReasonCode('validation_failed'),
+                message: 'Webhook request failed provider-specific validation.',
+                providerEventType: $rawData?->providerEventType,
+            ),
+            rawData: $rawData,
+        );
+    }
+
+    /**
      * Creates a result for a valid provider webhook event type that is not present in the provider mapping.
      */
     public static function unknownEvent(string $providerEventType): self

@@ -12,6 +12,41 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 
 final class WebhookProcessingResultTest extends TestCase
 {
+    public function testValidationFailureHasValidationFailedResult(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"id":"evt_invalid"}',
+            headers: ['Stripe-Signature' => 'invalid-signature'],
+            payload: ['id' => 'evt_invalid', 'type' => 'payment_intent.succeeded'],
+            providerEventType: 'payment_intent.succeeded',
+        );
+
+        $result = WebhookProcessingResult::validationFailed($rawData);
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('validation_failed', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook request failed provider-specific validation.',
+            $result->reason->message,
+        );
+        $this->assertSame('payment_intent.succeeded', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+    }
+
+    public function testValidationFailureCanBeReturnedWithoutRawData(): void
+    {
+        $result = WebhookProcessingResult::validationFailed();
+
+        $this->assertSame(WebhookProcessingStatus::ValidationFailed, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('validation_failed', $result->reason->code->value);
+        $this->assertNull($result->reason->providerEventType);
+        $this->assertNull($result->rawData);
+    }
+
     public function testUnknownProviderEventTypeHasUnknownEventResult(): void
     {
         $result = WebhookProcessingResult::unknownEvent('payment_intent.partially_refunded');

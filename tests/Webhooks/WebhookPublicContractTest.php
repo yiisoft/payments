@@ -100,7 +100,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertTrue($reflection->isFinal());
         $this->assertTrue($reflection->isReadOnly());
-        $this->assertSame(['__construct', 'unknownEvent', 'unsupportedEvent'], $this->methodNames($reflection));
+        $this->assertSame(['__construct', 'validationFailed', 'unknownEvent', 'unsupportedEvent'], $this->methodNames($reflection));
 
         $constructor = $reflection->getConstructor();
 
@@ -138,6 +138,18 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('rawData')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('rawData')->isPublic());
         $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
+        $validationFailedMethod = $reflection->getMethod('validationFailed');
+
+        $this->assertSame(['rawData'], array_map(
+            static fn ($parameter): string => $parameter->getName(),
+            $validationFailedMethod->getParameters(),
+        ));
+        $this->assertSame(WebhookRawData::class, $validationFailedMethod->getParameters()[0]->getType()?->getName());
+        $this->assertTrue($validationFailedMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertTrue($validationFailedMethod->getParameters()[0]->isDefaultValueAvailable());
+        $this->assertNull($validationFailedMethod->getParameters()[0]->getDefaultValue());
+        $this->assertSame('self', $validationFailedMethod->getReturnType()?->getName());
+
         $unknownEventMethod = $reflection->getMethod('unknownEvent');
 
         $this->assertSame(['providerEventType'], array_map(
