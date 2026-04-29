@@ -192,7 +192,7 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['providerId', 'eventType', 'status', 'validationFailureReason', 'unsupportedEventReason', 'unknownEventReason'], array_map(
+        $this->assertSame(['providerId', 'eventType', 'status', 'validationFailureReason', 'unsupportedEventReason', 'unknownEventReason', 'rawInput', 'rawData'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
@@ -220,6 +220,14 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($constructor->getParameters()[5]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[5]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[5]->getDefaultValue());
+        $this->assertSame(WebhookInput::class, $constructor->getParameters()[6]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[6]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[6]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[6]->getDefaultValue());
+        $this->assertSame(WebhookRawData::class, $constructor->getParameters()[7]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[7]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[7]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[7]->getDefaultValue());
 
         $this->assertSame('string', $reflection->getProperty('providerId')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('providerId')->getType()?->allowsNull());
@@ -245,6 +253,14 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('unknownEventReason')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('unknownEventReason')->isPublic());
         $this->assertTrue($reflection->getProperty('unknownEventReason')->isReadOnly());
+        $this->assertSame(WebhookInput::class, $reflection->getProperty('rawInput')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('rawInput')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('rawInput')->isPublic());
+        $this->assertTrue($reflection->getProperty('rawInput')->isReadOnly());
+        $this->assertSame(WebhookRawData::class, $reflection->getProperty('rawData')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('rawData')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('rawData')->isPublic());
+        $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
     }
 
     public function testWebhookProcessingStatusContractIsStable(): void

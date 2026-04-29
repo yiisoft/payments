@@ -8,9 +8,11 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
+use Yiisoft\Payments\Webhooks\WebhookRawData;
 
 final class WebhookContextTest extends TestCase
 {
@@ -32,6 +34,18 @@ final class WebhookContextTest extends TestCase
             providerEventType: 'invoice.unmapped_event',
         );
 
+        $rawInput = new WebhookInput(
+            rawBody: '{"id":"evt_123"}',
+            headers: ['Stripe-Signature' => 'test-signature'],
+            providerId: 'stripe',
+        );
+        $rawData = new WebhookRawData(
+            rawBody: '{"id":"evt_123"}',
+            headers: ['Stripe-Signature' => 'test-signature'],
+            payload: ['id' => 'evt_123'],
+            providerEventType: 'payment_intent.succeeded',
+        );
+
         $context = new WebhookContext(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -39,6 +53,8 @@ final class WebhookContextTest extends TestCase
             validationFailureReason: $validationFailureReason,
             unsupportedEventReason: $unsupportedEventReason,
             unknownEventReason: $unknownEventReason,
+            rawInput: $rawInput,
+            rawData: $rawData,
         );
 
         $this->assertSame('stripe', $context->providerId);
@@ -47,6 +63,8 @@ final class WebhookContextTest extends TestCase
         $this->assertSame($validationFailureReason, $context->validationFailureReason);
         $this->assertSame($unsupportedEventReason, $context->unsupportedEventReason);
         $this->assertSame($unknownEventReason, $context->unknownEventReason);
+        $this->assertSame($rawInput, $context->rawInput);
+        $this->assertSame($rawData, $context->rawData);
     }
 
     public function testContextCanBeCreatedWithoutNormalizedEventDataYet(): void
@@ -59,6 +77,8 @@ final class WebhookContextTest extends TestCase
         $this->assertNull($context->validationFailureReason);
         $this->assertNull($context->unsupportedEventReason);
         $this->assertNull($context->unknownEventReason);
+        $this->assertNull($context->rawInput);
+        $this->assertNull($context->rawData);
     }
 
     public function testContextIsImmutableValueObject(): void
@@ -73,5 +93,7 @@ final class WebhookContextTest extends TestCase
         $this->assertTrue($reflection->getProperty('validationFailureReason')->isReadOnly());
         $this->assertTrue($reflection->getProperty('unsupportedEventReason')->isReadOnly());
         $this->assertTrue($reflection->getProperty('unknownEventReason')->isReadOnly());
+        $this->assertTrue($reflection->getProperty('rawInput')->isReadOnly());
+        $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
     }
 }
