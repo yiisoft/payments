@@ -53,6 +53,77 @@ final class WebhookRobokassaValidatorTest extends TestCase
         $this->assertNull($result->reason);
     }
 
+    public function testReturnsSuccessWhenSignatureValueUsesUppercaseHex(): void
+    {
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => strtoupper(md5('100.00:123:pass2')),
+            ],
+            providerId: 'robokassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    public function testReturnsSuccessWhenSignatureIncludesCustomShpParametersInSortedOrder(): void
+    {
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'Shp_user' => '42',
+                'Shp_order' => 'abc',
+                'SignatureValue' => md5('100.00:123:pass2:Shp_order=abc:Shp_user=42'),
+            ],
+            providerId: 'robokassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    public function testReturnsSuccessWhenCustomShpParametersAreProvidedAcrossQueryAndBodyParams(): void
+    {
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'Shp_user' => '42',
+            ],
+            bodyParams: [
+                'SignatureValue' => md5('100.00:123:pass2:Shp_order=abc:Shp_user=42'),
+                'Shp_order' => 'abc',
+            ],
+            providerId: 'robokassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    public function testReturnsSuccessWhenSignatureUsesTrimmedRequiredAndCustomParameterValues(): void
+    {
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: [
+                'OutSum' => ' 100.00 ',
+                'InvId' => ' 123 ',
+                'Shp_user' => ' 42 ',
+                'SignatureValue' => md5('100.00:123:pass2:Shp_user=42'),
+            ],
+            providerId: 'robokassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
     public function testRejectsInvalidSignature(): void
     {
         $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
