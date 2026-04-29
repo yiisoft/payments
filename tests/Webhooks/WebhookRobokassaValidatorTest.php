@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
@@ -14,48 +15,69 @@ final class WebhookRobokassaValidatorTest extends TestCase
 {
     public function testImplementsProviderValidatorContract(): void
     {
-        $validator = new WebhookRobokassaValidator();
+        $validator = new WebhookRobokassaValidator('pass2');
 
         $this->assertInstanceOf(WebhookProviderValidatorInterface::class, $validator);
         $this->assertSame('robokassa', $validator->getProviderId());
     }
 
-    public function testReturnsFailClosedAfterRequiredParametersPassUntilSignatureValidationIsImplemented(): void
+    public function testReturnsSuccessWhenSignatureMatchesRequiredParameters(): void
     {
-        $result = (new WebhookRobokassaValidator())->validate(new WebhookInput(
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
             rawBody: '',
             queryParams: [
                 'OutSum' => '100.00',
                 'InvId' => '123',
-                'SignatureValue' => 'signature',
+                'SignatureValue' => md5('100.00:123:pass2'),
             ],
             providerId: 'robokassa',
         ));
 
-        $this->assertFalse($result->isValid);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('robokassa_webhook_validation_not_implemented', $result->reason->code->value);
-        $this->assertSame('Robokassa webhook validation is not implemented yet.', $result->reason->message);
-        $this->assertNull($result->reason->providerEventType);
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
     }
 
-    public function testAcceptsRequiredParametersFromBodyParamsBeforeSignatureValidation(): void
+    public function testAcceptsRequiredParametersFromBodyParamsForSignatureValidation(): void
     {
-        $result = (new WebhookRobokassaValidator())->validate(new WebhookInput(
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
             rawBody: '',
             bodyParams: [
                 'OutSum' => '100.00',
                 'InvId' => '123',
-                'SignatureValue' => 'signature',
+                'SignatureValue' => md5('100.00:123:pass2'),
+            ],
+            providerId: 'robokassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    public function testRejectsInvalidSignature(): void
+    {
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
+            rawBody: '',
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => md5('100.00:123:wrong-pass2'),
             ],
             providerId: 'robokassa',
         ));
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('robokassa_webhook_validation_not_implemented', $result->reason->code->value);
-        $this->assertSame('Robokassa webhook validation is not implemented yet.', $result->reason->message);
+        $this->assertSame('robokassa_signature_mismatch', $result->reason->code->value);
+        $this->assertSame('Robokassa callback signature does not match the request parameters.', $result->reason->message);
         $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testRejectsEmptyPassword2(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Robokassa password2 must be a non-empty string.');
+
+        new WebhookRobokassaValidator('   ');
     }
 
     /**
@@ -66,11 +88,11 @@ final class WebhookRobokassaValidatorTest extends TestCase
         $queryParams = [
             'OutSum' => '100.00',
             'InvId' => '123',
-            'SignatureValue' => 'signature',
+            'SignatureValue' => md5('100.00:123:pass2'),
         ];
         unset($queryParams[$parameterName]);
 
-        $result = (new WebhookRobokassaValidator())->validate(new WebhookInput(
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
             rawBody: '',
             queryParams: $queryParams,
             providerId: 'robokassa',
@@ -104,11 +126,11 @@ final class WebhookRobokassaValidatorTest extends TestCase
         $queryParams = [
             'OutSum' => '100.00',
             'InvId' => '123',
-            'SignatureValue' => 'signature',
+            'SignatureValue' => md5('100.00:123:pass2'),
         ];
         $queryParams[$parameterName] = $value;
 
-        $result = (new WebhookRobokassaValidator())->validate(new WebhookInput(
+        $result = (new WebhookRobokassaValidator('pass2'))->validate(new WebhookInput(
             rawBody: '',
             queryParams: $queryParams,
             providerId: 'robokassa',
