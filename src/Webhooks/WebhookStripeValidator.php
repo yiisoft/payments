@@ -92,9 +92,17 @@ final readonly class WebhookStripeValidator implements WebhookProviderValidatorI
             ));
         }
 
+        $expectedSignature = hash_hmac('sha256', $timestamp . '.' . $input->rawBody, $this->signingSecret);
+
+        foreach ($signatures as $signature) {
+            if (hash_equals($expectedSignature, $signature)) {
+                return WebhookValidationResult::success();
+            }
+        }
+
         return WebhookValidationResult::failure(new WebhookReason(
-            code: new WebhookReasonCode('stripe_signature_validation_not_implemented'),
-            message: 'Stripe webhook signature validation is not implemented yet.',
+            code: new WebhookReasonCode('stripe_signature_mismatch'),
+            message: 'Stripe webhook signature does not match the request payload.',
         ));
     }
 }

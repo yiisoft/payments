@@ -122,8 +122,8 @@ final class WebhookStripeValidatorTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('stripe_signature_validation_not_implemented', $result->reason->code->value);
-        $this->assertSame('Stripe webhook signature validation is not implemented yet.', $result->reason->message);
+        $this->assertSame('stripe_signature_mismatch', $result->reason->code->value);
+        $this->assertSame('Stripe webhook signature does not match the request payload.', $result->reason->message);
         $this->assertNull($result->reason->providerEventType);
     }
 
@@ -142,9 +142,62 @@ final class WebhookStripeValidatorTest extends TestCase
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('stripe_signature_validation_not_implemented', $result->reason->code->value);
-        $this->assertSame('Stripe webhook signature validation is not implemented yet.', $result->reason->message);
+        $this->assertSame('stripe_signature_mismatch', $result->reason->code->value);
+        $this->assertSame('Stripe webhook signature does not match the request payload.', $result->reason->message);
         $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testReturnsSuccessWhenSignatureMatchesPayload(): void
+    {
+        $rawBody = '{"id":"evt_123","type":"payment_intent.succeeded"}';
+        $timestamp = '1700000000';
+        $signature = hash_hmac('sha256', $timestamp . '.' . $rawBody, 'whsec_test_secret');
+
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: [
+                'Stripe-Signature' => 't=' . $timestamp . ',v1=' . $signature,
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    public function testReturnsValidationFailureWhenSignatureDoesNotMatchPayload(): void
+    {
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: '{"id":"evt_123","type":"payment_intent.succeeded"}',
+            headers: [
+                'Stripe-Signature' => 't=1700000000,v1=invalid_signature',
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('stripe_signature_mismatch', $result->reason->code->value);
+        $this->assertSame('Stripe webhook signature does not match the request payload.', $result->reason->message);
+        $this->assertNull($result->reason->providerEventType);
+    }
+
+    public function testReturnsSuccessWhenOneOfMultipleV1SignaturesMatchesPayload(): void
+    {
+        $rawBody = '{"id":"evt_123","type":"payment_intent.succeeded"}';
+        $timestamp = '1700000000';
+        $signature = hash_hmac('sha256', $timestamp . '.' . $rawBody, 'whsec_test_secret');
+
+        $result = $this->validator()->validate(new WebhookInput(
+            rawBody: $rawBody,
+            headers: [
+                'Stripe-Signature' => 't=' . $timestamp . ',v1=invalid_signature,v1=' . $signature,
+            ],
+            providerId: 'stripe',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
     }
 
     private function validator(): WebhookStripeValidator
