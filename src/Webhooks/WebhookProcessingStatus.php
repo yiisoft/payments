@@ -13,4 +13,9 @@ enum WebhookProcessingStatus: string
      * The webhook request was validated, recognized, parsed, and mapped successfully.
      */
     case Processed = 'processed';
+
+    /**
+     * The webhook request failed provider-specific validation before event processing.
+     */
+    case ValidationFailed = 'validation_failed';
 }

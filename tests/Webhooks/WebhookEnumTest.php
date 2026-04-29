@@ -32,6 +32,7 @@ final class WebhookEnumTest extends TestCase
     public function testWebhookProcessingStatusValues(): void
     {
         $this->assertSame('processed', WebhookProcessingStatus::Processed->value);
+        $this->assertSame('validation_failed', WebhookProcessingStatus::ValidationFailed->value);
     }
 
     public function testWebhookSupportStatusValues(): void
