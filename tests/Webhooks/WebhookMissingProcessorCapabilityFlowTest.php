@@ -157,6 +157,69 @@ final class WebhookMissingProcessorCapabilityFlowTest extends TestCase
         $this->assertSame('charge.dispute.created', $context->rawData->providerEventType);
     }
 
+    public function testExistingProviderWithUnknownEventReturnsUnknownContext(): void
+    {
+        $providerProcessor = new class implements WebhookProviderProcessorInterface {
+            public int $processCalls = 0;
+            public ?WebhookInput $processedInput = null;
+
+            public function getProviderId(): string
+            {
+                return 'stripe';
+            }
+
+            public function process(WebhookInput $input): WebhookProcessingResult
+            {
+                $this->processCalls++;
+                $this->processedInput = $input;
+
+                return new WebhookProcessingResult(
+                    status: WebhookProcessingStatus::UnknownEvent,
+                    reason: new WebhookReason(
+                        code: new WebhookReasonCode('unknown_event_type'),
+                        message: 'Provider event type is not recognized by the webhook event mapping.',
+                        providerEventType: 'payment_intent.processing',
+                    ),
+                    rawData: new WebhookRawData(
+                        rawBody: $input->rawBody,
+                        headers: $input->headers,
+                        payload: ['type' => 'payment_intent.processing'],
+                        providerEventType: 'payment_intent.processing',
+                    ),
+                );
+            }
+        };
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.processing"}',
+            headers: ['Stripe-Signature' => 'signature'],
+            providerId: 'stripe',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame(1, $providerProcessor->processCalls);
+        $this->assertSame($input, $providerProcessor->processedInput);
+        $this->assertSame('stripe', $context->providerId);
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $context->status);
+        $this->assertNull($context->eventType);
+        $this->assertNull($context->validationFailureReason);
+        $this->assertNull($context->unsupportedEventReason);
+        $this->assertNotNull($context->unknownEventReason);
+        $this->assertSame('unknown_event_type', $context->unknownEventReason->code->value);
+        $this->assertSame(
+            'Provider event type is not recognized by the webhook event mapping.',
+            $context->unknownEventReason->message,
+        );
+        $this->assertSame('payment_intent.processing', $context->unknownEventReason->providerEventType);
+        $this->assertSame($input, $context->rawInput);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame($input->rawBody, $context->rawData->rawBody);
+        $this->assertSame($input->headers, $context->rawData->headers);
+        $this->assertSame(['type' => 'payment_intent.processing'], $context->rawData->payload);
+        $this->assertSame('payment_intent.processing', $context->rawData->providerEventType);
+    }
+
     public function testMissingProviderProcessorDoesNotFallbackToAnotherRegisteredProcessor(): void
     {
         $registeredProcessor = new SuccessfulWebhookProviderProcessor(providerId: 'stripe');
