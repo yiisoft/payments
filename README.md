@@ -1196,6 +1196,35 @@ readonly class WebhookPayload
 }
 ```
 
+#### `WebhookRawData`
+
+Preserved provider request data attached to webhook processing results and the final
+`WebhookContext`. `WebhookRawData` keeps the original request body, original headers,
+original query-string provider fields, original form/body provider fields, and, when
+provider processing reaches parsing, the decoded provider payload and provider-specific event
+type.
+
+Raw data is intentionally separate from normalized application-facing data. It is used for
+logs, diagnostics, fallback handling, and custom provider-specific application logic that
+needs access to provider fields beyond the common payment webhook context. Query and body
+field names must remain provider field names as received; they must not be mapped to
+application-specific names or normalized payment data.
+
+```php
+readonly class WebhookRawData
+{
+    public function __construct(
+        public string $rawBody,
+        public array $headers = [],
+        public mixed $payload = null,
+        public ?string $providerEventType = null,
+        public array $queryParams = [],
+        public array $bodyParams = [],
+    ) {
+    }
+}
+```
+
 #### `WebhookContext`
 
 `WebhookContext` is the final normalized context returned to application code after validation
