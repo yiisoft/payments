@@ -9,7 +9,7 @@ use InvalidArgumentException;
 /**
  * Machine-readable reason code for a webhook processing outcome.
  */
-final readonly class WebhookReasonCode
+final readonly class WebhookReasonCode implements \Stringable
 {
     public function __construct(
         public string $value,
