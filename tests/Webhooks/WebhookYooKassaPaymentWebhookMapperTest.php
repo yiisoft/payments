@@ -48,6 +48,67 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
     }
 
     /**
+     * @dataProvider processedYooKassaNonSuccessPaymentOutcomeProvider
+     */
+    public function testProcessesYooKassaNonSuccessPaymentOutcomes(
+        WebhookEventType $eventType,
+        string $providerEventType,
+        string $paymentStatus,
+    ): void {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: sprintf(
+                '{"type":"notification","event":"%s","object":{"status":"%s"}}',
+                $providerEventType,
+                $paymentStatus,
+            ),
+            headers: ['Content-Type' => 'application/json'],
+            payload: [
+                'type' => 'notification',
+                'event' => $providerEventType,
+                'object' => ['status' => $paymentStatus],
+            ],
+            providerEventType: $providerEventType,
+        );
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: $eventType,
+            providerEventType: $providerEventType,
+            data: [
+                'type' => 'notification',
+                'event' => $providerEventType,
+                'object' => ['status' => $paymentStatus],
+            ],
+            paymentStatus: $paymentStatus,
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame($eventType, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame($paymentStatus, $result->paymentStatus);
+    }
+
+    public static function processedYooKassaNonSuccessPaymentOutcomeProvider(): array
+    {
+        return [
+            'canceled payment' => [
+                WebhookEventType::PaymentCanceled,
+                'payment.canceled',
+                'canceled',
+            ],
+            'waiting for capture payment' => [
+                WebhookEventType::PaymentRequiresCapture,
+                'payment.waiting_for_capture',
+                'waiting_for_capture',
+            ],
+        ];
+    }
+
+    /**
      * @dataProvider unsupportedYooKassaRefundLikePayloadProvider
      */
     public function testKeepsUnsupportedResultForRecognizedYooKassaRefundLikePayloads(
