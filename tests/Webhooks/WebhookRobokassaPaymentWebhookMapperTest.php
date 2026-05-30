@@ -127,14 +127,22 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertNull($result->rawData);
     }
 
-    public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
+    public function testReturnsUnknownEventForPayloadWithoutNormalizedEventTypeAndPreservesRawData(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '',
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            payload: ['OutSum' => '100.00'],
+            providerEventType: 'unsupported_callback',
+            bodyParams: ['OutSum' => '100.00'],
+        );
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: null,
             providerEventType: 'unsupported_callback',
             data: ['OutSum' => '100.00'],
+            rawData: $rawData,
         );
 
         $result = $mapper->mapPaymentWebhook($payload);
@@ -144,6 +152,7 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('unknown_event_type', $result->reason->code->value);
         $this->assertSame('unsupported_callback', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
     }
 
     public function testMapsUnsupportedRobokassaCallbackToUnsupportedEvent(): void
@@ -275,9 +284,24 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertNull($result->rawData);
     }
 
-    public function testMapsAmbiguousRobokassaCallbackWithoutProviderEventTypeToUnknownEvent(): void
+    public function testMapsAmbiguousRobokassaCallbackWithoutProviderEventTypeToUnknownEventAndPreservesRawData(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '',
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            payload: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+            providerEventType: null,
+            bodyParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: null,
@@ -287,6 +311,7 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
                 'InvId' => '123',
                 'SignatureValue' => 'signature',
             ],
+            rawData: $rawData,
         );
 
         $result = $mapper->mapPaymentWebhook($payload);
@@ -296,6 +321,7 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('unknown_event_type', $result->reason->code->value);
         $this->assertSame('', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
     }
 
     public function testDefinesSupportedRobokassaPaymentStatusSignalForR1(): void
