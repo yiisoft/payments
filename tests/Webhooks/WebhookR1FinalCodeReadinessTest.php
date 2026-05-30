@@ -18,6 +18,8 @@ use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentWebhookMapper;
 use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
 
@@ -113,6 +115,17 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
                 'type' => 'notification',
                 'event' => 'payment.future_r1_event',
                 'object' => ['id' => 'payment-final-ready-yookassa', 'status' => 'future'],
+            ],
+        ];
+
+        yield 'robokassa' => [
+            new WebhookRobokassaPaymentWebhookMapper(),
+            WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            'robokassa.future_r1_event',
+            [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature-final-ready-robokassa',
             ],
         ];
     }
