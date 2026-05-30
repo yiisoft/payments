@@ -88,6 +88,11 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
     public static function unsupportedStripePaymentPayloadProvider(): array
     {
         return [
+            'created payment intent' => [
+                WebhookEventType::PaymentCreated,
+                'payment_intent.created',
+                'requires_payment_method',
+            ],
             'processing payment intent' => [
                 WebhookEventType::PaymentProcessing,
                 'payment_intent.processing',
@@ -152,5 +157,56 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         );
 
         $this->assertSame('succeeded', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullWhenStripePaymentStatusIsMissing(): void
+    {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            data: ['type' => 'payment_intent.succeeded'],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
+    public function testMapsSuccessfulStripePaymentPayloadWithoutRawData(): void
+    {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            data: ['type' => 'payment_intent.succeeded'],
+            paymentStatus: 'succeeded',
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertNull($result->rawData);
+    }
+
+    public function testReturnsUnknownEventForPayloadWithoutProviderEventType(): void
+    {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: null,
+            providerEventType: null,
+            data: ['type' => 'payment_intent.future_event'],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unknown_event_type', $result->reason->code->value);
+        $this->assertSame('', $result->reason->providerEventType);
     }
 }
