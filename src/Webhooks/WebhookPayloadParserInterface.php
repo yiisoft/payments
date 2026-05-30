@@ -9,6 +9,14 @@ namespace Yiisoft\Payments\Webhooks;
  */
 interface WebhookPayloadParserInterface
 {
+    /**
+     * Parses a recognized webhook request into an intermediate provider payload.
+     *
+     * The input contains the raw request data received from the application, while
+     * the event type is the normalized library-level payment webhook event selected
+     * before parsing. The returned {@see WebhookPayload} must preserve the data
+     * required by provider-specific mapping.
+     */
     public function parsePayload(
         WebhookInput $input,
         WebhookEventType $eventType,
