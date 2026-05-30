@@ -114,6 +114,78 @@ final class WebhookPayPalValidatorTest extends TestCase
         $this->assertNull($result->reason->providerEventType);
     }
 
+    #[DataProvider('verifierFailureProvider')]
+    public function testReturnsPayPalVerifierFailureResultWithoutReplacingReason(
+        WebhookValidationResult $verifierFailure,
+        string $expectedCode,
+        string $expectedMessage,
+        ?string $expectedProviderEventType,
+    ): void {
+        $verifier = new class($verifierFailure) implements WebhookPayPalSignatureVerifierInterface {
+            public bool $called = false;
+
+            public function __construct(private WebhookValidationResult $result)
+            {
+            }
+
+            public function verify(WebhookInput $input, string $webhookId): WebhookValidationResult
+            {
+                $this->called = true;
+
+                return $this->result;
+            }
+        };
+
+        $result = (new WebhookPayPalValidator($verifier, 'WH-123'))->validate(new WebhookInput(
+            rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.DENIED"}',
+            headers: self::requiredTransmissionHeaders(),
+            providerId: 'paypal',
+        ));
+
+        $this->assertTrue($verifier->called);
+        $this->assertFalse($result->isValid);
+        $this->assertSame($verifierFailure, $result);
+        $this->assertNotNull($result->reason);
+        $this->assertSame($expectedCode, $result->reason->code->value);
+        $this->assertSame($expectedMessage, $result->reason->message);
+        $this->assertSame($expectedProviderEventType, $result->reason->providerEventType);
+    }
+
+    public function testDoesNotCallPayPalVerifierFailureFlowWhenTransmissionHeadersAreInvalid(): void
+    {
+        $verifier = new class implements WebhookPayPalSignatureVerifierInterface {
+            public bool $called = false;
+
+            public function verify(WebhookInput $input, string $webhookId): WebhookValidationResult
+            {
+                $this->called = true;
+
+                return WebhookValidationResult::failure(new WebhookReason(
+                    code: new WebhookReasonCode('paypal_signature_verification_failed'),
+                    message: 'PayPal webhook signature verification failed.',
+                ));
+            }
+        };
+
+        $headers = self::requiredTransmissionHeaders();
+        unset($headers['PayPal-Transmission-Sig']);
+
+        $result = (new WebhookPayPalValidator($verifier, 'WH-123'))->validate(new WebhookInput(
+            rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+            headers: $headers,
+            providerId: 'paypal',
+        ));
+
+        $this->assertFalse($verifier->called);
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_required_transmission_header_missing', $result->reason->code->value);
+        $this->assertSame(
+            'Required PayPal transmission header "PayPal-Transmission-Sig" is missing or empty.',
+            $result->reason->message,
+        );
+    }
+
     public function testPassesConfiguredWebhookIdToVerifier(): void
     {
         $verifier = new class implements WebhookPayPalSignatureVerifierInterface {
@@ -343,6 +415,33 @@ final class WebhookPayPalValidatorTest extends TestCase
         yield 'PayPal-Transmission-Sig is empty' => [
             self::requiredTransmissionHeaders(['PayPal-Transmission-Sig' => ['', " \t"]]),
             'PayPal-Transmission-Sig',
+        ];
+    }
+
+    /**
+     * @return iterable<string, array{WebhookValidationResult, string, string, string|null}>
+     */
+    public static function verifierFailureProvider(): iterable
+    {
+        yield 'signature verification failure' => [
+            WebhookValidationResult::failure(new WebhookReason(
+                code: new WebhookReasonCode('paypal_signature_verification_failed'),
+                message: 'PayPal webhook signature verification failed.',
+            )),
+            'paypal_signature_verification_failed',
+            'PayPal webhook signature verification failed.',
+            null,
+        ];
+
+        yield 'verification failure with provider event type' => [
+            WebhookValidationResult::failure(new WebhookReason(
+                code: new WebhookReasonCode('paypal_signature_verification_failed'),
+                message: 'PayPal webhook signature verification failed for provider event.',
+                providerEventType: 'PAYMENT.CAPTURE.DENIED',
+            )),
+            'paypal_signature_verification_failed',
+            'PayPal webhook signature verification failed for provider event.',
+            'PAYMENT.CAPTURE.DENIED',
         ];
     }
 
