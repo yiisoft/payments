@@ -275,10 +275,13 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(1, $constructor->getNumberOfParameters());
-        $this->assertSame('webhookId', $constructor->getParameters()[0]->getName());
-        $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
+        $this->assertSame(2, $constructor->getNumberOfParameters());
+        $this->assertSame('signatureVerifier', $constructor->getParameters()[0]->getName());
+        $this->assertSame(WebhookPayPalSignatureVerifierInterface::class, $constructor->getParameters()[0]->getType()?->getName());
         $this->assertFalse($constructor->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('webhookId', $constructor->getParameters()[1]->getName());
+        $this->assertSame('string', $constructor->getParameters()[1]->getType()?->getName());
+        $this->assertFalse($constructor->getParameters()[1]->getType()?->allowsNull());
 
         $providerIdMethod = $reflection->getMethod('getProviderId');
 
