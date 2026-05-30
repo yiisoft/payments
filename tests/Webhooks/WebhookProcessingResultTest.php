@@ -143,6 +143,44 @@ final class WebhookProcessingResultTest extends TestCase
         $this->assertSame('provider.event.not_in_mapping', $result->reason->providerEventType);
     }
 
+    public function testUnknownProviderEventTypeCanKeepRawDataForFallbackDebug(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.partially_refunded","data":{"object":{"id":"pi_123"}}}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: [
+                'type' => 'payment_intent.partially_refunded',
+                'data' => ['object' => ['id' => 'pi_123']],
+            ],
+            providerEventType: 'payment_intent.partially_refunded',
+        );
+
+        $result = WebhookProcessingResult::unknownEvent(
+            'payment_intent.partially_refunded',
+            $rawData,
+        );
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unknown_event_type', $result->reason->code->value);
+        $this->assertSame('payment_intent.partially_refunded', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame(
+            '{"type":"payment_intent.partially_refunded","data":{"object":{"id":"pi_123"}}}',
+            $result->rawData->rawBody,
+        );
+        $this->assertSame(['Stripe-Signature' => 't=123,v1=signature'], $result->rawData->headers);
+        $this->assertSame('payment_intent.partially_refunded', $result->rawData->providerEventType);
+        $this->assertSame(
+            [
+                'type' => 'payment_intent.partially_refunded',
+                'data' => ['object' => ['id' => 'pi_123']],
+            ],
+            $result->rawData->payload,
+        );
+    }
+
     public function testUnknownProviderEventTypeKeepsRawProviderValueUnchanged(): void
     {
         $result = WebhookProcessingResult::unknownEvent('PAYMENT.CAPTURE.PENDING');
