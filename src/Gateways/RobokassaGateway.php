@@ -17,7 +17,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilities;
 use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
-use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
@@ -539,50 +539,24 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
 
     public function getWebhookCapabilities(): WebhookCapabilities
     {
-        $supportedResultUrlOutcome = WebhookRobokassaCallbackFormat::supportedR1PaymentOutcome();
+        $capabilities = [];
 
-        return new WebhookCapabilities(
-            new WebhookCapability(
-                WebhookEventType::PaymentCreated,
+        foreach (
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ] as $eventType
+        ) {
+            $capabilities[] = new WebhookCapability(
+                $eventType,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentProcessing,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRequiresAction,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRequiresCapture,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-            new WebhookCapability(
-                $supportedResultUrlOutcome,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentFailed,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentCanceled,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRefunded,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-        );
+                WebhookRobokassaCallbackFormat::supportsR1PaymentOutcome($eventType)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
+            );
+        }
+
+        return new WebhookCapabilities(...$capabilities);
     }
 
     private function extractRobokassaErrorMessage(array $data): ?string
