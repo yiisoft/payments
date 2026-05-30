@@ -101,6 +101,97 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame('unsupported_callback', $result->reason->providerEventType);
     }
 
+
+    public function testMapsUnsupportedRobokassaCallbackToUnsupportedEvent(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '',
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            payload: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+        );
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentRefunded,
+            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook event type is recognized but is not supported by the current webhook contract.',
+            $result->reason->message,
+        );
+        $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+    }
+
+    public function testMapsAmbiguousRobokassaCallbackToUnknownEvent(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: null,
+            providerEventType: 'ambiguous_callback',
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unknown_event_type', $result->reason->code->value);
+        $this->assertSame(
+            'Provider event type is not recognized by the webhook event mapping.',
+            $result->reason->message,
+        );
+        $this->assertSame('ambiguous_callback', $result->reason->providerEventType);
+        $this->assertNull($result->rawData);
+    }
+
+    public function testMapsAmbiguousRobokassaCallbackWithoutProviderEventTypeToUnknownEvent(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: null,
+            providerEventType: null,
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unknown_event_type', $result->reason->code->value);
+        $this->assertSame('', $result->reason->providerEventType);
+    }
+
     public function testDoesNotExtractRobokassaPaymentStatusAtSkeletonStage(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
