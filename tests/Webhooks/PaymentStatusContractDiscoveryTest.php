@@ -55,6 +55,16 @@ final class PaymentStatusContractDiscoveryTest extends TestCase
         );
     }
 
+    public function testR1DoesNotIntroduceDedicatedPaymentStatusDomainModel(): void
+    {
+        $this->assertFalse(class_exists('Yiisoft\Payments\Models\PaymentStatus'));
+        $this->assertFalse(enum_exists('Yiisoft\Payments\Models\PaymentStatus'));
+        $this->assertFalse(class_exists('Yiisoft\Payments\Webhooks\PaymentStatus'));
+        $this->assertFalse(enum_exists('Yiisoft\Payments\Webhooks\PaymentStatus'));
+        $this->assertFalse(class_exists('Yiisoft\Payments\Constants\PaymentIntentStatus'));
+        $this->assertFalse(enum_exists('Yiisoft\Payments\Constants\PaymentIntentStatus'));
+    }
+
     public function testWebhookPayloadCarriesNullableProviderPaymentStatus(): void
     {
         $property = new ReflectionProperty(WebhookPayload::class, 'paymentStatus');
@@ -67,7 +77,7 @@ final class PaymentStatusContractDiscoveryTest extends TestCase
         $this->assertSame('string', $type->getName());
     }
 
-    public function testMapperStatusExtractionReturnsNullableString(): void
+    public function testMapperStatusExtractionReturnsMinimalR1NullableStringRepresentation(): void
     {
         $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, 'extractPaymentStatus');
         $parameters = $method->getParameters();

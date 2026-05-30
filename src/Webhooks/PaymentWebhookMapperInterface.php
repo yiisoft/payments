@@ -15,7 +15,11 @@ interface PaymentWebhookMapperInterface
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult;
 
     /**
-     * Extracts a provider payment status from the intermediate payload, if it is available.
+     * Extracts the minimal R1 payment status representation from the intermediate payload.
+     *
+     * R1 intentionally returns the provider status as a nullable string instead of introducing
+     * a dedicated common status value object. This keeps the webhook contract aligned with
+     * the existing PaymentIntent status surface and avoids a premature domain model.
      */
     public function extractPaymentStatus(WebhookPayload $payload): ?string;
 }
