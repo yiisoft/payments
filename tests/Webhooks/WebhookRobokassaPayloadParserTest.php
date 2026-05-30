@@ -144,4 +144,87 @@ final class WebhookRobokassaPayloadParserTest extends TestCase
         $this->assertSame('order-123', $payload->data['Shp_orderId']);
         $this->assertSame($payload->data, $payload->rawData?->payload);
     }
+
+    public function testParsesEmptyCallbackPayloadWithoutException(): void
+    {
+        $parser = new WebhookRobokassaPayloadParser();
+        $input = new WebhookInput(
+            rawBody: '',
+            headers: [],
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+        );
+
+        $payload = $parser->parsePayload($input, WebhookEventType::PaymentSucceeded);
+
+        $this->assertSame(WebhookRobokassaCallbackFormat::PROVIDER_ID, $payload->providerId);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $payload->eventType);
+        $this->assertNull($payload->providerEventType);
+        $this->assertSame([], $payload->data);
+        $this->assertNull($payload->paymentStatus);
+        $this->assertSame([], $payload->rawData?->payload);
+        $this->assertNull($payload->rawData?->providerEventType);
+        $this->assertSame([], $payload->rawData?->queryParams);
+        $this->assertSame([], $payload->rawData?->bodyParams);
+    }
+
+    public function testQueryParamsTakePrecedenceWhenSameProviderFieldExistsInBodyParams(): void
+    {
+        $parser = new WebhookRobokassaPayloadParser();
+        $input = new WebhookInput(
+            rawBody: 'OutSum=200.00&InvId=456&SignatureValue=body-signature',
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'query-signature',
+            ],
+            bodyParams: [
+                'OutSum' => '200.00',
+                'InvId' => '456',
+                'SignatureValue' => 'body-signature',
+                'Shp_orderId' => 'order-123',
+            ],
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+        );
+
+        $payload = $parser->parsePayload(
+            $input,
+            WebhookEventType::PaymentSucceeded,
+            WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+        );
+
+        $this->assertSame('100.00', $payload->data['OutSum']);
+        $this->assertSame('123', $payload->data['InvId']);
+        $this->assertSame('query-signature', $payload->data['SignatureValue']);
+        $this->assertSame('order-123', $payload->data['Shp_orderId']);
+        $this->assertSame($input->queryParams, $payload->rawData?->queryParams);
+        $this->assertSame($input->bodyParams, $payload->rawData?->bodyParams);
+    }
+
+    public function testPreservesNonStringProviderFieldValues(): void
+    {
+        $parser = new WebhookRobokassaPayloadParser();
+        $input = new WebhookInput(
+            rawBody: '',
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => 123,
+                'SignatureValue' => 'abc123',
+                'Shp_items' => ['sku-1', 'sku-2'],
+            ],
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+        );
+
+        $payload = $parser->parsePayload(
+            $input,
+            WebhookEventType::PaymentSucceeded,
+            WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+        );
+
+        $this->assertSame(123, $payload->data['InvId']);
+        $this->assertSame(['sku-1', 'sku-2'], $payload->data['Shp_items']);
+        $this->assertSame($payload->data, $payload->rawData?->payload);
+    }
+
 }
