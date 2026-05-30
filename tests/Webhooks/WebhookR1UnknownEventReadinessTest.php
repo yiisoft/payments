@@ -44,7 +44,13 @@ final class WebhookR1UnknownEventReadinessTest extends TestCase
         );
         $this->assertSame($expectedProviderEventType, $context->unknownEventReason->providerEventType);
         $this->assertSame($input, $context->rawInput);
-        $this->assertNull($context->rawData);
+        $this->assertNotNull($context->rawData);
+        $this->assertSame($input->rawBody, $context->rawData->rawBody);
+        $this->assertSame($input->headers, $context->rawData->headers);
+        $this->assertSame($input->queryParams, $context->rawData->queryParams);
+        $this->assertSame($input->bodyParams, $context->rawData->bodyParams);
+        $this->assertSame($expectedProviderEventType, $context->rawData->providerEventType);
+        $this->assertSame(json_decode($input->rawBody, true, 512, JSON_THROW_ON_ERROR), $context->rawData->payload);
     }
 
     /**
