@@ -68,6 +68,44 @@ final class WebhookPayPalSignatureVerifierTest extends TestCase
         ], $requestBody['webhook_event']);
     }
 
+    public function testReturnsFailureForFailedPayPalVerificationResponse(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = new TestHttpClient($factory);
+        $httpClient->queueJsonResponse([
+            'access_token' => 'ACCESS-TOKEN-123',
+            'expires_in' => 3600,
+        ]);
+        $httpClient->queueJsonResponse([
+            'verification_status' => 'FAILURE',
+        ]);
+
+        $verifier = new WebhookPayPalSignatureVerifier(
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            sandbox: true,
+            httpClient: $httpClient,
+            requestFactory: $factory,
+            streamFactory: $factory,
+            endpoints: new PayPalEndpoints(
+                sandboxBaseUri: 'https://paypal-sandbox.test',
+                liveBaseUri: 'https://paypal-live.test',
+            ),
+        );
+
+        $result = $verifier->verify($this->input(), 'WH-CONFIGURED-123');
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_signature_verification_failed', $result->reason->code->value);
+        $this->assertSame('PayPal webhook signature verification failed.', $result->reason->message);
+        $this->assertSame('POST', $httpClient->lastRequest['method']);
+        $this->assertSame(
+            'https://paypal-sandbox.test/v1/notifications/verify-webhook-signature',
+            $httpClient->lastRequest['uri'],
+        );
+    }
+
     private function input(): WebhookInput
     {
         return new WebhookInput(
