@@ -9,6 +9,7 @@ use IteratorAggregate;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
+use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
@@ -37,6 +38,32 @@ use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
 
 final class WebhookPublicContractTest extends TestCase
 {
+    public function testPaymentWebhookMapperInterfaceContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(PaymentWebhookMapperInterface::class);
+
+        $this->assertTrue($reflection->isInterface());
+        $this->assertSame(['extractPaymentStatus', 'mapPaymentWebhook'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));
+
+        $mapMethod = $reflection->getMethod('mapPaymentWebhook');
+
+        $this->assertSame(1, $mapMethod->getNumberOfParameters());
+        $this->assertSame('payload', $mapMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookPayload::class, $mapMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($mapMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame(WebhookProcessingResult::class, $mapMethod->getReturnType()?->getName());
+        $this->assertFalse($mapMethod->getReturnType()?->allowsNull());
+
+        $extractMethod = $reflection->getMethod('extractPaymentStatus');
+
+        $this->assertSame(1, $extractMethod->getNumberOfParameters());
+        $this->assertSame('payload', $extractMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookPayload::class, $extractMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($extractMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('string', $extractMethod->getReturnType()?->getName());
+        $this->assertTrue($extractMethod->getReturnType()?->allowsNull());
+    }
+
     public function testWebhookProcessorContractIsStable(): void
     {
         $reflection = new ReflectionClass(WebhookProcessor::class);
