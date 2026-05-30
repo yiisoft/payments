@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
@@ -206,6 +207,44 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame('unsupported_event_type', $result->reason->code->value);
         $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $result->reason->providerEventType);
         $this->assertNull($result->rawData);
+    }
+
+    #[DataProvider('unsupportedR1PaymentOutcomeProvider')]
+    public function testReturnsUnsupportedForNonSuccessR1PaymentOutcomes(WebhookEventType $eventType): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: $eventType,
+            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame($eventType, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $result->reason->providerEventType);
+        $this->assertNull($result->paymentStatus);
+    }
+
+    /**
+     * @return iterable<string, array{WebhookEventType}>
+     */
+    public static function unsupportedR1PaymentOutcomeProvider(): iterable
+    {
+        yield 'created' => [WebhookEventType::PaymentCreated];
+        yield 'processing' => [WebhookEventType::PaymentProcessing];
+        yield 'requires action' => [WebhookEventType::PaymentRequiresAction];
+        yield 'requires capture' => [WebhookEventType::PaymentRequiresCapture];
+        yield 'failed' => [WebhookEventType::PaymentFailed];
+        yield 'canceled' => [WebhookEventType::PaymentCanceled];
     }
 
     public function testMapsAmbiguousRobokassaCallbackToUnknownEvent(): void
