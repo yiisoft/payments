@@ -120,6 +120,24 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
         ], $this->capabilitySupportStatuses($gateway));
     }
 
+    public function testRefundLikeEventsAreNotDeclaredAsSupportedR1PaymentCapabilities(): void
+    {
+        foreach ($this->createGateways() as $gateway) {
+            $refundCapability = null;
+
+            foreach ($gateway->getWebhookCapabilities() as $capability) {
+                if ($capability->eventType === WebhookEventType::PaymentRefunded) {
+                    $refundCapability = $capability;
+                    break;
+                }
+            }
+
+            $this->assertInstanceOf(WebhookCapability::class, $refundCapability);
+            $this->assertSame(WebhookEntityKind::Payment, $refundCapability->entityKind);
+            $this->assertSame(WebhookSupportStatus::Unsupported, $refundCapability->supportStatus);
+        }
+    }
+
     public function testRobokassaWebhookCapabilitiesMatchImplementedR1PaymentMapping(): void
     {
         $psr17Factory = new Psr17Factory();
