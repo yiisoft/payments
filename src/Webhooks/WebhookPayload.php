@@ -10,6 +10,7 @@ namespace Yiisoft\Payments\Webhooks;
 final readonly class WebhookPayload
 {
     /**
+     * @param WebhookEventType|null $eventType Normalized library-level webhook event type recognized from the provider event.
      * @param array<string, mixed> $data Parsed provider payload data preserved for provider-specific mapping.
      */
     public function __construct(
