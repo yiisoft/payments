@@ -286,13 +286,43 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertNull($payload->paymentStatus);
     }
 
-    public function testDoesNotExtractRobokassaPaymentStatus(): void
+    public function testExtractsRobokassaPaymentStatusFromSupportedResultUrlSignal(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: WebhookEventType::PaymentSucceeded,
-            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            providerEventType: WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL,
+            data: ['OutSum' => '100.00'],
+        );
+
+        $this->assertSame(
+            WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL,
+            $mapper->extractPaymentStatus($payload),
+        );
+    }
+
+    public function testExplicitRobokassaPayloadPaymentStatusHasPriority(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL,
+            data: ['OutSum' => '100.00'],
+            paymentStatus: 'paid',
+        );
+
+        $this->assertSame('paid', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullForRobokassaPayloadWithoutSupportedStatusSignal(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: null,
+            providerEventType: 'ambiguous_callback',
             data: ['OutSum' => '100.00'],
         );
 

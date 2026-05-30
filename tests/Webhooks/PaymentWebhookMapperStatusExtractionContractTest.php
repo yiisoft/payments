@@ -50,7 +50,6 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
         yield 'stripe' => [new WebhookStripePaymentWebhookMapper(), 'stripe'];
         yield 'paypal' => [new WebhookPayPalPaymentWebhookMapper(), 'paypal'];
         yield 'yookassa' => [new WebhookYooKassaPaymentWebhookMapper(), 'yookassa'];
-        yield 'robokassa' => [new WebhookRobokassaPaymentWebhookMapper(), 'robokassa'];
     }
 
     #[DataProvider('nullableStatusMapperProvider')]
@@ -67,16 +66,15 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
         $this->assertNull($mapper->extractPaymentStatus($payload));
     }
 
-    public function testRobokassaKeepsStatusExtractionNullableUntilSupportedStatusSignalIsDefined(): void
+    public function testRobokassaExtractsStatusFromSupportedResultUrlStatusSignal(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
         $payload = new WebhookPayload(
             providerId: 'robokassa',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'result_url',
-            paymentStatus: 'paid',
         );
 
-        $this->assertNull($mapper->extractPaymentStatus($payload));
+        $this->assertSame('result_url', $mapper->extractPaymentStatus($payload));
     }
 }

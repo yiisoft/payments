@@ -28,6 +28,17 @@ final readonly class WebhookRobokassaPaymentWebhookMapper implements PaymentWebh
 
     public function extractPaymentStatus(WebhookPayload $payload): ?string
     {
+        if ($payload->paymentStatus !== null) {
+            return $payload->paymentStatus;
+        }
+
+        if (
+            $payload->eventType === WebhookEventType::PaymentSucceeded
+            && $payload->providerEventType === WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL
+        ) {
+            return WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL;
+        }
+
         return null;
     }
 }
