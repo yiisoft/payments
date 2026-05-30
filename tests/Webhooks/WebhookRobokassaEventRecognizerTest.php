@@ -6,7 +6,9 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookEventRecognizerInterface;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaEventRecognizer;
 
 final class WebhookRobokassaEventRecognizerTest extends TestCase
@@ -18,19 +20,31 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
         $this->assertInstanceOf(WebhookEventRecognizerInterface::class, $recognizer);
     }
 
-    public function testDoesNotRecognizeProviderEventTypeYet(): void
+    public function testRecognizesSupportedResultUrlCallbackFromQueryParams(): void
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $this->assertNull(
-            $recognizer->recognizeProviderEventType(new WebhookInput(queryParams: ['OutSum' => '100.00'])),
-        );
+        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'SignatureValue' => 'abc123',
+        ]));
+
+        $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $providerEventType);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $recognizer->recognizeEventType($providerEventType));
     }
 
-    public function testDoesNotNormalizeEventTypeYet(): void
+    public function testRecognizesSupportedResultUrlCallbackFromBodyParams(): void
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $this->assertNull($recognizer->recognizeEventType('result_url'));
+        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(bodyParams: [
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'SignatureValue' => 'abc123',
+        ]));
+
+        $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $providerEventType);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $recognizer->recognizeEventType($providerEventType));
     }
 }

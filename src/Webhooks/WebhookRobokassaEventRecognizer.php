@@ -11,11 +11,21 @@ final readonly class WebhookRobokassaEventRecognizer implements WebhookEventReco
 {
     public function recognizeProviderEventType(WebhookInput $input): ?string
     {
-        return null;
+        $callbackParams = $input->queryParams + $input->bodyParams;
+
+        foreach (WebhookRobokassaCallbackFormat::requiredParameters() as $parameterName) {
+            if (!array_key_exists($parameterName, $callbackParams)) {
+                return null;
+            }
+        }
+
+        return WebhookRobokassaCallbackFormat::CALLBACK_TYPE;
     }
 
     public function recognizeEventType(string $providerEventType): ?WebhookEventType
     {
-        return null;
+        return $providerEventType === WebhookRobokassaCallbackFormat::CALLBACK_TYPE
+            ? WebhookEventType::PaymentSucceeded
+            : null;
     }
 }
