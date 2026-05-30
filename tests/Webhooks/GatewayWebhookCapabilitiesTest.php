@@ -44,9 +44,31 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
 
             foreach ($capabilities as $capability) {
                 $this->assertSame(WebhookEntityKind::Payment, $capability->entityKind);
-                $this->assertSame(WebhookSupportStatus::Supported, $capability->supportStatus);
             }
         }
+    }
+
+    public function testStripeWebhookCapabilitiesMatchImplementedR1PaymentMapping(): void
+    {
+        $psr17Factory = new Psr17Factory();
+        $gateway = new StripeGateway(
+            'test_api_key',
+            new TestHttpClient($psr17Factory),
+            $psr17Factory,
+            $psr17Factory,
+            new NullLogger(),
+        );
+
+        $this->assertSame([
+            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
+        ], $this->capabilitySupportStatuses($gateway));
     }
 
     /**
@@ -95,6 +117,20 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
                 $logger,
             ),
         ];
+    }
+
+    /**
+     * @return array<string, WebhookSupportStatus>
+     */
+    private function capabilitySupportStatuses(WebhookCapabilitiesProviderInterface $gateway): array
+    {
+        $supportStatuses = [];
+
+        foreach ($gateway->getWebhookCapabilities() as $capability) {
+            $supportStatuses[$capability->eventType->value] = $capability->supportStatus;
+        }
+
+        return $supportStatuses;
     }
 
     /**
