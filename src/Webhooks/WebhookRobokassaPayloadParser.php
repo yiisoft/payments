@@ -33,6 +33,9 @@ final readonly class WebhookRobokassaPayloadParser implements WebhookPayloadPars
     }
 
     /**
+     * Returns provider callback fields as received, without renaming Robokassa keys such as
+     * OutSum, InvId, SignatureValue, or Shp_* to application-specific names.
+     *
      * @return array<string, mixed>
      */
     private function collectCallbackData(WebhookInput $input): array
