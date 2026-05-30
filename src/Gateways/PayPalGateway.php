@@ -19,6 +19,8 @@ use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
+use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
+use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 /**
@@ -584,6 +586,24 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             }
         }
         return null;
+    }
+
+    public function createWebhookValidator(string $webhookId): WebhookPayPalValidator
+    {
+        return new WebhookPayPalValidator($this->createWebhookSignatureVerifier(), $webhookId);
+    }
+
+    public function createWebhookSignatureVerifier(): WebhookPayPalSignatureVerifier
+    {
+        return new WebhookPayPalSignatureVerifier(
+            clientId: $this->clientId,
+            clientSecret: $this->clientSecret,
+            sandbox: $this->sandbox,
+            httpClient: $this->httpClient,
+            requestFactory: $this->requestFactory,
+            streamFactory: $this->streamFactory,
+            endpoints: $this->endpoints ?? new PayPalEndpoints(),
+        );
     }
 
     public function getWebhookCapabilities(): WebhookCapabilities
