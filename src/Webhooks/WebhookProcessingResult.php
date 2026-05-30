@@ -21,6 +21,18 @@ final readonly class WebhookProcessingResult
     }
 
     /**
+     * Creates a result for a webhook payload that was mapped successfully.
+     */
+    public static function processed(WebhookEventType $eventType, ?WebhookRawData $rawData = null): self
+    {
+        return new self(
+            status: WebhookProcessingStatus::Processed,
+            eventType: $eventType,
+            rawData: $rawData,
+        );
+    }
+
+    /**
      * Creates a result for a webhook request that failed provider-specific validation.
      */
     public static function validationFailed(?WebhookRawData $rawData = null, ?WebhookReason $reason = null): self

@@ -21,7 +21,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
     }
 
-    public function testDoesNotMapRecognizedStripePaymentPayloadYet(): void
+    public function testMapsSuccessfulStripePaymentPayload(): void
     {
         $mapper = new WebhookStripePaymentWebhookMapper();
         $rawData = new WebhookRawData(
@@ -41,11 +41,37 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
         $result = $mapper->mapPaymentWebhook($payload);
 
-        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
         $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertSame($rawData, $result->rawData);
+    }
+
+    public function testKeepsUnsupportedResultForOtherRecognizedStripePaymentPayloads(): void
+    {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.payment_failed"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: ['type' => 'payment_intent.payment_failed'],
+            providerEventType: 'payment_intent.payment_failed',
+        );
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentFailed,
+            providerEventType: 'payment_intent.payment_failed',
+            data: ['type' => 'payment_intent.payment_failed'],
+            paymentStatus: 'requires_payment_method',
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentFailed, $result->eventType);
         $this->assertNotNull($result->reason);
         $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('payment_intent.succeeded', $result->reason->providerEventType);
+        $this->assertSame('payment_intent.payment_failed', $result->reason->providerEventType);
         $this->assertSame($rawData, $result->rawData);
     }
 
@@ -68,7 +94,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertSame('payment_intent.future_event', $result->reason->providerEventType);
     }
 
-    public function testDoesNotExtractStripePaymentStatusYet(): void
+    public function testExtractsStripePaymentStatusFromPayload(): void
     {
         $mapper = new WebhookStripePaymentWebhookMapper();
         $payload = new WebhookPayload(
@@ -79,6 +105,6 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
             paymentStatus: 'succeeded',
         );
 
-        $this->assertNull($mapper->extractPaymentStatus($payload));
+        $this->assertSame('succeeded', $mapper->extractPaymentStatus($payload));
     }
 }
