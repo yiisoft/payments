@@ -160,11 +160,18 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
         $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '{"event":"payment.future_event"}',
+            headers: ['Content-Type' => 'application/json'],
+            payload: ['event' => 'payment.future_event'],
+            providerEventType: 'payment.future_event',
+        );
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: null,
             providerEventType: 'payment.future_event',
             data: ['event' => 'payment.future_event'],
+            rawData: $rawData,
         );
 
         $result = $mapper->mapPaymentWebhook($payload);
@@ -174,6 +181,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('unknown_event_type', $result->reason->code->value);
         $this->assertSame('payment.future_event', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
     }
 
     public function testExtractsYooKassaPaymentStatusFromPayload(): void
