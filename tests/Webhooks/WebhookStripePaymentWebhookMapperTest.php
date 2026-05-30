@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
@@ -45,6 +46,37 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
         $this->assertNull($result->reason);
         $this->assertSame($rawData, $result->rawData);
+    }
+
+    #[DataProvider('supportedStripePaymentOutcomeProvider')]
+    public function testMapsSupportedStripePaymentOutcomePayloads(
+        WebhookEventType $eventType,
+        string $providerEventType,
+        string $paymentStatus,
+    ): void {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: sprintf('{"type":"%s"}', $providerEventType),
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: ['type' => $providerEventType],
+            providerEventType: $providerEventType,
+        );
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: $eventType,
+            providerEventType: $providerEventType,
+            data: ['data' => ['object' => ['status' => $paymentStatus]]],
+            paymentStatus: $paymentStatus,
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame($eventType, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame($paymentStatus, $result->paymentStatus);
     }
 
     public function testKeepsUnsupportedResultForRecognizedStripeRefundLikePayload(): void
@@ -201,5 +233,29 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('unknown_event_type', $result->reason->code->value);
         $this->assertSame('', $result->reason->providerEventType);
+    }
+
+    public static function supportedStripePaymentOutcomeProvider(): iterable
+    {
+        yield 'failed payment intent' => [
+            WebhookEventType::PaymentFailed,
+            'payment_intent.payment_failed',
+            'requires_payment_method',
+        ];
+        yield 'canceled payment intent' => [
+            WebhookEventType::PaymentCanceled,
+            'payment_intent.canceled',
+            'canceled',
+        ];
+        yield 'processing payment intent' => [
+            WebhookEventType::PaymentProcessing,
+            'payment_intent.processing',
+            'processing',
+        ];
+        yield 'requires capture payment intent' => [
+            WebhookEventType::PaymentRequiresCapture,
+            'payment_intent.amount_capturable_updated',
+            'requires_capture',
+        ];
     }
 }
