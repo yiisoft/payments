@@ -11,10 +11,18 @@ final readonly class WebhookRobokassaEventRecognizer implements WebhookEventReco
 {
     public function recognizeProviderEventType(WebhookInput $input): ?string
     {
+        if ($this->hasConflictingCallbackParameter($input->queryParams, $input->bodyParams)) {
+            return null;
+        }
+
         $callbackParams = $input->queryParams + $input->bodyParams;
 
         foreach (WebhookRobokassaCallbackFormat::requiredParameters() as $parameterName) {
-            if (!array_key_exists($parameterName, $callbackParams)) {
+            if (
+                !array_key_exists($parameterName, $callbackParams)
+                || !is_string($callbackParams[$parameterName])
+                || trim($callbackParams[$parameterName]) === ''
+            ) {
                 return null;
             }
         }
@@ -27,5 +35,27 @@ final readonly class WebhookRobokassaEventRecognizer implements WebhookEventReco
         return $providerEventType === WebhookRobokassaCallbackFormat::CALLBACK_TYPE
             ? WebhookEventType::PaymentSucceeded
             : null;
+    }
+
+    /**
+     * @param array<string, mixed> $queryParams Original Robokassa provider fields from the query string.
+     * @param array<string, mixed> $bodyParams Original Robokassa provider fields from the form body.
+     */
+    private function hasConflictingCallbackParameter(array $queryParams, array $bodyParams): bool
+    {
+        foreach ($queryParams as $parameterName => $queryValue) {
+            if (
+                !array_key_exists($parameterName, $bodyParams)
+                || !WebhookRobokassaCallbackFormat::isRequiredParameter($parameterName)
+            ) {
+                continue;
+            }
+
+            if ($queryValue !== $bodyParams[$parameterName]) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

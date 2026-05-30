@@ -47,4 +47,60 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
         $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $providerEventType);
         $this->assertSame(WebhookEventType::PaymentSucceeded, $recognizer->recognizeEventType($providerEventType));
     }
+
+    public function testReturnsNullForMissingRequiredCallbackParameter(): void
+    {
+        $recognizer = new WebhookRobokassaEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+            'OutSum' => '100.00',
+            'SignatureValue' => 'abc123',
+        ])));
+    }
+
+    public function testReturnsNullForEmptyRequiredCallbackParameter(): void
+    {
+        $recognizer = new WebhookRobokassaEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+            'OutSum' => '100.00',
+            'InvId' => ' ',
+            'SignatureValue' => 'abc123',
+        ])));
+    }
+
+    public function testReturnsNullForNonStringRequiredCallbackParameter(): void
+    {
+        $recognizer = new WebhookRobokassaEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+            'OutSum' => '100.00',
+            'InvId' => 123,
+            'SignatureValue' => 'abc123',
+        ])));
+    }
+
+    public function testReturnsNullForConflictingRequiredCallbackParameter(): void
+    {
+        $recognizer = new WebhookRobokassaEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'abc123',
+            ],
+            bodyParams: [
+                'OutSum' => '200.00',
+            ],
+        )));
+    }
+
+    public function testReturnsNullForUnsupportedProviderEventType(): void
+    {
+        $recognizer = new WebhookRobokassaEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeEventType('unsupported_callback'));
+    }
+
 }
