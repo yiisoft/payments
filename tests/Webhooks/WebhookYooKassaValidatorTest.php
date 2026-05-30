@@ -109,11 +109,15 @@ final class WebhookYooKassaValidatorTest extends TestCase
         ];
     }
 
-    public function testRejectsMissingAuthorizationHeader(): void
+    /**
+     * @param array<string, string|list<string>> $headers
+     */
+    #[DataProvider('missingAuthorizationHeaderProvider')]
+    public function testRejectsMissingAuthorizationHeader(array $headers): void
     {
         $result = self::validator()->validate(new WebhookInput(
             rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
-            headers: ['Content-Type' => ['application/json']],
+            headers: $headers,
             providerId: 'yookassa',
         ));
 
@@ -122,6 +126,16 @@ final class WebhookYooKassaValidatorTest extends TestCase
         $this->assertSame('yookassa_authorization_header_missing', $result->reason->code->value);
         $this->assertSame('YooKassa Authorization header is missing.', $result->reason->message);
         $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string|list<string>>}>
+     */
+    public static function missingAuthorizationHeaderProvider(): iterable
+    {
+        yield 'no headers' => [[]];
+        yield 'only content type header' => [['Content-Type' => ['application/json']]];
+        yield 'only unrelated webhook header' => [['X-YooKassa-Event' => ['payment.succeeded']]];
     }
 
     #[DataProvider('invalidAuthorizationHeaderProvider')]
