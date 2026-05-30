@@ -25,6 +25,8 @@ final class WebhookJsonPayloadParserMalformedBodyTest extends TestCase
         $input = new WebhookInput(
             rawBody: '{invalid-json',
             headers: ['Content-Type' => 'application/json'],
+            queryParams: ['source' => 'query-value'],
+            bodyParams: ['source' => 'body-value'],
             providerId: $providerId,
         );
 
@@ -44,6 +46,8 @@ final class WebhookJsonPayloadParserMalformedBodyTest extends TestCase
         $this->assertSame(['Content-Type' => 'application/json'], $payload->rawData->headers);
         $this->assertSame([], $payload->rawData->payload);
         $this->assertSame($providerEventType, $payload->rawData->providerEventType);
+        $this->assertSame(['source' => 'query-value'], $payload->rawData->queryParams);
+        $this->assertSame(['source' => 'body-value'], $payload->rawData->bodyParams);
     }
 
     #[DataProvider('jsonPayloadParserProvider')]
