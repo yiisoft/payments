@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use ReflectionMethod;
 use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
@@ -15,6 +16,33 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 
 final class PaymentWebhookMapperInterfaceTest extends TestCase
 {
+    public function testInterfaceExposesOnlyStableMapperContractMethods(): void
+    {
+        $reflection = new ReflectionClass(PaymentWebhookMapperInterface::class);
+
+        $this->assertTrue($reflection->isInterface());
+        $this->assertSame(
+            [
+                'mapPaymentWebhook',
+                'extractPaymentStatus',
+            ],
+            array_map(
+                static fn (ReflectionMethod $method): string => $method->getName(),
+                $reflection->getMethods(),
+            ),
+        );
+    }
+
+    public function testMapperContractMethodsArePublicInstanceMethods(): void
+    {
+        foreach (['mapPaymentWebhook', 'extractPaymentStatus'] as $methodName) {
+            $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, $methodName);
+
+            $this->assertTrue($method->isPublic());
+            $this->assertFalse($method->isStatic());
+        }
+    }
+
     public function testMapPaymentWebhookAcceptsPayloadAndReturnsProcessingResult(): void
     {
         $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, 'mapPaymentWebhook');
