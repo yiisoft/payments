@@ -60,6 +60,50 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
+    public function testMapsSupportedRobokassaQueryCallbackToProcessedResultAndPreservesRawData(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '',
+            headers: ['Content-Type' => 'application/x-www-form-urlencoded'],
+            payload: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            queryParams: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame([
+            'OutSum' => '100.00',
+            'InvId' => '123',
+            'SignatureValue' => 'signature',
+        ], $result->rawData?->queryParams);
+        $this->assertSame([], $result->rawData?->bodyParams);
+    }
+
     public function testMapsSupportedRobokassaCallbackToProcessedResultWithoutRawData(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
@@ -101,7 +145,6 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame('unsupported_callback', $result->reason->providerEventType);
     }
 
-
     public function testMapsUnsupportedRobokassaCallbackToUnsupportedEvent(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
@@ -139,6 +182,30 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         );
         $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $result->reason->providerEventType);
         $this->assertSame($rawData, $result->rawData);
+    }
+
+    public function testMapsUnsupportedRobokassaCallbackWithoutRawDataToUnsupportedEvent(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentRefunded,
+            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $result->reason->providerEventType);
+        $this->assertNull($result->rawData);
     }
 
     public function testMapsAmbiguousRobokassaCallbackToUnknownEvent(): void
@@ -192,7 +259,7 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame('', $result->reason->providerEventType);
     }
 
-    public function testDoesNotExtractRobokassaPaymentStatusAtSkeletonStage(): void
+    public function testDoesNotExtractRobokassaPaymentStatus(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
         $payload = new WebhookPayload(
