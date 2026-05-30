@@ -13,6 +13,7 @@ final readonly class WebhookContext
         public ?string $providerId = null,
         public ?WebhookEventType $eventType = null,
         public ?WebhookProcessingStatus $status = null,
+        public ?string $paymentStatus = null,
         public ?WebhookReason $validationFailureReason = null,
         public ?WebhookReason $unsupportedEventReason = null,
         public ?WebhookReason $unknownEventReason = null,

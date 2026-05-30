@@ -514,7 +514,7 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['providerId', 'eventType', 'status', 'validationFailureReason', 'unsupportedEventReason', 'unknownEventReason', 'rawInput', 'rawData'], array_map(
+        $this->assertSame(['providerId', 'eventType', 'status', 'paymentStatus', 'validationFailureReason', 'unsupportedEventReason', 'unknownEventReason', 'rawInput', 'rawData'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
@@ -530,7 +530,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($constructor->getParameters()[2]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[2]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[2]->getDefaultValue());
-        $this->assertSame(WebhookReason::class, $constructor->getParameters()[3]->getType()?->getName());
+        $this->assertSame('string', $constructor->getParameters()[3]->getType()?->getName());
         $this->assertTrue($constructor->getParameters()[3]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[3]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[3]->getDefaultValue());
@@ -542,14 +542,18 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($constructor->getParameters()[5]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[5]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[5]->getDefaultValue());
-        $this->assertSame(WebhookInput::class, $constructor->getParameters()[6]->getType()?->getName());
+        $this->assertSame(WebhookReason::class, $constructor->getParameters()[6]->getType()?->getName());
         $this->assertTrue($constructor->getParameters()[6]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[6]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[6]->getDefaultValue());
-        $this->assertSame(WebhookRawData::class, $constructor->getParameters()[7]->getType()?->getName());
+        $this->assertSame(WebhookInput::class, $constructor->getParameters()[7]->getType()?->getName());
         $this->assertTrue($constructor->getParameters()[7]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[7]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[7]->getDefaultValue());
+        $this->assertSame(WebhookRawData::class, $constructor->getParameters()[8]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[8]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[8]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[8]->getDefaultValue());
 
         $this->assertSame('string', $reflection->getProperty('providerId')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('providerId')->getType()?->allowsNull());
@@ -563,6 +567,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('status')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('status')->isPublic());
         $this->assertTrue($reflection->getProperty('status')->isReadOnly());
+        $this->assertSame('string', $reflection->getProperty('paymentStatus')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('paymentStatus')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('paymentStatus')->isPublic());
+        $this->assertTrue($reflection->getProperty('paymentStatus')->isReadOnly());
         $this->assertSame(WebhookReason::class, $reflection->getProperty('validationFailureReason')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('validationFailureReason')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('validationFailureReason')->isPublic());
