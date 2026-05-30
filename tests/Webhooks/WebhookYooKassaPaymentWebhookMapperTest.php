@@ -21,7 +21,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
     }
 
-    public function testKeepsUnsupportedResultForRecognizedYooKassaPaymentPayload(): void
+    public function testMapsSuccessfulYooKassaPaymentPayload(): void
     {
         $mapper = new WebhookYooKassaPaymentWebhookMapper();
         $rawData = new WebhookRawData(
@@ -41,11 +41,9 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
         $result = $mapper->mapPaymentWebhook($payload);
 
-        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
         $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+        $this->assertNull($result->reason);
         $this->assertSame($rawData, $result->rawData);
     }
 
@@ -68,7 +66,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame('payment.future_event', $result->reason->providerEventType);
     }
 
-    public function testDoesNotExtractYooKassaPaymentStatusAtSkeletonStage(): void
+    public function testExtractsYooKassaPaymentStatusFromPayload(): void
     {
         $mapper = new WebhookYooKassaPaymentWebhookMapper();
         $payload = new WebhookPayload(
@@ -79,6 +77,38 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
             paymentStatus: 'succeeded',
         );
 
+        $this->assertSame('succeeded', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullWhenYooKassaPaymentStatusIsMissing(): void
+    {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment.succeeded',
+            data: ['event' => 'payment.succeeded'],
+        );
+
         $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
+    public function testMapsSuccessfulYooKassaPaymentPayloadWithoutRawData(): void
+    {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment.succeeded',
+            data: ['event' => 'payment.succeeded'],
+            paymentStatus: 'succeeded',
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertNull($result->rawData);
     }
 }
