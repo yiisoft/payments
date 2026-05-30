@@ -106,6 +106,161 @@ final class WebhookPayPalSignatureVerifierTest extends TestCase
         );
     }
 
+
+    /**
+     * @dataProvider malformedVerificationResponseProvider
+     */
+    public function testReturnsFailureForMalformedPayPalVerificationResponse(
+        string $responseBody,
+        string $expectedCode,
+        string $expectedMessage,
+    ): void {
+        $factory = new Psr17Factory();
+        $httpClient = new TestHttpClient($factory);
+        $httpClient->queueJsonResponse([
+            'access_token' => 'ACCESS-TOKEN-123',
+            'expires_in' => 3600,
+        ]);
+        $httpClient->queueRawResponse($responseBody, 200, ['Content-Type' => ['application/json']]);
+
+        $verifier = $this->createVerifier($factory, $httpClient);
+
+        $result = $verifier->verify($this->input(), 'WH-CONFIGURED-123');
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame($expectedCode, $result->reason->code->value);
+        $this->assertSame($expectedMessage, $result->reason->message);
+    }
+
+    public static function malformedVerificationResponseProvider(): array
+    {
+        return [
+            'invalid JSON' => [
+                '{not-json',
+                'paypal_signature_verification_failed',
+                'PayPal webhook signature verification request failed: Syntax error',
+            ],
+            'JSON list' => [
+                '[]',
+                'paypal_signature_verification_response_invalid',
+                'PayPal webhook signature verification response does not contain a supported verification status.',
+            ],
+            'missing verification status' => [
+                json_encode(['id' => 'VERIFY-123'], JSON_THROW_ON_ERROR),
+                'paypal_signature_verification_response_invalid',
+                'PayPal webhook signature verification response does not contain a supported verification status.',
+            ],
+            'unsupported verification status' => [
+                json_encode(['verification_status' => 'PENDING'], JSON_THROW_ON_ERROR),
+                'paypal_signature_verification_response_invalid',
+                'PayPal webhook signature verification response does not contain a supported verification status.',
+            ],
+        ];
+    }
+
+    public function testReturnsFailureForPayPalVerificationHttpErrorResponse(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = new TestHttpClient($factory);
+        $httpClient->queueJsonResponse([
+            'access_token' => 'ACCESS-TOKEN-123',
+            'expires_in' => 3600,
+        ]);
+        $httpClient->queueJsonResponse(['name' => 'INTERNAL_SERVER_ERROR'], 500);
+
+        $verifier = $this->createVerifier($factory, $httpClient);
+
+        $result = $verifier->verify($this->input(), 'WH-CONFIGURED-123');
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_signature_verification_failed', $result->reason->code->value);
+        $this->assertSame(
+            'PayPal webhook signature verification request failed: PayPal API returned HTTP 500 during webhook signature verification.',
+            $result->reason->message,
+        );
+    }
+
+    /**
+     * @dataProvider malformedAccessTokenResponseProvider
+     */
+    public function testReturnsFailureForMalformedPayPalAccessTokenResponse(
+        string $responseBody,
+        string $expectedMessage,
+    ): void {
+        $factory = new Psr17Factory();
+        $httpClient = new TestHttpClient($factory);
+        $httpClient->queueRawResponse($responseBody, 200, ['Content-Type' => ['application/json']]);
+
+        $verifier = $this->createVerifier($factory, $httpClient);
+
+        $result = $verifier->verify($this->input(), 'WH-CONFIGURED-123');
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_signature_verification_failed', $result->reason->code->value);
+        $this->assertSame($expectedMessage, $result->reason->message);
+    }
+
+    public static function malformedAccessTokenResponseProvider(): array
+    {
+        return [
+            'invalid JSON' => [
+                '{not-json',
+                'PayPal webhook signature verification request failed: Syntax error',
+            ],
+            'JSON list' => [
+                '[]',
+                'PayPal webhook signature verification request failed: PayPal access token response does not contain a non-empty access token.',
+            ],
+            'missing access token' => [
+                json_encode(['expires_in' => 3600], JSON_THROW_ON_ERROR),
+                'PayPal webhook signature verification request failed: PayPal access token response does not contain a non-empty access token.',
+            ],
+            'empty access token' => [
+                json_encode(['access_token' => '', 'expires_in' => 3600], JSON_THROW_ON_ERROR),
+                'PayPal webhook signature verification request failed: PayPal access token response does not contain a non-empty access token.',
+            ],
+        ];
+    }
+
+    public function testReturnsFailureForPayPalAccessTokenHttpErrorResponse(): void
+    {
+        $factory = new Psr17Factory();
+        $httpClient = new TestHttpClient($factory);
+        $httpClient->queueJsonResponse(['error' => 'invalid_client'], 401);
+
+        $verifier = $this->createVerifier($factory, $httpClient);
+
+        $result = $verifier->verify($this->input(), 'WH-CONFIGURED-123');
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_signature_verification_failed', $result->reason->code->value);
+        $this->assertSame(
+            'PayPal webhook signature verification request failed: PayPal API returned HTTP 401 while requesting an access token.',
+            $result->reason->message,
+        );
+    }
+
+
+    private function createVerifier(Psr17Factory $factory, TestHttpClient $httpClient): WebhookPayPalSignatureVerifier
+    {
+        return new WebhookPayPalSignatureVerifier(
+            clientId: 'client-id',
+            clientSecret: 'client-secret',
+            sandbox: true,
+            httpClient: $httpClient,
+            requestFactory: $factory,
+            streamFactory: $factory,
+            endpoints: new PayPalEndpoints(
+                sandboxBaseUri: 'https://paypal-sandbox.test',
+                liveBaseUri: 'https://paypal-live.test',
+            ),
+        );
+    }
+
     private function input(): WebhookInput
     {
         return new WebhookInput(
