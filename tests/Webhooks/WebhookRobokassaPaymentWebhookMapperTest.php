@@ -22,7 +22,7 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
     }
 
-    public function testKeepsUnsupportedResultForRecognizedRobokassaPaymentPayload(): void
+    public function testMapsSupportedRobokassaCallbackToProcessedResult(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();
         $rawData = new WebhookRawData(
@@ -54,16 +54,32 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
 
         $result = $mapper->mapPaymentWebhook($payload);
 
-        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
         $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame(
-            'Webhook event type is recognized but is not supported by the current webhook contract.',
-            $result->reason->message,
-        );
-        $this->assertSame(WebhookRobokassaCallbackFormat::CALLBACK_TYPE, $result->reason->providerEventType);
+        $this->assertNull($result->reason);
         $this->assertSame($rawData, $result->rawData);
+    }
+
+    public function testMapsSupportedRobokassaCallbackToProcessedResultWithoutRawData(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertNull($result->rawData);
     }
 
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void

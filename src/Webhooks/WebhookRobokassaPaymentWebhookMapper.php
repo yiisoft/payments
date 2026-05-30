@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Webhooks;
 
 /**
- * Provider-specific mapper skeleton for Robokassa payment webhook payloads.
+ * Provider-specific mapper for Robokassa payment webhook payloads.
  */
 final readonly class WebhookRobokassaPaymentWebhookMapper implements PaymentWebhookMapperInterface
 {
@@ -13,6 +13,10 @@ final readonly class WebhookRobokassaPaymentWebhookMapper implements PaymentWebh
     {
         if ($payload->eventType === null) {
             return WebhookProcessingResult::unknownEvent($payload->providerEventType ?? '');
+        }
+
+        if ($payload->eventType === WebhookEventType::PaymentSucceeded) {
+            return WebhookProcessingResult::processed($payload->eventType, $payload->rawData);
         }
 
         return WebhookProcessingResult::unsupportedEvent(
