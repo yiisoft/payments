@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
@@ -36,7 +37,7 @@ final class WebhookPayPalValidatorTest extends TestCase
     {
         $result = (new WebhookPayPalValidator(self::successfulVerifier(), 'WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-EVENT-123","event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"CAPTURE-123"}}',
-            headers: $this->requiredTransmissionHeaders(),
+            headers: self::requiredTransmissionHeaders(),
             providerId: 'paypal',
         ));
 
@@ -46,7 +47,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testValidPayPalWebhookVerificationFlowPassesOriginalInputToVerifier(): void
     {
-        $headers = $this->requiredTransmissionHeaders();
+        $headers = self::requiredTransmissionHeaders();
         $rawBody = '{"id":"WH-EVENT-123","event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"CAPTURE-123"}}';
 
         $verifier = new class implements WebhookPayPalSignatureVerifierInterface {
@@ -81,7 +82,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testDelegatesStructurallyValidPayPalValidationInputWithWhitespaceAroundHeaderValuesToVerifier(): void
     {
-        $headers = $this->requiredTransmissionHeaders();
+        $headers = self::requiredTransmissionHeaders();
         $headers['PayPal-Transmission-Id'] = '  transmission-id  ';
         $headers['PayPal-Transmission-Time'] = '  2026-04-29T10:00:00Z  ';
         $headers['PayPal-Cert-Url'] = '  https://api-m.paypal.com/certs/test.pem  ';
@@ -102,7 +103,7 @@ final class WebhookPayPalValidatorTest extends TestCase
     {
         $result = (new WebhookPayPalValidator(self::failingVerifier(), 'WH-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
-            headers: $this->requiredTransmissionHeaders(),
+            headers: self::requiredTransmissionHeaders(),
             providerId: 'paypal',
         ));
 
@@ -128,7 +129,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
         $result = (new WebhookPayPalValidator($verifier, 'WH-CONFIGURED-123'))->validate(new WebhookInput(
             rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
-            headers: $this->requiredTransmissionHeaders(),
+            headers: self::requiredTransmissionHeaders(),
             providerId: 'paypal',
         ));
 
@@ -138,7 +139,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testReturnsValidationFailureWhenRequiredTransmissionHeaderIsMissing(): void
     {
-        $headers = $this->requiredTransmissionHeaders();
+        $headers = self::requiredTransmissionHeaders();
         unset($headers['PayPal-Transmission-Sig']);
 
         $result = (new WebhookPayPalValidator(self::successfulVerifier(), 'WH-123'))->validate(new WebhookInput(
@@ -159,7 +160,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testReturnsValidationFailureWhenRequiredTransmissionHeaderIsEmpty(): void
     {
-        $headers = $this->requiredTransmissionHeaders();
+        $headers = self::requiredTransmissionHeaders();
         $headers['PayPal-Transmission-Id'] = '   ';
 
         $result = (new WebhookPayPalValidator(self::successfulVerifier(), 'WH-123'))->validate(new WebhookInput(
@@ -180,8 +181,8 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testReturnsValidationFailureForEachMissingRequiredTransmissionHeader(): void
     {
-        foreach (array_keys($this->requiredTransmissionHeaders()) as $headerName) {
-            $headers = $this->requiredTransmissionHeaders();
+        foreach (array_keys(self::requiredTransmissionHeaders()) as $headerName) {
+            $headers = self::requiredTransmissionHeaders();
             unset($headers[$headerName]);
 
             $result = (new WebhookPayPalValidator(self::successfulVerifier(), 'WH-123'))->validate(new WebhookInput(
@@ -203,8 +204,8 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testReturnsValidationFailureForEachEmptyRequiredTransmissionHeader(): void
     {
-        foreach (array_keys($this->requiredTransmissionHeaders()) as $headerName) {
-            $headers = $this->requiredTransmissionHeaders();
+        foreach (array_keys(self::requiredTransmissionHeaders()) as $headerName) {
+            $headers = self::requiredTransmissionHeaders();
             $headers[$headerName] = ['', "   \t"];
 
             $result = (new WebhookPayPalValidator(self::successfulVerifier(), 'WH-123'))->validate(new WebhookInput(
@@ -222,6 +223,42 @@ final class WebhookPayPalValidatorTest extends TestCase
             );
             $this->assertNull($result->reason->providerEventType);
         }
+    }
+
+    /**
+     * @param array<string, string|list<string>> $headers
+     */
+    #[DataProvider('missingOrInvalidAuthenticityMarkerProvider')]
+    public function testRejectsMissingOrInvalidAuthenticityMarkersBeforeVerifier(
+        array $headers,
+        string $expectedHeaderName,
+    ): void {
+        $verifier = new class implements WebhookPayPalSignatureVerifierInterface {
+            public bool $called = false;
+
+            public function verify(WebhookInput $input, string $webhookId): WebhookValidationResult
+            {
+                $this->called = true;
+
+                return WebhookValidationResult::success();
+            }
+        };
+
+        $result = (new WebhookPayPalValidator($verifier, 'WH-123'))->validate(new WebhookInput(
+            rawBody: '{"id":"WH-123","event_type":"PAYMENT.CAPTURE.COMPLETED"}',
+            headers: $headers,
+            providerId: 'paypal',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertFalse($verifier->called);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('paypal_required_transmission_header_missing', $result->reason->code->value);
+        $this->assertSame(
+            sprintf('Required PayPal transmission header "%s" is missing or empty.', $expectedHeaderName),
+            $result->reason->message,
+        );
+        $this->assertNull($result->reason->providerEventType);
     }
 
     public function testRejectsWhitespaceOnlyWebhookIdBeforeValidation(): void
@@ -252,7 +289,7 @@ final class WebhookPayPalValidatorTest extends TestCase
 
     public function testRequiredTransmissionHeadersMayUseMultiValueHeaders(): void
     {
-        $headers = $this->requiredTransmissionHeaders();
+        $headers = self::requiredTransmissionHeaders();
         $headers['PayPal-Transmission-Sig'] = ['', 'signature'];
 
         $result = (new WebhookPayPalValidator(self::successfulVerifier(), 'WH-123'))->validate(new WebhookInput(
@@ -266,17 +303,62 @@ final class WebhookPayPalValidatorTest extends TestCase
     }
 
     /**
+     * @return iterable<string, array{array<string, string|list<string>>, string}>
+     */
+    public static function missingOrInvalidAuthenticityMarkerProvider(): iterable
+    {
+        yield 'all authenticity markers missing' => [
+            [],
+            'PayPal-Transmission-Id',
+        ];
+
+        yield 'only unrelated headers present' => [
+            [
+                'Content-Type' => 'application/json',
+                'PayPal-Webhook-Id' => 'WH-123',
+            ],
+            'PayPal-Transmission-Id',
+        ];
+
+        yield 'PayPal-Transmission-Id is empty' => [
+            self::requiredTransmissionHeaders(['PayPal-Transmission-Id' => ['', " \t"]]),
+            'PayPal-Transmission-Id',
+        ];
+
+        yield 'PayPal-Transmission-Time is empty' => [
+            self::requiredTransmissionHeaders(['PayPal-Transmission-Time' => ['', " \t"]]),
+            'PayPal-Transmission-Time',
+        ];
+
+        yield 'PayPal-Cert-Url is empty' => [
+            self::requiredTransmissionHeaders(['PayPal-Cert-Url' => ['', " \t"]]),
+            'PayPal-Cert-Url',
+        ];
+
+        yield 'PayPal-Auth-Algo is empty' => [
+            self::requiredTransmissionHeaders(['PayPal-Auth-Algo' => ['', " \t"]]),
+            'PayPal-Auth-Algo',
+        ];
+
+        yield 'PayPal-Transmission-Sig is empty' => [
+            self::requiredTransmissionHeaders(['PayPal-Transmission-Sig' => ['', " \t"]]),
+            'PayPal-Transmission-Sig',
+        ];
+    }
+
+    /**
+     * @param array<string, string|list<string>> $overrides
      * @return array<string, string|list<string>>
      */
-    private function requiredTransmissionHeaders(): array
+    private static function requiredTransmissionHeaders(array $overrides = []): array
     {
-        return [
+        return array_replace([
             'PayPal-Transmission-Id' => 'transmission-id',
             'PayPal-Transmission-Time' => '2026-04-29T10:00:00Z',
             'PayPal-Cert-Url' => 'https://api-m.paypal.com/certs/test.pem',
             'PayPal-Auth-Algo' => 'SHA256withRSA',
             'PayPal-Transmission-Sig' => 'signature',
-        ];
+        ], $overrides);
     }
 
     private static function successfulVerifier(): WebhookPayPalSignatureVerifierInterface
