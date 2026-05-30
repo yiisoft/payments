@@ -195,4 +195,23 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertNull($result->reason);
         $this->assertNull($result->rawData);
     }
+
+    public function testReturnsUnknownEventForPayloadWithoutProviderEventType(): void
+    {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: null,
+            providerEventType: null,
+            data: ['event_type' => 'PAYMENT.CAPTURE.FUTURE_EVENT'],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unknown_event_type', $result->reason->code->value);
+        $this->assertSame('', $result->reason->providerEventType);
+    }
 }
