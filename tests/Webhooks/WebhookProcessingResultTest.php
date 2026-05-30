@@ -29,6 +29,36 @@ final class WebhookProcessingResultTest extends TestCase
         $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
         $this->assertNull($result->reason);
         $this->assertSame($rawData, $result->rawData);
+        $this->assertNull($result->paymentStatus);
+    }
+
+    public function testProcessedResultCanExposePaymentStatus(): void
+    {
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: ['type' => 'payment_intent.succeeded'],
+            providerEventType: 'payment_intent.succeeded',
+        );
+
+        $result = WebhookProcessingResult::processed(
+            WebhookEventType::PaymentSucceeded,
+            $rawData,
+            'succeeded',
+        );
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame('succeeded', $result->paymentStatus);
+    }
+
+    public function testProcessedResultDefaultsPaymentStatusToNull(): void
+    {
+        $result = WebhookProcessingResult::processed(WebhookEventType::PaymentSucceeded);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertNull($result->paymentStatus);
     }
 
     public function testValidationFailureHasValidationFailedResult(): void

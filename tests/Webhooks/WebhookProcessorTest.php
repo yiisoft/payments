@@ -82,6 +82,29 @@ final class WebhookProcessorTest extends TestCase
         $this->assertSame($input, $providerProcessor->processedInput);
     }
 
+    public function testProcessorPropagatesPaymentStatusFromProviderProcessingResult(): void
+    {
+        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            payload: ['type' => 'payment_intent.succeeded'],
+            paymentStatus: 'succeeded',
+        );
+        $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($providerProcessor));
+        $input = new WebhookInput(
+            rawBody: '{"type":"payment_intent.succeeded"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            providerId: 'stripe',
+        );
+
+        $context = $processor->process($input);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $context->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $context->eventType);
+        $this->assertSame('succeeded', $context->paymentStatus);
+    }
+
     public function testProcessorCallsProviderValidatorBeforeProviderProcessor(): void
     {
         $providerValidator = new SuccessfulWebhookProviderValidator('stripe');

@@ -652,7 +652,7 @@ final class WebhookPublicContractTest extends TestCase
         $constructor = $reflection->getConstructor();
 
         $this->assertNotNull($constructor);
-        $this->assertSame(['status', 'eventType', 'reason', 'rawData'], array_map(
+        $this->assertSame(['status', 'eventType', 'reason', 'rawData', 'paymentStatus'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
@@ -669,6 +669,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($constructor->getParameters()[3]->getType()?->allowsNull());
         $this->assertTrue($constructor->getParameters()[3]->isDefaultValueAvailable());
         $this->assertNull($constructor->getParameters()[3]->getDefaultValue());
+        $this->assertSame('string', $constructor->getParameters()[4]->getType()?->getName());
+        $this->assertTrue($constructor->getParameters()[4]->getType()?->allowsNull());
+        $this->assertTrue($constructor->getParameters()[4]->isDefaultValueAvailable());
+        $this->assertNull($constructor->getParameters()[4]->getDefaultValue());
 
         $this->assertSame(WebhookProcessingStatus::class, $reflection->getProperty('status')->getType()?->getName());
         $this->assertTrue($reflection->getProperty('status')->isPublic());
@@ -685,6 +689,10 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->getProperty('rawData')->getType()?->allowsNull());
         $this->assertTrue($reflection->getProperty('rawData')->isPublic());
         $this->assertTrue($reflection->getProperty('rawData')->isReadOnly());
+        $this->assertSame('string', $reflection->getProperty('paymentStatus')->getType()?->getName());
+        $this->assertTrue($reflection->getProperty('paymentStatus')->getType()?->allowsNull());
+        $this->assertTrue($reflection->getProperty('paymentStatus')->isPublic());
+        $this->assertTrue($reflection->getProperty('paymentStatus')->isReadOnly());
         $validationFailedMethod = $reflection->getMethod('validationFailed');
 
         $this->assertSame(['rawData', 'reason'], array_map(
