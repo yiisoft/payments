@@ -13,6 +13,7 @@ use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
+use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
@@ -240,6 +241,26 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertFalse($validateMethod->getParameters()[0]->getType()?->allowsNull());
         $this->assertSame(WebhookValidationResult::class, $validateMethod->getReturnType()?->getName());
         $this->assertFalse($validateMethod->getReturnType()?->allowsNull());
+    }
+
+    public function testWebhookPayPalSignatureVerifierInterfaceContractIsStable(): void
+    {
+        $reflection = new ReflectionClass(WebhookPayPalSignatureVerifierInterface::class);
+
+        $this->assertTrue($reflection->isInterface());
+        $this->assertSame(['verify'], $this->methodNames($reflection));
+
+        $verifyMethod = $reflection->getMethod('verify');
+
+        $this->assertSame(2, $verifyMethod->getNumberOfParameters());
+        $this->assertSame('input', $verifyMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookInput::class, $verifyMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($verifyMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('webhookId', $verifyMethod->getParameters()[1]->getName());
+        $this->assertSame('string', $verifyMethod->getParameters()[1]->getType()?->getName());
+        $this->assertFalse($verifyMethod->getParameters()[1]->getType()?->allowsNull());
+        $this->assertSame(WebhookValidationResult::class, $verifyMethod->getReturnType()?->getName());
+        $this->assertFalse($verifyMethod->getReturnType()?->allowsNull());
     }
 
     public function testWebhookPayPalValidatorContractIsStable(): void
