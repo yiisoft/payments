@@ -114,11 +114,18 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
         $mapper = new WebhookStripePaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '{"type":"payment_intent.future_event"}',
+            headers: ['Stripe-Signature' => 't=123,v1=signature'],
+            payload: ['type' => 'payment_intent.future_event'],
+            providerEventType: 'payment_intent.future_event',
+        );
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: null,
             providerEventType: 'payment_intent.future_event',
             data: ['type' => 'payment_intent.future_event'],
+            rawData: $rawData,
         );
 
         $result = $mapper->mapPaymentWebhook($payload);
@@ -128,6 +135,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('unknown_event_type', $result->reason->code->value);
         $this->assertSame('payment_intent.future_event', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
     }
 
     public function testExtractsStripePaymentStatusFromPayload(): void

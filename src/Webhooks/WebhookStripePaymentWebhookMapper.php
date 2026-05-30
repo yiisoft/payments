@@ -12,7 +12,7 @@ final readonly class WebhookStripePaymentWebhookMapper implements PaymentWebhook
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
     {
         if ($payload->eventType === null) {
-            return WebhookProcessingResult::unknownEvent($payload->providerEventType ?? '');
+            return WebhookProcessingResult::unknownEvent($payload->providerEventType ?? '', $payload->rawData);
         }
 
         if (WebhookPaymentOutcomeRules::shouldProcess($payload->eventType)) {
