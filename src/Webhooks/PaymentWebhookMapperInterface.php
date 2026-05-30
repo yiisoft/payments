@@ -17,12 +17,15 @@ interface PaymentWebhookMapperInterface
     /**
      * Extracts the minimal R1 payment status representation from the intermediate payload.
      *
-     * R1 intentionally returns the provider status as a nullable string instead of introducing
-     * a dedicated common status value object. This keeps the webhook contract aligned with
-     * the existing PaymentIntent status surface and avoids a premature domain model.
+     * This method is the common status extraction hook for payment webhook mappers. R1 keeps
+     * the representation intentionally minimal: implementations return a provider status string
+     * when it is already available in the parsed payload and return null when the status is not
+     * available or is not safely mappable at this stage.
      *
-     * When the provider status cannot be extracted or cannot be represented by the minimal
-     * R1 contract, implementations must return null instead of inventing an unknown status value.
+     * The method must not derive an application-level payment state, must not create an
+     * artificial unknown sentinel, and must not require a dedicated common status value object.
+     * Provider-specific mapping rules can be added by concrete mappers without changing this
+     * method signature.
      */
     public function extractPaymentStatus(WebhookPayload $payload): ?string;
 }
