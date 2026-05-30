@@ -120,21 +120,17 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
         ], $this->capabilitySupportStatuses($gateway));
     }
 
-    public function testRefundLikeEventsAreNotDeclaredAsSupportedR1PaymentCapabilities(): void
+    public function testPaymentRefundedStaysUnsupportedInAllR1CapabilityDeclarations(): void
     {
         foreach ($this->createGateways() as $gateway) {
-            $refundCapability = null;
+            $refundCapabilities = array_values(array_filter(
+                $gateway->getWebhookCapabilities()->all(),
+                static fn (WebhookCapability $capability): bool => $capability->eventType === WebhookEventType::PaymentRefunded,
+            ));
 
-            foreach ($gateway->getWebhookCapabilities() as $capability) {
-                if ($capability->eventType === WebhookEventType::PaymentRefunded) {
-                    $refundCapability = $capability;
-                    break;
-                }
-            }
-
-            $this->assertInstanceOf(WebhookCapability::class, $refundCapability);
-            $this->assertSame(WebhookEntityKind::Payment, $refundCapability->entityKind);
-            $this->assertSame(WebhookSupportStatus::Unsupported, $refundCapability->supportStatus);
+            $this->assertCount(1, $refundCapabilities);
+            $this->assertSame(WebhookEntityKind::Payment, $refundCapabilities[0]->entityKind);
+            $this->assertSame(WebhookSupportStatus::Unsupported, $refundCapabilities[0]->supportStatus);
         }
     }
 
