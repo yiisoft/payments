@@ -46,6 +46,36 @@ final class WebhookJsonPayloadParserMalformedBodyTest extends TestCase
         $this->assertSame($providerEventType, $payload->rawData->providerEventType);
     }
 
+    #[DataProvider('jsonPayloadParserProvider')]
+    public function testEmptyRequiredJsonBodyReturnsEmptyPayloadAndPreservesRawBody(
+        WebhookPayloadParserInterface $parser,
+        string $providerId,
+        string $providerEventType,
+    ): void {
+        $input = new WebhookInput(
+            rawBody: '',
+            headers: ['Content-Type' => 'application/json'],
+            providerId: $providerId,
+        );
+
+        $payload = $parser->parsePayload(
+            $input,
+            WebhookEventType::PaymentSucceeded,
+            $providerEventType,
+        );
+
+        $this->assertSame($providerId, $payload->providerId);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $payload->eventType);
+        $this->assertSame($providerEventType, $payload->providerEventType);
+        $this->assertSame([], $payload->data);
+        $this->assertNull($payload->paymentStatus);
+        $this->assertInstanceOf(WebhookRawData::class, $payload->rawData);
+        $this->assertSame('', $payload->rawData->rawBody);
+        $this->assertSame(['Content-Type' => 'application/json'], $payload->rawData->headers);
+        $this->assertSame([], $payload->rawData->payload);
+        $this->assertSame($providerEventType, $payload->rawData->providerEventType);
+    }
+
     /**
      * @return iterable<string, array{WebhookPayloadParserInterface, string, string}>
      */
