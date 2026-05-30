@@ -18,6 +18,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 /**
@@ -587,48 +588,35 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
 
     public function getWebhookCapabilities(): WebhookCapabilities
     {
-        return new WebhookCapabilities(
-            new WebhookCapability(
-                WebhookEventType::PaymentCreated,
+        return new WebhookCapabilities(...array_map(
+            fn (WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
+                $eventType,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                in_array($eventType, self::supportedR1PaymentOutcomes(), true)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
             ),
-            new WebhookCapability(
-                WebhookEventType::PaymentProcessing,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRequiresAction,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRequiresCapture,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentSucceeded,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentFailed,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentCanceled,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRefunded,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
-            ),
-        );
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ],
+        ));
+    }
+
+    /**
+     * Returns R1 payment outcomes that PayPal can actually recognize and process.
+     *
+     * @return list<WebhookEventType>
+     */
+    private static function supportedR1PaymentOutcomes(): array
+    {
+        return [
+            WebhookEventType::PaymentProcessing,
+            WebhookEventType::PaymentRequiresCapture,
+            WebhookEventType::PaymentSucceeded,
+            WebhookEventType::PaymentFailed,
+            WebhookEventType::PaymentCanceled,
+        ];
     }
 
     private static function formatAmount(int $amountMinor): string
