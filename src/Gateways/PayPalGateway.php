@@ -596,7 +596,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             new WebhookCapability(
                 WebhookEventType::PaymentProcessing,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRequiresAction,
@@ -606,7 +606,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             new WebhookCapability(
                 WebhookEventType::PaymentRequiresCapture,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentSucceeded,
@@ -616,12 +616,12 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             new WebhookCapability(
                 WebhookEventType::PaymentFailed,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentCanceled,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRefunded,

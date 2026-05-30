@@ -339,22 +339,22 @@ class StripeGateway extends AbstractGateway implements WebhookCapabilitiesProvid
             new WebhookCapability(
                 WebhookEventType::PaymentCreated,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentProcessing,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRequiresAction,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRequiresCapture,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentSucceeded,
@@ -364,12 +364,12 @@ class StripeGateway extends AbstractGateway implements WebhookCapabilitiesProvid
             new WebhookCapability(
                 WebhookEventType::PaymentFailed,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentCanceled,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRefunded,

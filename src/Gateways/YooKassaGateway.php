@@ -235,7 +235,7 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
             new WebhookCapability(
                 WebhookEventType::PaymentRequiresCapture,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentSucceeded,
@@ -250,7 +250,7 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
             new WebhookCapability(
                 WebhookEventType::PaymentCanceled,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Unsupported,
+                WebhookSupportStatus::Supported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRefunded,

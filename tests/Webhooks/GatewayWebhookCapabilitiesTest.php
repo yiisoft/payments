@@ -60,13 +60,13 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
         );
 
         $this->assertSame([
-            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
-            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
         ], $this->capabilitySupportStatuses($gateway));
     }
@@ -86,12 +86,12 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
 
         $this->assertSame([
             WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
-            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
         ], $this->capabilitySupportStatuses($gateway));
     }
@@ -112,10 +112,10 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
             WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
             WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Unsupported,
             WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Unsupported,
-            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Supported,
             WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
         ], $this->capabilitySupportStatuses($gateway));
     }
