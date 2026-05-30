@@ -170,6 +170,33 @@ final class WebhookYooKassaValidatorTest extends TestCase
         yield 'empty secret key' => ['Basic ' . base64_encode('shop-id:')];
         yield 'wrong shop id' => ['Basic ' . base64_encode('wrong-shop:secret-key')];
         yield 'wrong secret key' => ['Basic ' . base64_encode('shop-id:wrong-secret')];
+        yield 'wrong shop id and secret key' => ['Basic ' . base64_encode('wrong-shop:wrong-secret')];
+        yield 'invalid credentials with leading whitespace' => ['Basic ' . base64_encode(' shop-id:secret-key')];
+        yield 'invalid credentials with trailing whitespace' => ['Basic ' . base64_encode('shop-id:secret-key ')];
+    }
+
+    public function testRejectsMultipleInvalidAuthorizationHeaders(): void
+    {
+        $result = self::validator()->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: [
+                'Authorization' => [
+                    'Bearer token',
+                    'Basic not-base64',
+                    'Basic ' . base64_encode('wrong-shop:wrong-secret'),
+                ],
+            ],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertFalse($result->isValid);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('yookassa_basic_auth_mismatch', $result->reason->code->value);
+        $this->assertSame(
+            'YooKassa Basic Auth credentials do not match the configured shop ID and secret key.',
+            $result->reason->message,
+        );
+        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
     }
 
     public function testAcceptsAnyValidAuthorizationHeaderWhenMultipleAreProvided(): void
