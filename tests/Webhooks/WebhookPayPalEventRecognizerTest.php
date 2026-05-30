@@ -48,6 +48,36 @@ final class WebhookPayPalEventRecognizerTest extends TestCase
     }
 
 
+    #[DataProvider('basicPaymentEventTypesProvider')]
+    public function testRecognizesProviderAndNormalizedEventTypeFromPayPalPayload(
+        string $providerEventType,
+        WebhookEventType $expectedEventType,
+    ): void {
+        $recognizer = new WebhookPayPalEventRecognizer();
+        $input = new WebhookInput(rawBody: json_encode(['event_type' => $providerEventType], JSON_THROW_ON_ERROR));
+
+        $recognizedProviderEventType = $recognizer->recognizeProviderEventType($input);
+
+        $this->assertSame($providerEventType, $recognizedProviderEventType);
+        $this->assertSame($expectedEventType, $recognizer->recognizeEventType($recognizedProviderEventType));
+    }
+
+    #[DataProvider('invalidPayPalPayloadProvider')]
+    public function testReturnsNullForInvalidPayPalPayloadWithoutException(string $rawBody): void
+    {
+        $recognizer = new WebhookPayPalEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(rawBody: $rawBody)));
+    }
+
+    public function testReturnsNullForUnknownProviderEventType(): void
+    {
+        $recognizer = new WebhookPayPalEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeEventType('BILLING.SUBSCRIPTION.CREATED'));
+        $this->assertNull($recognizer->recognizeEventType('CUSTOMER.DISPUTE.CREATED'));
+    }
+
     public function testReturnsNullForUnknownPayPalEventType(): void
     {
         $recognizer = new WebhookPayPalEventRecognizer();
@@ -73,5 +103,18 @@ final class WebhookPayPalEventRecognizerTest extends TestCase
         yield 'capture declined' => ['PAYMENT.CAPTURE.DECLINED', WebhookEventType::PaymentFailed];
         yield 'capture refunded' => ['PAYMENT.CAPTURE.REFUNDED', WebhookEventType::PaymentRefunded];
         yield 'capture reversed' => ['PAYMENT.CAPTURE.REVERSED', WebhookEventType::PaymentRefunded];
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidPayPalPayloadProvider(): iterable
+    {
+        yield 'malformed json' => ['{"event_type":"PAYMENT.CAPTURE.COMPLETED"'];
+        yield 'json list' => ['[]'];
+        yield 'json null' => ['null'];
+        yield 'missing event type' => ['{"id":"WH-123"}'];
+        yield 'null event type' => ['{"event_type":null}'];
+        yield 'object event type' => ['{"event_type":{"name":"PAYMENT.CAPTURE.COMPLETED"}}'];
     }
 }
