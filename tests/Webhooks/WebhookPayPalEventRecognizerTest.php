@@ -47,6 +47,18 @@ final class WebhookPayPalEventRecognizerTest extends TestCase
         $this->assertSame($expectedEventType, $recognizer->recognizeEventType($providerEventType));
     }
 
+
+    public function testReturnsNullForUnknownPayPalEventType(): void
+    {
+        $recognizer = new WebhookPayPalEventRecognizer();
+        $input = new WebhookInput(rawBody: '{"id":"WH-123","event_type":"BILLING.SUBSCRIPTION.CREATED"}');
+
+        $providerEventType = $recognizer->recognizeProviderEventType($input);
+
+        $this->assertSame('BILLING.SUBSCRIPTION.CREATED', $providerEventType);
+        $this->assertNull($recognizer->recognizeEventType($providerEventType));
+    }
+
     /**
      * @return iterable<string, array{string, WebhookEventType}>
      */
