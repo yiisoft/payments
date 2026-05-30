@@ -44,6 +44,41 @@ final class WebhookPayPalValidatorTest extends TestCase
         $this->assertNull($result->reason);
     }
 
+    public function testValidPayPalWebhookVerificationFlowPassesOriginalInputToVerifier(): void
+    {
+        $headers = $this->requiredTransmissionHeaders();
+        $rawBody = '{"id":"WH-EVENT-123","event_type":"PAYMENT.CAPTURE.COMPLETED","resource":{"id":"CAPTURE-123"}}';
+
+        $verifier = new class implements WebhookPayPalSignatureVerifierInterface {
+            public ?WebhookInput $input = null;
+            public ?string $webhookId = null;
+
+            public function verify(WebhookInput $input, string $webhookId): WebhookValidationResult
+            {
+                $this->input = $input;
+                $this->webhookId = $webhookId;
+
+                return WebhookValidationResult::success();
+            }
+        };
+
+        $input = new WebhookInput(
+            rawBody: $rawBody,
+            headers: $headers,
+            providerId: 'paypal',
+        );
+
+        $result = (new WebhookPayPalValidator($verifier, 'WH-CONFIGURED-123'))->validate($input);
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+        $this->assertSame($input, $verifier->input);
+        $this->assertSame($rawBody, $verifier->input?->rawBody);
+        $this->assertSame($headers, $verifier->input?->headers);
+        $this->assertSame('paypal', $verifier->input?->providerId);
+        $this->assertSame('WH-CONFIGURED-123', $verifier->webhookId);
+    }
+
     public function testDelegatesStructurallyValidPayPalValidationInputWithWhitespaceAroundHeaderValuesToVerifier(): void
     {
         $headers = $this->requiredTransmissionHeaders();
