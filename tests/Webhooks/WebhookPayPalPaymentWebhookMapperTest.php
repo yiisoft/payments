@@ -47,6 +47,90 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
+    /**
+     * @dataProvider unsupportedPayPalPaymentPayloadProvider
+     */
+    public function testKeepsUnsupportedResultForOtherRecognizedPayPalPaymentPayloads(
+        WebhookEventType $eventType,
+        string $providerEventType,
+        string $paymentStatus,
+    ): void {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: sprintf('{"event_type":"%s"}', $providerEventType),
+            headers: ['PayPal-Transmission-Id' => 'transmission-id'],
+            payload: ['event_type' => $providerEventType],
+            providerEventType: $providerEventType,
+        );
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: $eventType,
+            providerEventType: $providerEventType,
+            data: ['event_type' => $providerEventType],
+            paymentStatus: $paymentStatus,
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame($eventType, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook event type is recognized but is not supported by the current webhook contract.',
+            $result->reason->message,
+        );
+        $this->assertSame($providerEventType, $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+    }
+
+    public static function unsupportedPayPalPaymentPayloadProvider(): array
+    {
+        return [
+            'approved checkout order' => [
+                WebhookEventType::PaymentRequiresCapture,
+                'CHECKOUT.ORDER.APPROVED',
+                'APPROVED',
+            ],
+            'reversed payment approval' => [
+                WebhookEventType::PaymentCanceled,
+                'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
+                'REVERSED',
+            ],
+            'created authorization' => [
+                WebhookEventType::PaymentRequiresCapture,
+                'PAYMENT.AUTHORIZATION.CREATED',
+                'CREATED',
+            ],
+            'pending capture' => [
+                WebhookEventType::PaymentProcessing,
+                'PAYMENT.CAPTURE.PENDING',
+                'PENDING',
+            ],
+            'denied capture' => [
+                WebhookEventType::PaymentFailed,
+                'PAYMENT.CAPTURE.DENIED',
+                'DENIED',
+            ],
+            'declined capture' => [
+                WebhookEventType::PaymentFailed,
+                'PAYMENT.CAPTURE.DECLINED',
+                'DECLINED',
+            ],
+            'partially supported refunded capture' => [
+                WebhookEventType::PaymentRefunded,
+                'PAYMENT.CAPTURE.REFUNDED',
+                'REFUNDED',
+            ],
+            'partially supported reversed capture' => [
+                WebhookEventType::PaymentRefunded,
+                'PAYMENT.CAPTURE.REVERSED',
+                'REVERSED',
+            ],
+        ];
+    }
+
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
         $mapper = new WebhookPayPalPaymentWebhookMapper();
