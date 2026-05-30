@@ -28,6 +28,18 @@ final readonly class WebhookPayPalPaymentWebhookMapper implements PaymentWebhook
 
     public function extractPaymentStatus(WebhookPayload $payload): ?string
     {
-        return $payload->paymentStatus;
+        if ($payload->paymentStatus !== null) {
+            return $payload->paymentStatus;
+        }
+
+        $resource = $payload->data['resource'] ?? null;
+
+        if (!is_array($resource)) {
+            return null;
+        }
+
+        $status = $resource['status'] ?? null;
+
+        return is_string($status) ? $status : null;
     }
 }

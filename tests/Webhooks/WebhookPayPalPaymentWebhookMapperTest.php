@@ -164,6 +164,46 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertSame('COMPLETED', $mapper->extractPaymentStatus($payload));
     }
 
+    public function testExtractsPayPalPaymentStatusFromProviderResourceWhenPayloadStatusIsMissing(): void
+    {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: WebhookEventType::PaymentProcessing,
+            providerEventType: 'PAYMENT.CAPTURE.PENDING',
+            data: ['resource' => ['status' => 'PENDING']],
+        );
+
+        $this->assertSame('PENDING', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testKeepsExplicitPayPalPaymentStatusWhenProviderResourceContainsDifferentStatus(): void
+    {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'PAYMENT.CAPTURE.COMPLETED',
+            data: ['resource' => ['status' => 'PENDING']],
+            paymentStatus: 'COMPLETED',
+        );
+
+        $this->assertSame('COMPLETED', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullWhenPayPalProviderResourceStatusIsNotString(): void
+    {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'PAYMENT.CAPTURE.COMPLETED',
+            data: ['resource' => ['status' => ['COMPLETED']]],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
     public function testReturnsNullWhenPayPalPaymentStatusIsMissing(): void
     {
         $mapper = new WebhookPayPalPaymentWebhookMapper();
