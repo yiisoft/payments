@@ -69,6 +69,46 @@ final class WebhookYooKassaValidatorTest extends TestCase
         $this->assertNull($result->reason);
     }
 
+    #[DataProvider('validBasicAuthHeaderProvider')]
+    public function testAcceptsValidBasicAuthHeaders(
+        string $shopId,
+        string $secretKey,
+        string $authorizationHeader,
+    ): void {
+        $result = (new WebhookYooKassaValidator($shopId, $secretKey))->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: ['Authorization' => [$authorizationHeader]],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function validBasicAuthHeaderProvider(): iterable
+    {
+        yield 'numeric YooKassa shop ID and secret key' => [
+            '123456',
+            'test_secret_key',
+            'Basic ' . base64_encode('123456:test_secret_key'),
+        ];
+
+        yield 'secret key containing colon' => [
+            '123456',
+            'secret:with:colon',
+            'Basic ' . base64_encode('123456:secret:with:colon'),
+        ];
+
+        yield 'authorization value with surrounding whitespace' => [
+            'shop-id',
+            'secret-key',
+            '  Basic ' . base64_encode('shop-id:secret-key') . '  ',
+        ];
+    }
+
     public function testRejectsMissingAuthorizationHeader(): void
     {
         $result = self::validator()->validate(new WebhookInput(
