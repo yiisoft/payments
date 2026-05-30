@@ -322,7 +322,46 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: null,
+            providerEventType: 'unsupported_callback',
+            data: ['OutSum' => '100.00'],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullForRobokassaMissingStatusSignal(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: null,
+            data: ['OutSum' => '100.00'],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullForRobokassaAmbiguousStatusSignal(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: null,
             providerEventType: 'ambiguous_callback',
+            data: ['OutSum' => '100.00'],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullForRobokassaUnsupportedStatusSignal(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentRefunded,
+            providerEventType: WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL,
             data: ['OutSum' => '100.00'],
         );
 

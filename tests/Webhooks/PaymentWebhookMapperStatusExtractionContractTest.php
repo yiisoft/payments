@@ -77,4 +77,28 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
 
         $this->assertSame('result_url', $mapper->extractPaymentStatus($payload));
     }
+
+    public function testRobokassaReturnsNullForMissingStatusSignal(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'robokassa',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: null,
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
+    public function testRobokassaReturnsNullForAmbiguousStatusSignal(): void
+    {
+        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'robokassa',
+            eventType: null,
+            providerEventType: 'ambiguous_callback',
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
 }

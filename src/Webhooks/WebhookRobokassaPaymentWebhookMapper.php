@@ -32,6 +32,11 @@ final readonly class WebhookRobokassaPaymentWebhookMapper implements PaymentWebh
             return $payload->paymentStatus;
         }
 
+        /**
+         * Robokassa ResultURL does not carry a separate payment status field. R1 treats only a
+         * successfully recognized ResultURL callback as the provider status signal. Missing,
+         * ambiguous, or unsupported callback formats remain unmapped and are represented as null.
+         */
         if (
             $payload->eventType === WebhookEventType::PaymentSucceeded
             && $payload->providerEventType === WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL
