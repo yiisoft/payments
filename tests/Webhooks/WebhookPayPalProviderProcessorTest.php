@@ -48,7 +48,7 @@ final class WebhookPayPalProviderProcessorTest extends TestCase
         $this->assertSame('COMPLETED', $result->rawData->payload['resource']['status']);
     }
 
-    public function testReturnsUnsupportedEventForRecognizedButUnsupportedPayPalPaymentWebhook(): void
+    public function testProcessesPendingPayPalPaymentWebhook(): void
     {
         $processor = new WebhookPayPalProviderProcessor();
         $input = new WebhookInput(
@@ -59,13 +59,12 @@ final class WebhookPayPalProviderProcessorTest extends TestCase
 
         $result = $processor->process($input);
 
-        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
         $this->assertSame(WebhookEventType::PaymentProcessing, $result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('PAYMENT.CAPTURE.PENDING', $result->reason->providerEventType);
+        $this->assertNull($result->reason);
         $this->assertNotNull($result->rawData);
         $this->assertSame('PAYMENT.CAPTURE.PENDING', $result->rawData->providerEventType);
+        $this->assertSame('PENDING', $result->paymentStatus);
     }
 
     public function testReturnsUnknownEventForUnknownPayPalProviderEventType(): void

@@ -47,6 +47,71 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
+
+    /**
+     * @dataProvider processedPayPalNonSuccessPaymentOutcomeProvider
+     */
+    public function testProcessesPayPalNonSuccessPaymentOutcomes(
+        WebhookEventType $eventType,
+        string $providerEventType,
+        string $paymentStatus,
+    ): void {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: sprintf('{"event_type":"%s","resource":{"status":"%s"}}', $providerEventType, $paymentStatus),
+            headers: ['PayPal-Transmission-Id' => 'transmission-id'],
+            payload: ['event_type' => $providerEventType, 'resource' => ['status' => $paymentStatus]],
+            providerEventType: $providerEventType,
+        );
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: $eventType,
+            providerEventType: $providerEventType,
+            data: ['event_type' => $providerEventType, 'resource' => ['status' => $paymentStatus]],
+            paymentStatus: $paymentStatus,
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame($eventType, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertSame($rawData, $result->rawData);
+        $this->assertSame($paymentStatus, $result->paymentStatus);
+    }
+
+    public static function processedPayPalNonSuccessPaymentOutcomeProvider(): array
+    {
+        return [
+            'failed denied capture' => [
+                WebhookEventType::PaymentFailed,
+                'PAYMENT.CAPTURE.DENIED',
+                'DENIED',
+            ],
+            'failed declined capture' => [
+                WebhookEventType::PaymentFailed,
+                'PAYMENT.CAPTURE.DECLINED',
+                'DECLINED',
+            ],
+            'canceled reversed approval' => [
+                WebhookEventType::PaymentCanceled,
+                'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
+                'REVERSED',
+            ],
+            'pending capture' => [
+                WebhookEventType::PaymentProcessing,
+                'PAYMENT.CAPTURE.PENDING',
+                'PENDING',
+            ],
+            'authorization created' => [
+                WebhookEventType::PaymentRequiresCapture,
+                'PAYMENT.AUTHORIZATION.CREATED',
+                'CREATED',
+            ],
+        ];
+    }
+
     /**
      * @dataProvider unsupportedPayPalRefundLikePayloadProvider
      */
