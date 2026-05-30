@@ -16,8 +16,10 @@ namespace Yiisoft\Payments\Webhooks;
  * Full parameter presence and signature validation are implemented by the Robokassa validator tasks.
  *
  * Robokassa ResultURL callback does not carry a separate payment status field. For R1, a validated
- * supported ResultURL callback is the payment-succeeded status signal. Missing, ambiguous, or
- * unsupported callback data must stay unmapped and be represented as a null payment status.
+ * supported ResultURL callback is the only available successful payment callback signal. Robokassa
+ * does not provide separate ResultURL signals for failed, canceled, pending, or authorization-only
+ * outcomes, so those outcomes must remain unsupported in R1 Robokassa webhook capabilities. Missing,
+ * ambiguous, or unsupported callback data must stay unmapped and be represented as a null payment status.
  */
 final class WebhookRobokassaCallbackFormat
 {
@@ -58,5 +60,21 @@ final class WebhookRobokassaCallbackFormat
     public static function isCustomParameter(string $name): bool
     {
         return str_starts_with($name, self::CUSTOM_PARAMETER_PREFIX);
+    }
+
+    /**
+     * Returns the only Robokassa payment outcome that can be normalized from the R1 ResultURL callback.
+     */
+    public static function supportedR1PaymentOutcome(): WebhookEventType
+    {
+        return WebhookEventType::PaymentSucceeded;
+    }
+
+    /**
+     * Returns whether the event can be produced by the R1-supported ResultURL callback format.
+     */
+    public static function supportsR1PaymentOutcome(WebhookEventType $eventType): bool
+    {
+        return $eventType === self::supportedR1PaymentOutcome();
     }
 }

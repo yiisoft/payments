@@ -18,6 +18,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 /**
@@ -538,6 +539,8 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
 
     public function getWebhookCapabilities(): WebhookCapabilities
     {
+        $supportedResultUrlOutcome = WebhookRobokassaCallbackFormat::supportedR1PaymentOutcome();
+
         return new WebhookCapabilities(
             new WebhookCapability(
                 WebhookEventType::PaymentCreated,
@@ -560,7 +563,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                 WebhookSupportStatus::Unsupported,
             ),
             new WebhookCapability(
-                WebhookEventType::PaymentSucceeded,
+                $supportedResultUrlOutcome,
                 WebhookEntityKind::Payment,
                 WebhookSupportStatus::Supported,
             ),
