@@ -48,9 +48,9 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
     }
 
     /**
-     * @dataProvider unsupportedPayPalPaymentPayloadProvider
+     * @dataProvider unsupportedPayPalRefundLikePayloadProvider
      */
-    public function testKeepsUnsupportedResultForOtherRecognizedPayPalPaymentPayloads(
+    public function testKeepsUnsupportedResultForPayPalRefundLikePayloads(
         WebhookEventType $eventType,
         string $providerEventType,
         string $paymentStatus,
@@ -85,39 +85,9 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
-    public static function unsupportedPayPalPaymentPayloadProvider(): array
+    public static function unsupportedPayPalRefundLikePayloadProvider(): array
     {
         return [
-            'approved checkout order' => [
-                WebhookEventType::PaymentRequiresCapture,
-                'CHECKOUT.ORDER.APPROVED',
-                'APPROVED',
-            ],
-            'reversed payment approval' => [
-                WebhookEventType::PaymentCanceled,
-                'CHECKOUT.PAYMENT-APPROVAL.REVERSED',
-                'REVERSED',
-            ],
-            'created authorization' => [
-                WebhookEventType::PaymentRequiresCapture,
-                'PAYMENT.AUTHORIZATION.CREATED',
-                'CREATED',
-            ],
-            'pending capture' => [
-                WebhookEventType::PaymentProcessing,
-                'PAYMENT.CAPTURE.PENDING',
-                'PENDING',
-            ],
-            'denied capture' => [
-                WebhookEventType::PaymentFailed,
-                'PAYMENT.CAPTURE.DENIED',
-                'DENIED',
-            ],
-            'declined capture' => [
-                WebhookEventType::PaymentFailed,
-                'PAYMENT.CAPTURE.DECLINED',
-                'DECLINED',
-            ],
             'partially supported refunded capture' => [
                 WebhookEventType::PaymentRefunded,
                 'PAYMENT.CAPTURE.REFUNDED',
