@@ -120,6 +120,33 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
         ], $this->capabilitySupportStatuses($gateway));
     }
 
+    public function testRobokassaWebhookCapabilitiesMatchImplementedR1PaymentMapping(): void
+    {
+        $psr17Factory = new Psr17Factory();
+        $gateway = new RobokassaGateway(
+            'test_merchant_login',
+            'test_password1',
+            'test_password2',
+            'test_password3',
+            true,
+            new TestHttpClient($psr17Factory),
+            $psr17Factory,
+            $psr17Factory,
+            new NullLogger(),
+        );
+
+        $this->assertSame([
+            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
+        ], $this->capabilitySupportStatuses($gateway));
+    }
+
     /**
      * @return list<WebhookCapabilitiesProviderInterface>
      */

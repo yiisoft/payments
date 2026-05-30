@@ -542,22 +542,22 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
             new WebhookCapability(
                 WebhookEventType::PaymentCreated,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookSupportStatus::Unsupported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentProcessing,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookSupportStatus::Unsupported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRequiresAction,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookSupportStatus::Unsupported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRequiresCapture,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookSupportStatus::Unsupported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentSucceeded,
@@ -567,17 +567,17 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
             new WebhookCapability(
                 WebhookEventType::PaymentFailed,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookSupportStatus::Unsupported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentCanceled,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookSupportStatus::Unsupported,
             ),
             new WebhookCapability(
                 WebhookEventType::PaymentRefunded,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookSupportStatus::Unsupported,
             ),
         );
     }
