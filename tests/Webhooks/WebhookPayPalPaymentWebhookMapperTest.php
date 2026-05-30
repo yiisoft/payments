@@ -169,11 +169,18 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
         $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: '{"event_type":"PAYMENT.CAPTURE.FUTURE_EVENT"}',
+            headers: ['PayPal-Transmission-Id' => 'transmission-id'],
+            payload: ['event_type' => 'PAYMENT.CAPTURE.FUTURE_EVENT'],
+            providerEventType: 'PAYMENT.CAPTURE.FUTURE_EVENT',
+        );
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: null,
             providerEventType: 'PAYMENT.CAPTURE.FUTURE_EVENT',
             data: ['event_type' => 'PAYMENT.CAPTURE.FUTURE_EVENT'],
+            rawData: $rawData,
         );
 
         $result = $mapper->mapPaymentWebhook($payload);
@@ -183,6 +190,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertNotNull($result->reason);
         $this->assertSame('unknown_event_type', $result->reason->code->value);
         $this->assertSame('PAYMENT.CAPTURE.FUTURE_EVENT', $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
     }
 
     public function testExtractsPayPalPaymentStatusFromPayload(): void
