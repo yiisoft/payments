@@ -15,6 +15,10 @@ final readonly class WebhookPayPalPaymentWebhookMapper implements PaymentWebhook
             return WebhookProcessingResult::unknownEvent($payload->providerEventType ?? '');
         }
 
+        if ($payload->eventType === WebhookEventType::PaymentSucceeded) {
+            return WebhookProcessingResult::processed($payload->eventType, $payload->rawData);
+        }
+
         return WebhookProcessingResult::unsupportedEvent(
             $payload->eventType,
             $payload->providerEventType,
@@ -24,6 +28,6 @@ final readonly class WebhookPayPalPaymentWebhookMapper implements PaymentWebhook
 
     public function extractPaymentStatus(WebhookPayload $payload): ?string
     {
-        return null;
+        return $payload->paymentStatus;
     }
 }

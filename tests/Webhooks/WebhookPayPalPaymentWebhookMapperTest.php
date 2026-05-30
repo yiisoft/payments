@@ -21,7 +21,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
     }
 
-    public function testKeepsUnsupportedResultForRecognizedPayPalPaymentPayload(): void
+    public function testMapsSuccessfulPayPalPaymentPayload(): void
     {
         $mapper = new WebhookPayPalPaymentWebhookMapper();
         $rawData = new WebhookRawData(
@@ -41,11 +41,9 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
         $result = $mapper->mapPaymentWebhook($payload);
 
-        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
         $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('PAYMENT.CAPTURE.COMPLETED', $result->reason->providerEventType);
+        $this->assertNull($result->reason);
         $this->assertSame($rawData, $result->rawData);
     }
 
@@ -68,7 +66,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         $this->assertSame('PAYMENT.CAPTURE.FUTURE_EVENT', $result->reason->providerEventType);
     }
 
-    public function testDoesNotExtractPaymentStatusAtSkeletonStage(): void
+    public function testExtractsPayPalPaymentStatusFromPayload(): void
     {
         $mapper = new WebhookPayPalPaymentWebhookMapper();
         $payload = new WebhookPayload(
@@ -79,6 +77,38 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
             paymentStatus: 'COMPLETED',
         );
 
+        $this->assertSame('COMPLETED', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullWhenPayPalPaymentStatusIsMissing(): void
+    {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'PAYMENT.CAPTURE.COMPLETED',
+            data: ['event_type' => 'PAYMENT.CAPTURE.COMPLETED'],
+        );
+
         $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
+    public function testMapsSuccessfulPayPalPaymentPayloadWithoutRawData(): void
+    {
+        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'paypal',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'PAYMENT.CAPTURE.COMPLETED',
+            data: ['event_type' => 'PAYMENT.CAPTURE.COMPLETED'],
+            paymentStatus: 'COMPLETED',
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $result->eventType);
+        $this->assertNull($result->reason);
+        $this->assertNull($result->rawData);
     }
 }
