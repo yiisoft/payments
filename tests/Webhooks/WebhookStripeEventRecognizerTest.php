@@ -47,6 +47,28 @@ final class WebhookStripeEventRecognizerTest extends TestCase
         $this->assertSame($expectedEventType, $recognizer->recognizeEventType($providerEventType));
     }
 
+    #[DataProvider('basicPaymentEventTypesProvider')]
+    public function testRecognizesProviderAndNormalizedEventTypeFromStripePayload(
+        string $providerEventType,
+        WebhookEventType $expectedEventType,
+    ): void {
+        $recognizer = new WebhookStripeEventRecognizer();
+        $input = new WebhookInput(rawBody: json_encode(['type' => $providerEventType], JSON_THROW_ON_ERROR));
+
+        $recognizedProviderEventType = $recognizer->recognizeProviderEventType($input);
+
+        $this->assertSame($providerEventType, $recognizedProviderEventType);
+        $this->assertSame($expectedEventType, $recognizer->recognizeEventType($recognizedProviderEventType));
+    }
+
+    #[DataProvider('invalidStripePayloadProvider')]
+    public function testReturnsNullForInvalidStripePayloadWithoutException(string $rawBody): void
+    {
+        $recognizer = new WebhookStripeEventRecognizer();
+
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(rawBody: $rawBody)));
+    }
+
     public function testReturnsNullForUnknownProviderEventType(): void
     {
         $recognizer = new WebhookStripeEventRecognizer();
@@ -82,5 +104,18 @@ final class WebhookStripeEventRecognizerTest extends TestCase
         yield 'failed' => ['payment_intent.payment_failed', WebhookEventType::PaymentFailed];
         yield 'canceled' => ['payment_intent.canceled', WebhookEventType::PaymentCanceled];
         yield 'refunded' => ['charge.refunded', WebhookEventType::PaymentRefunded];
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidStripePayloadProvider(): iterable
+    {
+        yield 'malformed json' => ['{"type":"payment_intent.succeeded"'];
+        yield 'json list' => ['[]'];
+        yield 'json null' => ['null'];
+        yield 'missing type' => ['{"id":"evt_123"}'];
+        yield 'null type' => ['{"type":null}'];
+        yield 'object type' => ['{"type":{"name":"payment_intent.succeeded"}}'];
     }
 }
