@@ -37,6 +37,17 @@ final class WebhookYooKassaEventRecognizerTest extends TestCase
         $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(rawBody: '{"event":123}')));
     }
 
+    public function testUnknownProviderEventTypeDoesNotFail(): void
+    {
+        $recognizer = new WebhookYooKassaEventRecognizer();
+        $input = new WebhookInput(rawBody: '{"type":"notification","event":"payment.expired"}');
+
+        $providerEventType = $recognizer->recognizeProviderEventType($input);
+
+        $this->assertSame('payment.expired', $providerEventType);
+        $this->assertNull($recognizer->recognizeEventType($providerEventType));
+    }
+
     #[DataProvider('basicPaymentEventTypesProvider')]
     public function testRecognizesBasicPaymentRelatedEventTypes(
         string $providerEventType,
