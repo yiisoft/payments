@@ -47,32 +47,78 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
-    public function testKeepsUnsupportedResultForOtherRecognizedStripePaymentPayloads(): void
-    {
+    /**
+     * @dataProvider unsupportedStripePaymentPayloadProvider
+     */
+    public function testKeepsUnsupportedResultForOtherRecognizedStripePaymentPayloads(
+        WebhookEventType $eventType,
+        string $providerEventType,
+        string $paymentStatus,
+    ): void {
         $mapper = new WebhookStripePaymentWebhookMapper();
         $rawData = new WebhookRawData(
-            rawBody: '{"type":"payment_intent.payment_failed"}',
+            rawBody: sprintf('{"type":"%s"}', $providerEventType),
             headers: ['Stripe-Signature' => 't=123,v1=signature'],
-            payload: ['type' => 'payment_intent.payment_failed'],
-            providerEventType: 'payment_intent.payment_failed',
+            payload: ['type' => $providerEventType],
+            providerEventType: $providerEventType,
         );
         $payload = new WebhookPayload(
             providerId: 'stripe',
-            eventType: WebhookEventType::PaymentFailed,
-            providerEventType: 'payment_intent.payment_failed',
-            data: ['type' => 'payment_intent.payment_failed'],
-            paymentStatus: 'requires_payment_method',
+            eventType: $eventType,
+            providerEventType: $providerEventType,
+            data: ['type' => $providerEventType],
+            paymentStatus: $paymentStatus,
             rawData: $rawData,
         );
 
         $result = $mapper->mapPaymentWebhook($payload);
 
         $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
-        $this->assertSame(WebhookEventType::PaymentFailed, $result->eventType);
+        $this->assertSame($eventType, $result->eventType);
         $this->assertNotNull($result->reason);
         $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('payment_intent.payment_failed', $result->reason->providerEventType);
+        $this->assertSame(
+            'Webhook event type is recognized but is not supported by the current webhook contract.',
+            $result->reason->message,
+        );
+        $this->assertSame($providerEventType, $result->reason->providerEventType);
         $this->assertSame($rawData, $result->rawData);
+    }
+
+    public static function unsupportedStripePaymentPayloadProvider(): array
+    {
+        return [
+            'processing payment intent' => [
+                WebhookEventType::PaymentProcessing,
+                'payment_intent.processing',
+                'processing',
+            ],
+            'payment intent requires action' => [
+                WebhookEventType::PaymentRequiresAction,
+                'payment_intent.requires_action',
+                'requires_action',
+            ],
+            'payment intent requires capture' => [
+                WebhookEventType::PaymentRequiresCapture,
+                'payment_intent.amount_capturable_updated',
+                'requires_capture',
+            ],
+            'failed payment intent' => [
+                WebhookEventType::PaymentFailed,
+                'payment_intent.payment_failed',
+                'requires_payment_method',
+            ],
+            'canceled payment intent' => [
+                WebhookEventType::PaymentCanceled,
+                'payment_intent.canceled',
+                'canceled',
+            ],
+            'partially supported refunded charge' => [
+                WebhookEventType::PaymentRefunded,
+                'charge.refunded',
+                'succeeded',
+            ],
+        ];
     }
 
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
