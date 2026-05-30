@@ -259,6 +259,33 @@ final class WebhookRobokassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame('', $result->reason->providerEventType);
     }
 
+    public function testDefinesSupportedRobokassaPaymentStatusSignalForR1(): void
+    {
+        $this->assertSame(
+            WebhookRobokassaCallbackFormat::CALLBACK_TYPE,
+            WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL,
+        );
+        $this->assertSame('result_url', WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL);
+    }
+
+    public function testSupportedRobokassaStatusSignalIsNormalizedAsPaymentSucceededEvent(): void
+    {
+        $payload = new WebhookPayload(
+            providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL,
+            data: [
+                'OutSum' => '100.00',
+                'InvId' => '123',
+                'SignatureValue' => 'signature',
+            ],
+        );
+
+        $this->assertSame(WebhookEventType::PaymentSucceeded, $payload->eventType);
+        $this->assertSame(WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL, $payload->providerEventType);
+        $this->assertNull($payload->paymentStatus);
+    }
+
     public function testDoesNotExtractRobokassaPaymentStatus(): void
     {
         $mapper = new WebhookRobokassaPaymentWebhookMapper();

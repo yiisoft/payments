@@ -14,11 +14,16 @@ namespace Yiisoft\Payments\Webhooks;
  * to application-specific field names before passing the input to the library.
  *
  * Full parameter presence and signature validation are implemented by the Robokassa validator tasks.
+ *
+ * Robokassa ResultURL callback does not carry a separate payment status field. For R1, a validated
+ * supported ResultURL callback is the payment-succeeded status signal. Missing, ambiguous, or
+ * unsupported callback data must stay unmapped and be represented as a null payment status.
  */
 final class WebhookRobokassaCallbackFormat
 {
     public const PROVIDER_ID = 'robokassa';
     public const CALLBACK_TYPE = 'result_url';
+    public const PAYMENT_SUCCEEDED_STATUS_SIGNAL = self::CALLBACK_TYPE;
     public const SIGNATURE_PARAMETER = 'SignatureValue';
     public const SIGNATURE_SECRET = 'password2';
     public const SIGNATURE_ALGORITHM = 'md5';
