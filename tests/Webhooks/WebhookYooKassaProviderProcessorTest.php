@@ -48,7 +48,7 @@ final class WebhookYooKassaProviderProcessorTest extends TestCase
         $this->assertSame('succeeded', $result->rawData->payload['object']['status']);
     }
 
-    public function testReturnsUnsupportedEventForRecognizedButUnsupportedYooKassaPaymentWebhook(): void
+    public function testProcessesYooKassaWaitingForCapturePaymentWebhook(): void
     {
         $processor = new WebhookYooKassaProviderProcessor();
         $input = new WebhookInput(
@@ -59,11 +59,9 @@ final class WebhookYooKassaProviderProcessorTest extends TestCase
 
         $result = $processor->process($input);
 
-        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame(WebhookProcessingStatus::Processed, $result->status);
         $this->assertSame(WebhookEventType::PaymentRequiresCapture, $result->eventType);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('payment.waiting_for_capture', $result->reason->providerEventType);
+        $this->assertNull($result->reason);
         $this->assertNotNull($result->rawData);
         $this->assertSame('payment.waiting_for_capture', $result->rawData->providerEventType);
     }

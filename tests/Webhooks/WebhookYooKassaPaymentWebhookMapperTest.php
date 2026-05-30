@@ -48,9 +48,9 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
     }
 
     /**
-     * @dataProvider unsupportedYooKassaPaymentPayloadProvider
+     * @dataProvider unsupportedYooKassaRefundLikePayloadProvider
      */
-    public function testKeepsUnsupportedResultForOtherRecognizedYooKassaPaymentPayloads(
+    public function testKeepsUnsupportedResultForRecognizedYooKassaRefundLikePayloads(
         WebhookEventType $eventType,
         string $providerEventType,
         string $paymentStatus,
@@ -85,19 +85,9 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
-    public static function unsupportedYooKassaPaymentPayloadProvider(): array
+    public static function unsupportedYooKassaRefundLikePayloadProvider(): array
     {
         return [
-            'payment waiting for capture' => [
-                WebhookEventType::PaymentRequiresCapture,
-                'payment.waiting_for_capture',
-                'waiting_for_capture',
-            ],
-            'canceled payment' => [
-                WebhookEventType::PaymentCanceled,
-                'payment.canceled',
-                'canceled',
-            ],
             'partially supported refund succeeded' => [
                 WebhookEventType::PaymentRefunded,
                 'refund.succeeded',
