@@ -55,6 +55,17 @@ final class WebhookStripeEventRecognizerTest extends TestCase
         $this->assertNull($recognizer->recognizeEventType('payment_intent.partially_refunded'));
     }
 
+    public function testHandlesUnknownStripeEventTypeWithoutException(): void
+    {
+        $recognizer = new WebhookStripeEventRecognizer();
+        $input = new WebhookInput(rawBody: '{"id":"evt_123","type":"customer.created"}');
+
+        $providerEventType = $recognizer->recognizeProviderEventType($input);
+
+        $this->assertSame('customer.created', $providerEventType);
+        $this->assertNull($recognizer->recognizeEventType($providerEventType));
+    }
+
     /**
      * @return iterable<string, array{string, WebhookEventType}>
      */
