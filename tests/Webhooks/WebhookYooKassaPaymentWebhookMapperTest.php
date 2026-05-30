@@ -139,6 +139,46 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame('succeeded', $mapper->extractPaymentStatus($payload));
     }
 
+    public function testExtractsYooKassaPaymentStatusFromProviderObject(): void
+    {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: WebhookEventType::PaymentRequiresCapture,
+            providerEventType: 'payment.waiting_for_capture',
+            data: ['object' => ['status' => 'waiting_for_capture']],
+        );
+
+        $this->assertSame('waiting_for_capture', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testPrefersExplicitYooKassaPaymentStatusFromPayload(): void
+    {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment.succeeded',
+            data: ['object' => ['status' => 'pending']],
+            paymentStatus: 'succeeded',
+        );
+
+        $this->assertSame('succeeded', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullWhenYooKassaProviderObjectStatusIsNotString(): void
+    {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment.succeeded',
+            data: ['object' => ['status' => 1]],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
     public function testReturnsNullWhenYooKassaPaymentStatusIsMissing(): void
     {
         $mapper = new WebhookYooKassaPaymentWebhookMapper();
