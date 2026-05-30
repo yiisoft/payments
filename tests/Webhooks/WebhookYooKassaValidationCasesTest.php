@@ -14,20 +14,14 @@ final class WebhookYooKassaValidationCasesTest extends TestCase
     #[DataProvider('validStructuralPayloadProvider')]
     public function testAcceptsValidStructuralCases(string $rawBody, string $expectedProviderEventType): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = (new WebhookYooKassaValidator('shop-id', 'secret-key'))->validate(new WebhookInput(
             rawBody: $rawBody,
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
-        $this->assertFalse($result->isValid);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
-        $this->assertSame(
-            'YooKassa webhook signature-level validation is not supported in R1 because the current API/config does not expose a webhook-specific authenticity indicator.',
-            $result->reason->message,
-        );
-        $this->assertSame($expectedProviderEventType, $result->reason->providerEventType);
+        $this->assertTrue($result->isValid, $expectedProviderEventType);
+        $this->assertNull($result->reason);
     }
 
     /**
@@ -101,9 +95,9 @@ final class WebhookYooKassaValidationCasesTest extends TestCase
         string $expectedReasonMessage,
         ?string $expectedProviderEventType,
     ): void {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = (new WebhookYooKassaValidator('shop-id', 'secret-key'))->validate(new WebhookInput(
             rawBody: $rawBody,
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -174,6 +168,15 @@ final class WebhookYooKassaValidationCasesTest extends TestCase
             'YooKassa webhook payload must contain an object field.',
             'payment.succeeded',
         ];
+    }
+
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private static function headers(): array
+    {
+        return ['Authorization' => ['Basic ' . base64_encode('shop-id:secret-key')]];
     }
 
     /**
