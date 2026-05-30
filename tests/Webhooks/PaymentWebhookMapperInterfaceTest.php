@@ -140,4 +140,32 @@ final class PaymentWebhookMapperInterfaceTest extends TestCase
 
         $this->assertNull($mapper->extractPaymentStatus($payload));
     }
+
+    public function testMapperReturnsNullForUnmappedProviderStatus(): void
+    {
+        $mapper = new class implements PaymentWebhookMapperInterface {
+            public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
+            {
+                return new WebhookProcessingResult(
+                    status: WebhookProcessingStatus::Processed,
+                    eventType: $payload->eventType,
+                    rawData: $payload->rawData,
+                );
+            }
+
+            public function extractPaymentStatus(WebhookPayload $payload): ?string
+            {
+                return null;
+            }
+        };
+
+        $payload = new WebhookPayload(
+            providerId: 'acmepay',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment.completed',
+            data: ['provider_status' => 'completed_with_unmapped_provider_specific_state'],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
 }

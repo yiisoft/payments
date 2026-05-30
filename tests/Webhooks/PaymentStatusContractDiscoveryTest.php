@@ -77,6 +77,25 @@ final class PaymentStatusContractDiscoveryTest extends TestCase
         $this->assertSame('string', $type->getName());
     }
 
+    public function testR1DoesNotIntroduceUnknownPaymentStatusSentinel(): void
+    {
+        $reflection = new ReflectionClass(PaymentIntent::class);
+        $constants = $reflection->getConstants();
+
+        $this->assertArrayNotHasKey('STATUS_UNKNOWN', $constants);
+        $this->assertNotContains('unknown', $constants);
+    }
+
+    public function testWebhookPayloadRepresentsUnavailableOrUnmappedPaymentStatusAsNull(): void
+    {
+        $payload = new WebhookPayload(
+            providerId: 'acmepay',
+            data: ['provider_status' => 'unmapped_provider_status'],
+        );
+
+        $this->assertNull($payload->paymentStatus);
+    }
+
     public function testMapperStatusExtractionReturnsMinimalR1NullableStringRepresentation(): void
     {
         $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, 'extractPaymentStatus');
