@@ -18,5 +18,12 @@ interface WebhookEventRecognizerInterface
      */
     public function recognizeProviderEventType(WebhookInput $input): ?string;
 
+    /**
+     * Maps a raw provider event type to a normalized library-level webhook event type.
+     *
+     * Return a {@see WebhookEventType} only when the provider event is recognized as a
+     * supported payment-related event. Return null when the provider event is unknown
+     * or does not have a normalized R1 payment webhook equivalent.
+     */
     public function recognizeEventType(string $providerEventType): ?WebhookEventType;
 }
