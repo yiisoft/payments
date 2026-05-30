@@ -170,4 +170,23 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertNull($result->reason);
         $this->assertNull($result->rawData);
     }
+
+    public function testReturnsUnknownEventForPayloadWithoutProviderEventType(): void
+    {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: null,
+            providerEventType: null,
+            data: ['event' => 'payment.future_event'],
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnknownEvent, $result->status);
+        $this->assertNull($result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unknown_event_type', $result->reason->code->value);
+        $this->assertSame('', $result->reason->providerEventType);
+    }
 }
