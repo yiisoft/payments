@@ -47,6 +47,65 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
+    /**
+     * @dataProvider unsupportedYooKassaPaymentPayloadProvider
+     */
+    public function testKeepsUnsupportedResultForOtherRecognizedYooKassaPaymentPayloads(
+        WebhookEventType $eventType,
+        string $providerEventType,
+        string $paymentStatus,
+    ): void {
+        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $rawData = new WebhookRawData(
+            rawBody: sprintf('{"event":"%s"}', $providerEventType),
+            headers: ['Content-Type' => 'application/json'],
+            payload: ['event' => $providerEventType],
+            providerEventType: $providerEventType,
+        );
+        $payload = new WebhookPayload(
+            providerId: 'yookassa',
+            eventType: $eventType,
+            providerEventType: $providerEventType,
+            data: ['event' => $providerEventType],
+            paymentStatus: $paymentStatus,
+            rawData: $rawData,
+        );
+
+        $result = $mapper->mapPaymentWebhook($payload);
+
+        $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
+        $this->assertSame($eventType, $result->eventType);
+        $this->assertNotNull($result->reason);
+        $this->assertSame('unsupported_event_type', $result->reason->code->value);
+        $this->assertSame(
+            'Webhook event type is recognized but is not supported by the current webhook contract.',
+            $result->reason->message,
+        );
+        $this->assertSame($providerEventType, $result->reason->providerEventType);
+        $this->assertSame($rawData, $result->rawData);
+    }
+
+    public static function unsupportedYooKassaPaymentPayloadProvider(): array
+    {
+        return [
+            'payment waiting for capture' => [
+                WebhookEventType::PaymentRequiresCapture,
+                'payment.waiting_for_capture',
+                'waiting_for_capture',
+            ],
+            'canceled payment' => [
+                WebhookEventType::PaymentCanceled,
+                'payment.canceled',
+                'canceled',
+            ],
+            'partially supported refund succeeded' => [
+                WebhookEventType::PaymentRefunded,
+                'refund.succeeded',
+                'succeeded',
+            ],
+        ];
+    }
+
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
         $mapper = new WebhookYooKassaPaymentWebhookMapper();
