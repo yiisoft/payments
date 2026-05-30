@@ -16,7 +16,11 @@ final readonly class WebhookYooKassaPaymentWebhookMapper implements PaymentWebho
         }
 
         if ($payload->eventType === WebhookEventType::PaymentSucceeded) {
-            return WebhookProcessingResult::processed($payload->eventType, $payload->rawData);
+            return WebhookProcessingResult::processed(
+                $payload->eventType,
+                $payload->rawData,
+                $this->extractPaymentStatus($payload),
+            );
         }
 
         return WebhookProcessingResult::unsupportedEvent(

@@ -16,7 +16,11 @@ final readonly class WebhookPayPalPaymentWebhookMapper implements PaymentWebhook
         }
 
         if ($payload->eventType === WebhookEventType::PaymentSucceeded) {
-            return WebhookProcessingResult::processed($payload->eventType, $payload->rawData);
+            return WebhookProcessingResult::processed(
+                $payload->eventType,
+                $payload->rawData,
+                $this->extractPaymentStatus($payload),
+            );
         }
 
         return WebhookProcessingResult::unsupportedEvent(
