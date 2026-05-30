@@ -28,6 +28,18 @@ final readonly class WebhookStripePaymentWebhookMapper implements PaymentWebhook
 
     public function extractPaymentStatus(WebhookPayload $payload): ?string
     {
-        return $payload->paymentStatus;
+        if ($payload->paymentStatus !== null) {
+            return $payload->paymentStatus;
+        }
+
+        $object = $payload->data['data']['object'] ?? null;
+
+        if (!is_array($object)) {
+            return null;
+        }
+
+        $status = $object['status'] ?? null;
+
+        return is_string($status) ? $status : null;
     }
 }

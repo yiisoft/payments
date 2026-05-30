@@ -159,6 +159,46 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertSame('succeeded', $mapper->extractPaymentStatus($payload));
     }
 
+    public function testExtractsStripePaymentStatusFromProviderObjectWhenPayloadStatusIsMissing(): void
+    {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentProcessing,
+            providerEventType: 'payment_intent.processing',
+            data: ['data' => ['object' => ['status' => 'processing']]],
+        );
+
+        $this->assertSame('processing', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testKeepsExplicitStripePaymentStatusWhenProviderObjectContainsDifferentStatus(): void
+    {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            data: ['data' => ['object' => ['status' => 'processing']]],
+            paymentStatus: 'succeeded',
+        );
+
+        $this->assertSame('succeeded', $mapper->extractPaymentStatus($payload));
+    }
+
+    public function testReturnsNullWhenStripeProviderObjectStatusIsNotString(): void
+    {
+        $mapper = new WebhookStripePaymentWebhookMapper();
+        $payload = new WebhookPayload(
+            providerId: 'stripe',
+            eventType: WebhookEventType::PaymentSucceeded,
+            providerEventType: 'payment_intent.succeeded',
+            data: ['data' => ['object' => ['status' => ['succeeded']]]],
+        );
+
+        $this->assertNull($mapper->extractPaymentStatus($payload));
+    }
+
     public function testReturnsNullWhenStripePaymentStatusIsMissing(): void
     {
         $mapper = new WebhookStripePaymentWebhookMapper();
