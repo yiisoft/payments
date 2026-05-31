@@ -6,7 +6,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use LogicException;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Tests\Webhooks\Support\FailedWebhookProviderValidator;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookFailedProviderValidator;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
@@ -36,7 +36,7 @@ final class WebhookFailFastBehaviorTest extends TestCase
         };
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
-            new WebhookProviderValidatorRegistry(new FailedWebhookProviderValidator('stripe')),
+            new WebhookProviderValidatorRegistry(new WebhookFailedProviderValidator('stripe')),
         );
         $input = new WebhookInput(
             rawBody: '{"type":"payment_intent.succeeded"}',
@@ -82,7 +82,7 @@ final class WebhookFailFastBehaviorTest extends TestCase
         );
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
-            new WebhookProviderValidatorRegistry(new FailedWebhookProviderValidator('stripe')),
+            new WebhookProviderValidatorRegistry(new WebhookFailedProviderValidator('stripe')),
         );
 
         $context = $processor->process($input);
@@ -134,7 +134,7 @@ final class WebhookFailFastBehaviorTest extends TestCase
         };
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
-            new WebhookProviderValidatorRegistry(new FailedWebhookProviderValidator('stripe')),
+            new WebhookProviderValidatorRegistry(new WebhookFailedProviderValidator('stripe')),
         );
         $input = new WebhookInput(
             rawBody: '{"type":"payment_intent.succeeded"}',
@@ -192,7 +192,7 @@ final class WebhookFailFastBehaviorTest extends TestCase
         );
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
-            new WebhookProviderValidatorRegistry(new FailedWebhookProviderValidator('robokassa')),
+            new WebhookProviderValidatorRegistry(new WebhookFailedProviderValidator('robokassa')),
         );
 
         $context = $processor->process($input);

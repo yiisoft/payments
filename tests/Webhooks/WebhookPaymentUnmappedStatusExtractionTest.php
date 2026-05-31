@@ -8,13 +8,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
-use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
-final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
+final class WebhookPaymentUnmappedStatusExtractionTest extends TestCase
 {
     /**
      * @return iterable<string, array{WebhookPaymentMapperInterface, WebhookPayload, string}>
@@ -22,7 +22,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
     public static function providerStringStatusProvider(): iterable
     {
         yield 'stripe future provider status' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             new WebhookPayload(
                 providerId: 'stripe',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -33,7 +33,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
         ];
 
         yield 'paypal future provider status' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             new WebhookPayload(
                 providerId: 'paypal',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -44,7 +44,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
         ];
 
         yield 'yookassa future provider status' => [
-            new WebhookYooKassaPaymentWebhookMapper(),
+            new WebhookYooKassaPaymentMapper(),
             new WebhookPayload(
                 providerId: 'yookassa',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -70,7 +70,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
     public static function unmappedStatusPayloadProvider(): iterable
     {
         yield 'stripe status field has unsupported shape' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             new WebhookPayload(
                 providerId: 'stripe',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -80,7 +80,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
         ];
 
         yield 'paypal status field has unsupported shape' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             new WebhookPayload(
                 providerId: 'paypal',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -90,7 +90,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
         ];
 
         yield 'yookassa status field has unsupported shape' => [
-            new WebhookYooKassaPaymentWebhookMapper(),
+            new WebhookYooKassaPaymentMapper(),
             new WebhookPayload(
                 providerId: 'yookassa',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -100,7 +100,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
         ];
 
         yield 'robokassa unsupported callback status signal' => [
-            new WebhookRobokassaPaymentWebhookMapper(),
+            new WebhookRobokassaPaymentMapper(),
             new WebhookPayload(
                 providerId: 'robokassa',
                 eventType: WebhookEventType::PaymentSucceeded,
@@ -109,7 +109,7 @@ final class PaymentWebhookUnmappedStatusExtractionTest extends TestCase
         ];
 
         yield 'robokassa ambiguous callback status signal' => [
-            new WebhookRobokassaPaymentWebhookMapper(),
+            new WebhookRobokassaPaymentMapper(),
             new WebhookPayload(
                 providerId: 'robokassa',
                 eventType: null,

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
-use Yiisoft\Payments\Tests\Webhooks\Support\UnsupportedWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookSuccessfulProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookUnsupportedProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
@@ -120,7 +120,7 @@ final class WebhookMissingProcessorCapabilityFlowTest extends TestCase
 
     public function testExistingProviderWithUnsupportedEventReturnsUnsupportedContext(): void
     {
-        $providerProcessor = new UnsupportedWebhookProviderProcessor(
+        $providerProcessor = new WebhookUnsupportedProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentRefunded,
             providerEventType: 'charge.dispute.created',
@@ -222,7 +222,7 @@ final class WebhookMissingProcessorCapabilityFlowTest extends TestCase
 
     public function testMissingProviderProcessorDoesNotFallbackToAnotherRegisteredProcessor(): void
     {
-        $registeredProcessor = new SuccessfulWebhookProviderProcessor(providerId: 'stripe');
+        $registeredProcessor = new WebhookSuccessfulProviderProcessor(providerId: 'stripe');
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($registeredProcessor));
         $input = new WebhookInput(
             rawBody: '{"event_type":"PAYMENT.CAPTURE.COMPLETED"}',

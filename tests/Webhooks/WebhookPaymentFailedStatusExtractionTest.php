@@ -8,12 +8,12 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
-final class PaymentWebhookFailedStatusExtractionTest extends TestCase
+final class WebhookPaymentFailedStatusExtractionTest extends TestCase
 {
     /**
      * @return iterable<string, array{WebhookPaymentMapperInterface, WebhookPayload, string}>
@@ -21,7 +21,7 @@ final class PaymentWebhookFailedStatusExtractionTest extends TestCase
     public static function failedCanceledPaymentStatusProvider(): iterable
     {
         yield 'stripe failed payment intent' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             new WebhookPayload(
                 providerId: 'stripe',
                 eventType: WebhookEventType::PaymentFailed,
@@ -32,7 +32,7 @@ final class PaymentWebhookFailedStatusExtractionTest extends TestCase
         ];
 
         yield 'stripe canceled payment intent' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             new WebhookPayload(
                 providerId: 'stripe',
                 eventType: WebhookEventType::PaymentCanceled,
@@ -43,7 +43,7 @@ final class PaymentWebhookFailedStatusExtractionTest extends TestCase
         ];
 
         yield 'paypal denied capture' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             new WebhookPayload(
                 providerId: 'paypal',
                 eventType: WebhookEventType::PaymentFailed,
@@ -54,7 +54,7 @@ final class PaymentWebhookFailedStatusExtractionTest extends TestCase
         ];
 
         yield 'paypal declined capture' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             new WebhookPayload(
                 providerId: 'paypal',
                 eventType: WebhookEventType::PaymentFailed,
@@ -65,7 +65,7 @@ final class PaymentWebhookFailedStatusExtractionTest extends TestCase
         ];
 
         yield 'paypal reversed payment approval' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             new WebhookPayload(
                 providerId: 'paypal',
                 eventType: WebhookEventType::PaymentCanceled,
@@ -76,7 +76,7 @@ final class PaymentWebhookFailedStatusExtractionTest extends TestCase
         ];
 
         yield 'yookassa canceled payment' => [
-            new WebhookYooKassaPaymentWebhookMapper(),
+            new WebhookYooKassaPaymentMapper(),
             new WebhookPayload(
                 providerId: 'yookassa',
                 eventType: WebhookEventType::PaymentCanceled,

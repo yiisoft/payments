@@ -11,7 +11,7 @@ use Yiisoft\Payments\Webhooks\WebhookValidationResult;
 /**
  * Test-only provider validator that always returns a successful validation result.
  */
-final class SuccessfulWebhookProviderValidator implements WebhookProviderValidatorInterface
+final class WebhookSuccessfulProviderValidator implements WebhookProviderValidatorInterface
 {
     public int $validateCalls = 0;
     public ?WebhookInput $validatedInput = null;

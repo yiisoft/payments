@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookSuccessfulProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
@@ -18,7 +18,7 @@ final class WebhookProviderValidationUnifiedFlowTest extends TestCase
 {
     public function testValidRobokassaCallbackPassesProviderValidationAndContinuesUnifiedFlow(): void
     {
-        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+        $providerProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'robokassa',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'ResultURL',
@@ -59,7 +59,7 @@ final class WebhookProviderValidationUnifiedFlowTest extends TestCase
 
     public function testInvalidRobokassaSignatureReturnsValidationFailedContextBeforeProviderProcessing(): void
     {
-        $providerProcessor = new SuccessfulWebhookProviderProcessor('robokassa');
+        $providerProcessor = new WebhookSuccessfulProviderProcessor('robokassa');
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
             new WebhookProviderValidatorRegistry(new WebhookRobokassaValidator('pass2')),
@@ -96,7 +96,7 @@ final class WebhookProviderValidationUnifiedFlowTest extends TestCase
 
     public function testConflictingRobokassaCallbackParameterReturnsSingleValidationFailureReasonBeforeProviderProcessing(): void
     {
-        $providerProcessor = new SuccessfulWebhookProviderProcessor('robokassa');
+        $providerProcessor = new WebhookSuccessfulProviderProcessor('robokassa');
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
             new WebhookProviderValidatorRegistry(new WebhookRobokassaValidator('pass2')),
@@ -146,7 +146,7 @@ final class WebhookProviderValidationUnifiedFlowTest extends TestCase
 
     public function testMissingRobokassaRequiredParameterReturnsValidationFailedContextBeforeProviderProcessing(): void
     {
-        $providerProcessor = new SuccessfulWebhookProviderProcessor('robokassa');
+        $providerProcessor = new WebhookSuccessfulProviderProcessor('robokassa');
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
             new WebhookProviderValidatorRegistry(new WebhookRobokassaValidator('pass2')),

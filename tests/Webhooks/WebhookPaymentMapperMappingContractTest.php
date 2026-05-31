@@ -12,7 +12,7 @@ use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
-final class PaymentWebhookMapperMappingContractTest extends TestCase
+final class WebhookPaymentMapperMappingContractTest extends TestCase
 {
     public function testMappingContractReturnsProcessedResultForSupportedPaymentPayload(): void
     {

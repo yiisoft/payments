@@ -14,7 +14,7 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 
-final class PaymentWebhookMapperUnsupportedPayloadContractTest extends TestCase
+final class WebhookPaymentMapperUnsupportedPayloadContractTest extends TestCase
 {
     public function testMappingContractReturnsUnsupportedEventForRecognizedButUnsupportedPaymentPayload(): void
     {

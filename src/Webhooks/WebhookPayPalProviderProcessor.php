@@ -12,7 +12,7 @@ final readonly class WebhookPayPalProviderProcessor implements WebhookProviderPr
     public function __construct(
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookPayPalEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookPayPalPayloadParser(),
-        private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookPayPalPaymentWebhookMapper(),
+        private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookPayPalPaymentMapper(),
     ) {
     }
 

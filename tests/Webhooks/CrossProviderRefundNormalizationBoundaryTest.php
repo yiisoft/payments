@@ -11,16 +11,16 @@ use Yiisoft\Payments\Webhooks\WebhookEventRecognizerInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalEventRecognizer;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 use Yiisoft\Payments\Webhooks\WebhookStripeEventRecognizer;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaEventRecognizer;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
 final class CrossProviderRefundNormalizationBoundaryTest extends TestCase
 {
@@ -92,7 +92,7 @@ final class CrossProviderRefundNormalizationBoundaryTest extends TestCase
         yield 'stripe charge.refunded' => [
             'stripe',
             new WebhookStripeEventRecognizer(),
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             '{"id":"evt_refunded","type":"charge.refunded","data":{"object":{"status":"succeeded"}}}',
             'charge.refunded',
             ['type' => 'charge.refunded', 'data' => ['object' => ['status' => 'succeeded']]],
@@ -102,7 +102,7 @@ final class CrossProviderRefundNormalizationBoundaryTest extends TestCase
         yield 'paypal capture refunded' => [
             'paypal',
             new WebhookPayPalEventRecognizer(),
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             '{"id":"WH-REFUNDED","event_type":"PAYMENT.CAPTURE.REFUNDED","resource":{"status":"REFUNDED"}}',
             'PAYMENT.CAPTURE.REFUNDED',
             ['event_type' => 'PAYMENT.CAPTURE.REFUNDED', 'resource' => ['status' => 'REFUNDED']],
@@ -112,7 +112,7 @@ final class CrossProviderRefundNormalizationBoundaryTest extends TestCase
         yield 'paypal capture reversed' => [
             'paypal',
             new WebhookPayPalEventRecognizer(),
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             '{"id":"WH-REVERSED","event_type":"PAYMENT.CAPTURE.REVERSED","resource":{"status":"REVERSED"}}',
             'PAYMENT.CAPTURE.REVERSED',
             ['event_type' => 'PAYMENT.CAPTURE.REVERSED', 'resource' => ['status' => 'REVERSED']],
@@ -122,7 +122,7 @@ final class CrossProviderRefundNormalizationBoundaryTest extends TestCase
         yield 'yookassa refund.succeeded' => [
             'yookassa',
             new WebhookYooKassaEventRecognizer(),
-            new WebhookYooKassaPaymentWebhookMapper(),
+            new WebhookYooKassaPaymentMapper(),
             '{"type":"notification","event":"refund.succeeded","object":{"status":"succeeded"}}',
             'refund.succeeded',
             ['type' => 'notification', 'event' => 'refund.succeeded', 'object' => ['status' => 'succeeded']],

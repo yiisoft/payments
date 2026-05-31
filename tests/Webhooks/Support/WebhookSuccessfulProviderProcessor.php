@@ -14,7 +14,7 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 /**
  * Test-only provider processor that always returns a successful processed result.
  */
-final class SuccessfulWebhookProviderProcessor implements WebhookProviderProcessorInterface
+final class WebhookSuccessfulProviderProcessor implements WebhookProviderProcessorInterface
 {
     public int $processCalls = 0;
     public ?WebhookInput $processedInput = null;

@@ -8,13 +8,13 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
-use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentMapper;
 
 final class WebhookRobokassaPaymentStatusExtractionTest extends TestCase
 {
     public function testExtractsPaymentStatusFromSupportedResultUrlCallbackSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: WebhookEventType::PaymentSucceeded,
@@ -34,7 +34,7 @@ final class WebhookRobokassaPaymentStatusExtractionTest extends TestCase
 
     public function testExplicitParsedPaymentStatusHasPriorityOverCallbackSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: WebhookEventType::PaymentSucceeded,
@@ -48,7 +48,7 @@ final class WebhookRobokassaPaymentStatusExtractionTest extends TestCase
 
     public function testReturnsNullForMissingCallbackStatusSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: WebhookEventType::PaymentSucceeded,
@@ -61,7 +61,7 @@ final class WebhookRobokassaPaymentStatusExtractionTest extends TestCase
 
     public function testReturnsNullForAmbiguousCallbackStatusSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: null,
@@ -74,7 +74,7 @@ final class WebhookRobokassaPaymentStatusExtractionTest extends TestCase
 
     public function testReturnsNullForUnsupportedCallbackStatusSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: WebhookEventType::PaymentRefunded,
@@ -87,7 +87,7 @@ final class WebhookRobokassaPaymentStatusExtractionTest extends TestCase
 
     public function testReturnsNullForSupportedEventWithUnsupportedProviderCallbackType(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: WebhookRobokassaCallbackFormat::PROVIDER_ID,
             eventType: WebhookEventType::PaymentSucceeded,

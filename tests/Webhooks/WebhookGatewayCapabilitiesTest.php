@@ -19,7 +19,7 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
-final class GatewayWebhookCapabilitiesTest extends TestCase
+final class WebhookGatewayCapabilitiesTest extends TestCase
 {
     public function testAllGatewaysDeclareWebhookCapabilities(): void
     {

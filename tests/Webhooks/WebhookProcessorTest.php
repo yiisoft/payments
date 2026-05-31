@@ -6,11 +6,11 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
-use Yiisoft\Payments\Tests\Webhooks\Support\FailedWebhookProviderValidator;
-use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
-use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderValidator;
-use Yiisoft\Payments\Tests\Webhooks\Support\UnsupportedWebhookProviderProcessor;
-use Yiisoft\Payments\Tests\Webhooks\Support\ValidationFailedWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookFailedProviderValidator;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookSuccessfulProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookSuccessfulProviderValidator;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookUnsupportedProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookValidationFailedProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookInput;
@@ -55,7 +55,7 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorDelegatesInputToResolvedProviderProcessor(): void
     {
-        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+        $providerProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',
@@ -84,7 +84,7 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorPropagatesPaymentStatusFromProviderProcessingResult(): void
     {
-        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+        $providerProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',
@@ -107,8 +107,8 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorCallsProviderValidatorBeforeProviderProcessor(): void
     {
-        $providerValidator = new SuccessfulWebhookProviderValidator('stripe');
-        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+        $providerValidator = new WebhookSuccessfulProviderValidator('stripe');
+        $providerProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',
@@ -135,8 +135,8 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorDoesNotCallProviderProcessorWhenProviderValidatorFails(): void
     {
-        $providerValidator = new FailedWebhookProviderValidator('stripe');
-        $providerProcessor = new SuccessfulWebhookProviderProcessor('stripe');
+        $providerValidator = new WebhookFailedProviderValidator('stripe');
+        $providerProcessor = new WebhookSuccessfulProviderProcessor('stripe');
         $processor = new WebhookProcessor(
             new WebhookProviderProcessorRegistry($providerProcessor),
             new WebhookProviderValidatorRegistry($providerValidator),
@@ -171,12 +171,12 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorUsesInputProviderIdForProviderProcessorResolution(): void
     {
-        $stripeProcessor = new SuccessfulWebhookProviderProcessor(
+        $stripeProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',
         );
-        $paypalProcessor = new SuccessfulWebhookProviderProcessor(
+        $paypalProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'PAYMENT.CAPTURE.COMPLETED',
@@ -200,7 +200,7 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorReturnsUnsupportedCapabilityResultFromProviderProcessor(): void
     {
-        $providerProcessor = new UnsupportedWebhookProviderProcessor(
+        $providerProcessor = new WebhookUnsupportedProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentRefunded,
             providerEventType: 'charge.refunded',
@@ -232,7 +232,7 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorReturnsValidationFailureResultFromProviderProcessor(): void
     {
-        $providerProcessor = new ValidationFailedWebhookProviderProcessor(
+        $providerProcessor = new WebhookValidationFailedProviderProcessor(
             providerId: 'stripe',
             providerEventType: 'payment_intent.succeeded',
             payload: ['type' => 'payment_intent.succeeded'],
@@ -263,7 +263,7 @@ final class WebhookProcessorTest extends TestCase
 
     public function testProcessorReturnsMissingProviderProcessorResultWhenProcessorIsNotRegistered(): void
     {
-        $registeredProcessor = new SuccessfulWebhookProviderProcessor('stripe');
+        $registeredProcessor = new WebhookSuccessfulProviderProcessor('stripe');
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($registeredProcessor));
 
         $context = $processor->process(new WebhookInput(

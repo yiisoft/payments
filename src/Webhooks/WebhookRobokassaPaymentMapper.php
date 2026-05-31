@@ -7,7 +7,7 @@ namespace Yiisoft\Payments\Webhooks;
 /**
  * Provider-specific mapper for Robokassa payment webhook payloads.
  */
-final readonly class WebhookRobokassaPaymentWebhookMapper implements WebhookPaymentMapperInterface
+final readonly class WebhookRobokassaPaymentMapper implements WebhookPaymentMapperInterface
 {
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
     {

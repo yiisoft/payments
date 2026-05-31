@@ -12,7 +12,7 @@ use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookStripeEventRecognizer;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
 
 final class WebhookStripeRefundBoundaryTest extends TestCase
 {
@@ -31,7 +31,7 @@ final class WebhookStripeRefundBoundaryTest extends TestCase
 
     public function testKeepsChargeRefundedUnsupportedInR1StripeMapper(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"type":"charge.refunded","data":{"object":{"id":"ch_123","status":"succeeded"}}}',
             headers: ['Stripe-Signature' => 't=123,v1=signature'],

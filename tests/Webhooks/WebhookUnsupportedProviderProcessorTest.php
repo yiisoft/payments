@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Tests\Webhooks\Support\UnsupportedWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookUnsupportedProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 
-final class UnsupportedWebhookProviderProcessorTest extends TestCase
+final class WebhookUnsupportedProviderProcessorTest extends TestCase
 {
     public function testProcessorImplementsProviderProcessorContract(): void
     {
-        $processor = new UnsupportedWebhookProviderProcessor('stripe');
+        $processor = new WebhookUnsupportedProviderProcessor('stripe');
 
         $this->assertInstanceOf(WebhookProviderProcessorInterface::class, $processor);
         $this->assertSame('stripe', $processor->getProviderId());
@@ -23,7 +23,7 @@ final class UnsupportedWebhookProviderProcessorTest extends TestCase
 
     public function testProcessorReturnsUnsupportedEventResult(): void
     {
-        $processor = new UnsupportedWebhookProviderProcessor(
+        $processor = new WebhookUnsupportedProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentRefunded,
             providerEventType: 'charge.dispute.created',
@@ -51,7 +51,7 @@ final class UnsupportedWebhookProviderProcessorTest extends TestCase
 
     public function testProcessorKeepsProcessedInputForFlowAssertions(): void
     {
-        $processor = new UnsupportedWebhookProviderProcessor('stripe');
+        $processor = new WebhookUnsupportedProviderProcessor('stripe');
         $input = new WebhookInput(rawBody: '{}', providerId: 'stripe');
 
         $result = $processor->process($input);
