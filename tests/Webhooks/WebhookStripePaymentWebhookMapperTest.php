@@ -240,7 +240,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         $this->assertNull($result->eventType);
         $this->assertNotNull($result->reason);
         $this->assertSame('unknown_event_type', $result->reason->code->value);
-        $this->assertSame('', $result->reason->providerEventType);
+        $this->assertNull($result->reason->providerEventType);
     }
 
     public static function supportedStripePaymentOutcomeProvider(): iterable
