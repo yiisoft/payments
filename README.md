@@ -895,10 +895,19 @@ obtained from `PaymentGatewayInterface` implementations or from methods such as
 #### `WebhookProviderProcessorRegistry`
 
 Registry and resolver for provider-specific webhook processors. The common processor uses it
-to select the processor that matches `WebhookInput::$providerId` after validation succeeds.
+to select the processor that exactly matches `WebhookInput::$providerId` after validation
+succeeds. Applications register processors explicitly, usually one processor per configured
+webhook endpoint provider.
+
+The registry is intentionally small and deterministic: it does not auto-detect providers,
+does not create processors lazily, and does not fall back to another provider when the
+requested provider ID is not registered. Empty provider processor IDs and duplicate provider
+processor IDs are rejected during registry construction.
+
 When no processor is registered for the selected provider, the registry provides a predictable
 missing-provider processing result instead of letting the integration fail with an ambiguous
-null dereference or framework error.
+null dereference or framework error. The optional `WebhookRawData` argument allows the common
+processor to preserve the original request data in that failure result.
 
 ```php
 final class WebhookProviderProcessorRegistry
