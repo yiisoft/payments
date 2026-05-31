@@ -317,8 +317,7 @@ if (error) {
 ```
 
 #### Step 7: Webhooks (optional)
-This library does not include webhook signature verification or event parsing.
-Handle webhooks in your application using the provider's official documentation/SDK.
+For incoming payment webhooks, use the library's R1 webhook processing API to validate, parse, and normalize supported provider events. See the [Webhooks](#webhooks) section for the final flow, support matrix, and examples.
 
 
 ### 3. Handling Different Statuses
@@ -516,7 +515,6 @@ $refund = $gateway->createRefund($intent->id, [
 - Payment Intents (create / retrieve / confirm / capture / cancel)
 - Refunds
 
-> Webhook verification/event parsing is intentionally out of scope for this library. Implement it in your application using Stripe docs/SDK.
 
 ### PayPal (`PayPalGateway`) — REST API v2 (Checkout Orders)
 
