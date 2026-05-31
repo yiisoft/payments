@@ -1816,6 +1816,7 @@ function handleStripeHttpRequest(ServerRequestInterface $httpRequest, WebhookPro
 
 function handleWebhookContext(WebhookContext $context): void
 {
+    $rawInput = $context->rawInput;
     $rawData = $context->rawData;
     $providerEventType = $rawData?->providerEventType;
 
@@ -1828,6 +1829,7 @@ function handleWebhookContext(WebhookContext $context): void
             logWebhookDiagnostic(
                 reason: $context->validationFailureReason?->message ?? 'Webhook validation failed.',
                 providerEventType: $providerEventType,
+                rawInput: $rawInput,
                 rawData: $rawData,
             );
             return;
@@ -1836,6 +1838,7 @@ function handleWebhookContext(WebhookContext $context): void
             logWebhookDiagnostic(
                 reason: $context->unknownEventReason?->message ?? 'Unknown provider webhook event type.',
                 providerEventType: $providerEventType,
+                rawInput: $rawInput,
                 rawData: $rawData,
             );
             return;
@@ -1848,6 +1851,7 @@ function handleWebhookContext(WebhookContext $context): void
             logWebhookDiagnostic(
                 reason: 'Webhook processing finished without a known status.',
                 providerEventType: $providerEventType,
+                rawInput: $rawInput,
                 rawData: $rawData,
             );
     }
@@ -1874,6 +1878,7 @@ function handleProcessedWebhookContext(WebhookContext $context): void
         default => logWebhookDiagnostic(
             reason: 'Processed webhook context has no R1 payment handler.',
             providerEventType: $rawData?->providerEventType,
+            rawInput: $context->rawInput,
             rawData: $rawData,
         ),
     };
@@ -1882,8 +1887,8 @@ function handleProcessedWebhookContext(WebhookContext $context): void
     // - update the local payment record using the normalized payment event type;
     // - store paymentStatus as the optional provider status observed during processing;
     // - do not treat paymentStatus as a required value or as a cross-provider state machine;
-    // - use provider payload fields only when additional provider-specific details are needed;
-    // - keep raw webhook data for diagnostics and audit logs when appropriate.
+    // - keep rawInput/rawData only as debugging, audit, or provider-specific fallback data;
+    // - do not derive normalized payment decisions directly from raw provider fields.
 }
 
 function handleUnsupportedWebhookContext(WebhookContext $context): void
@@ -1898,16 +1903,24 @@ function handleUnsupportedWebhookContext(WebhookContext $context): void
     }
 
     // Application-specific fallback handling:
-    // - keep the raw request data for diagnostics;
-    // - use the normalized event type to decide whether a provider-specific fallback is needed;
+    // - keep rawInput/rawData for diagnostics and audit logs;
+    // - use the normalized event type/status to decide whether a provider-specific fallback is needed;
+    // - read raw provider fields only inside that explicit fallback path;
     // - ignore the event safely when it is outside the application scope.
 }
 
-function logWebhookDiagnostic(string $reason, ?string $providerEventType, ?WebhookRawData $rawData): void
+function logWebhookDiagnostic(
+    string $reason,
+    ?string $providerEventType,
+    ?WebhookInput $rawInput,
+    ?WebhookRawData $rawData,
+): void
 {
     // Application-specific diagnostics:
     // - log the reason and provider event type;
-    // - include raw headers, query/body provider fields, or decoded payload when useful;
+    // - use rawInput to inspect the original provider id, headers, and request body when troubleshooting wiring issues;
+    // - use rawData to inspect parsed provider event metadata or preserved query/body provider fields;
+    // - redact secrets, signatures, and personal data according to the application logging policy;
     // - avoid treating raw provider fields as normalized payment data.
 }
 ```
@@ -1917,18 +1930,22 @@ Application code should use `WebhookContext::$eventType` as the normalized R1 pa
 `WebhookContext::$paymentStatus` is an optional minimal provider status string extracted by the mapper when available.
 Examples that update local payment records should pass it along as supplementary provider-state information, but must not
 require it for every provider event. It is not a replacement for `WebhookProcessingStatus` and is not a rich cross-provider
-payment state machine. Applications may inspect `WebhookContext::$rawData` for provider-specific diagnostics or audit logs.
+payment state machine. Applications may inspect `WebhookContext::$rawInput` and `WebhookContext::$rawData` for
+provider-specific diagnostics, audit logs, and explicit fallback handling, but normalized payment decisions should be
+based on `WebhookContext::$status`, `WebhookContext::$eventType`, and the optional `WebhookContext::$paymentStatus`.
 
 `WebhookProcessingStatus::ValidationFailed` means processing stopped before provider event processing started.
 This includes provider-specific request validation failures and missing provider processors, for example with the
-`missing_provider_processor` reason code. The context can still expose raw input/raw data for diagnostics.
+`missing_provider_processor` reason code. The context can still expose raw input/raw data for diagnostics,
+logging, and troubleshooting of provider endpoint wiring.
 
 `WebhookProcessingStatus::UnknownEvent` means the request is valid, but the provider event type is not recognized
-by the provider mapping. The provider event type and raw data can be logged or used for fallback analysis.
+by the provider mapping. The provider event type and raw data can be logged or used for fallback analysis;
+they should not be promoted to normalized payment data by the common R1 example.
 
 `WebhookProcessingStatus::UnsupportedEvent` means the request is valid and recognized, but the normalized event is
-outside the current R1 payment webhook scope. Application code can use the normalized event type/status and raw data
-to decide whether to ignore the event, log it, or apply custom provider-specific fallback logic.
+outside the current R1 payment webhook scope. Application code can use the normalized event type/status first and
+then consult raw input/raw data only when it intentionally applies custom provider-specific fallback logic.
 
 ### Out of Scope for Release 1
 
