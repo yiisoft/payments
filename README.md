@@ -1071,10 +1071,12 @@ later processing can still return a predictable result with preserved raw reques
 
 #### `PaymentWebhookMapperInterface`
 
-Provider-specific mapping of the intermediate `WebhookPayload` into the common payment-oriented
-processing outcome. The mapper converts provider-specific payment data, payment event type, and
-payment state into `WebhookProcessingResult`; the common processor then wraps that result into the
-final `WebhookContext` returned to application code.
+Provider-specific mapping of the intermediate `WebhookPayload` into the common R1 payment
+webhook processing outcome. The mapper is the last provider-specific stage of the built-in
+provider processor pipeline: recognition has already selected a normalized `WebhookEventType`
+when possible, parsing has already created `WebhookPayload`, and the mapper converts that payload
+into `WebhookProcessingResult`. The common `WebhookProcessor` then wraps the result into the final
+`WebhookContext` returned to application code.
 
 ```php
 interface PaymentWebhookMapperInterface
@@ -1084,6 +1086,33 @@ interface PaymentWebhookMapperInterface
     public function extractPaymentStatus(WebhookPayload $payload): ?string;
 }
 ```
+
+`mapPaymentWebhook()` must return an explicit processing result for every payload shape handled by
+the provider processor. It does not return `null` and it does not throw for normal unsupported or
+unknown webhook events:
+
+- `Processed` for recognized R1 payment outcomes that the provider processor supports;
+- `UnknownEvent` when the provider event type cannot be mapped to a normalized webhook event;
+- `UnsupportedEvent` when the event is recognized but intentionally outside the current R1
+  payment webhook contract, for example refund-like events represented as `PaymentRefunded`.
+
+`extractPaymentStatus()` exposes the minimal R1 payment status signal as a nullable provider status
+string. It returns an already parsed `WebhookPayload::$paymentStatus` when available, otherwise the
+provider mapper may read the provider-specific status field from payload data. It must not derive an
+application-level payment state, must not invent an artificial unknown sentinel, and must return
+`null` when the status is absent or not safely mappable.
+
+The built-in mappers keep this extraction intentionally narrow:
+
+- Stripe reads payment status from `WebhookPayload::$paymentStatus` or `data.object.status`;
+- PayPal reads payment status from `WebhookPayload::$paymentStatus` or `resource.status`;
+- YooKassa reads payment status from `WebhookPayload::$paymentStatus` or `object.status`;
+- Robokassa returns the ResultURL success status signal only for the supported R1 payment callback
+  format because Robokassa ResultURL does not carry a separate payment status field.
+
+Mapping preserves `WebhookRawData` in the returned `WebhookProcessingResult` so application code can
+inspect the original request for debugging or provider-specific fallback handling without treating
+raw provider fields as normalized payment data.
 
 #### Capability declaration contracts
 
