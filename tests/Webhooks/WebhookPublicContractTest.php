@@ -305,7 +305,17 @@ final class WebhookPublicContractTest extends TestCase
         $reflection = new ReflectionClass(WebhookRobokassaCallbackFormat::class);
 
         $this->assertTrue($reflection->isFinal());
-        $this->assertSame(['__construct', 'isCustomParameter', 'isRequiredParameter', 'requiredParameters'], $this->methodNames($reflection));
+        $this->assertSame(
+            [
+                '__construct',
+                'isCustomParameter',
+                'isRequiredParameter',
+                'requiredParameters',
+                'supportedR1PaymentOutcome',
+                'supportsR1PaymentOutcome',
+            ],
+            $this->methodNames($reflection)
+        );
         $this->assertTrue($reflection->getConstructor()?->isPrivate());
 
         $this->assertSame('robokassa', $reflection->getConstant('PROVIDER_ID'));
@@ -341,6 +351,23 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertFalse($isCustomParameterMethod->getParameters()[0]->getType()?->allowsNull());
         $this->assertSame('bool', $isCustomParameterMethod->getReturnType()?->getName());
         $this->assertFalse($isCustomParameterMethod->getReturnType()?->allowsNull());
+
+        $supportedR1PaymentOutcomeMethod = $reflection->getMethod('supportedR1PaymentOutcome');
+
+        $this->assertTrue($supportedR1PaymentOutcomeMethod->isStatic());
+        $this->assertSame(0, $supportedR1PaymentOutcomeMethod->getNumberOfParameters());
+        $this->assertSame(WebhookEventType::class, $supportedR1PaymentOutcomeMethod->getReturnType()?->getName());
+        $this->assertFalse($supportedR1PaymentOutcomeMethod->getReturnType()?->allowsNull());
+
+        $supportsR1PaymentOutcomeMethod = $reflection->getMethod('supportsR1PaymentOutcome');
+
+        $this->assertTrue($supportsR1PaymentOutcomeMethod->isStatic());
+        $this->assertSame(1, $supportsR1PaymentOutcomeMethod->getNumberOfParameters());
+        $this->assertSame('eventType', $supportsR1PaymentOutcomeMethod->getParameters()[0]->getName());
+        $this->assertSame(WebhookEventType::class, $supportsR1PaymentOutcomeMethod->getParameters()[0]->getType()?->getName());
+        $this->assertFalse($supportsR1PaymentOutcomeMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertSame('bool', $supportsR1PaymentOutcomeMethod->getReturnType()?->getName());
+        $this->assertFalse($supportsR1PaymentOutcomeMethod->getReturnType()?->allowsNull());
     }
 
     public function testWebhookRobokassaValidatorContractIsStable(): void
