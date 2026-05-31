@@ -1000,12 +1000,12 @@ The target provider processing flow is:
 
 Provider-specific recognition of payment-related webhook events. The recognizer reads the
 original provider request represented by `WebhookInput`, extracts the raw provider event type,
-and maps it to the normalized `WebhookEventType` used by the R1 payment webhook contract.
+and maps known provider event names/callback formats to the normalized `WebhookEventType` used
+by the R1 payment webhook contract.
 
 Recognition is an internal provider-processing stage. It does not replace `WebhookInput`, does
 not return `WebhookContext`, and must not require application code to parse provider payloads.
-Unknown provider event names and known-but-unsupported event types are converted later into
-`WebhookProcessingResult` statuses.
+The provider processor uses the recognizer before payload parsing and mapping.
 
 ```php
 interface WebhookEventRecognizerInterface
@@ -1015,6 +1015,21 @@ interface WebhookEventRecognizerInterface
     public function recognizeEventType(string $providerEventType): ?WebhookEventType;
 }
 ```
+
+`recognizeProviderEventType()` returns the raw provider event name/code exactly as it appears in
+the request, or `null` when the request does not contain a recognizable provider event type for
+that provider. The built-in R1 recognizers read provider event identity from provider-specific
+locations: Stripe uses JSON `type`, PayPal uses JSON `event_type`, YooKassa uses JSON `event`,
+and Robokassa recognizes a valid ResultURL callback shape from query/form parameters.
+
+`recognizeEventType()` maps the raw provider event type to a normalized `WebhookEventType` when
+that provider event is known to the R1 webhook subsystem. It returns `null` for unknown provider
+event names or events that have no normalized webhook equivalent.
+
+The recognizer only identifies event semantics. It does not decide final R1 support by itself.
+For example, refund-like provider events may still map to `WebhookEventType::PaymentRefunded` so
+that the later mapper/capability layer can return an explicit `UnsupportedEvent` result, because
+refund webhook normalization is reserved for R2.
 
 #### `WebhookPayloadParserInterface`
 
