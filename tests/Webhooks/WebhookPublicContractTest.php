@@ -786,11 +786,18 @@ final class WebhookPublicContractTest extends TestCase
 
         $unknownEventMethod = $reflection->getMethod('unknownEvent');
 
-        $this->assertSame(['providerEventType'], array_map(
+        $this->assertSame(['providerEventType', 'rawData'], array_map(
             static fn ($parameter): string => $parameter->getName(),
             $unknownEventMethod->getParameters(),
         ));
         $this->assertSame('string', $unknownEventMethod->getParameters()[0]->getType()?->getName());
+        $this->assertTrue($unknownEventMethod->getParameters()[0]->getType()?->allowsNull());
+        $this->assertTrue($unknownEventMethod->getParameters()[0]->isDefaultValueAvailable());
+        $this->assertNull($unknownEventMethod->getParameters()[0]->getDefaultValue());
+        $this->assertSame(WebhookRawData::class, $unknownEventMethod->getParameters()[1]->getType()?->getName());
+        $this->assertTrue($unknownEventMethod->getParameters()[1]->getType()?->allowsNull());
+        $this->assertTrue($unknownEventMethod->getParameters()[1]->isDefaultValueAvailable());
+        $this->assertNull($unknownEventMethod->getParameters()[1]->getDefaultValue());
         $this->assertSame('self', $unknownEventMethod->getReturnType()?->getName());
 
         $unsupportedEventMethod = $reflection->getMethod('unsupportedEvent');
