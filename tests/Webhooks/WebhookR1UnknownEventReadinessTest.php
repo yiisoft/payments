@@ -29,7 +29,7 @@ final class WebhookR1UnknownEventReadinessTest extends TestCase
     public function testR1PipelineReturnsUnknownEventContextAfterSuccessfulValidation(
         WebhookProcessor $processor,
         WebhookInput $input,
-        string $expectedProviderEventType,
+        ?string $expectedProviderEventType,
         ?string $expectedRawDataProviderEventType,
         ?array $expectedPayload,
     ): void {
@@ -59,7 +59,7 @@ final class WebhookR1UnknownEventReadinessTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{WebhookProcessor, WebhookInput, string, ?string, ?array<string, mixed>}>
+     * @return iterable<string, array{WebhookProcessor, WebhookInput, ?string, ?string, ?array<string, mixed>}>
      */
     public static function unknownEventProvider(): iterable
     {
@@ -179,7 +179,7 @@ final class WebhookR1UnknownEventReadinessTest extends TestCase
     }
 
     /**
-     * @return array{WebhookProcessor, WebhookInput, string, null, null}
+     * @return array{WebhookProcessor, WebhookInput, null, null, null}
      */
     private static function robokassaUnknownEventCase(): array
     {
@@ -214,6 +214,6 @@ final class WebhookR1UnknownEventReadinessTest extends TestCase
             new WebhookProviderValidatorRegistry($validator),
         );
 
-        return [$processor, $input, '', null, null];
+        return [$processor, $input, null, null, null];
     }
 }
