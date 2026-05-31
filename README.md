@@ -1923,6 +1923,31 @@ function logWebhookDiagnostic(
     // - redact secrets, signatures, and personal data according to the application logging policy;
     // - avoid treating raw provider fields as normalized payment data.
 }
+
+function storeProviderPaymentStatus(WebhookContext $context, string $paymentStatus): void
+{
+    // Application-specific persistence of the optional provider payment status.
+}
+
+function markLocalPaymentAsSucceeded(WebhookContext $context, ?string $paymentStatus): void
+{
+    // Application-specific local payment update for a normalized successful payment webhook.
+}
+
+function markLocalPaymentAsFailed(WebhookContext $context, ?string $paymentStatus): void
+{
+    // Application-specific local payment update for a normalized failed payment webhook.
+}
+
+function markLocalPaymentAsCanceled(WebhookContext $context, ?string $paymentStatus): void
+{
+    // Application-specific local payment update for a normalized canceled payment webhook.
+}
+
+function syncLocalPaymentState(WebhookContext $context, ?string $paymentStatus): void
+{
+    // Application-specific local payment synchronization for non-final R1 payment webhook outcomes.
+}
 ```
 
 `WebhookProcessingStatus::Processed` means the request was validated, recognized, parsed, and mapped successfully.
