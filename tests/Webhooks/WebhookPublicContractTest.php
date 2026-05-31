@@ -165,7 +165,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertTrue($successMethod->isStatic());
         $this->assertSame(0, $successMethod->getNumberOfParameters());
-        $this->assertSame('self', $successMethod->getReturnType()?->getName());
+        $this->assertSelfReturnType($successMethod, WebhookValidationResult::class);
         $this->assertFalse($successMethod->getReturnType()?->allowsNull());
 
         $failureMethod = $reflection->getMethod('failure');
@@ -175,7 +175,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame('reason', $failureMethod->getParameters()[0]->getName());
         $this->assertSame(WebhookReason::class, $failureMethod->getParameters()[0]->getType()?->getName());
         $this->assertFalse($failureMethod->getParameters()[0]->getType()?->allowsNull());
-        $this->assertSame('self', $failureMethod->getReturnType()?->getName());
+        $this->assertSelfReturnType($failureMethod, WebhookValidationResult::class);
         $this->assertFalse($failureMethod->getReturnType()?->allowsNull());
     }
 
@@ -769,7 +769,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($validationFailedMethod->getParameters()[1]->getType()?->allowsNull());
         $this->assertTrue($validationFailedMethod->getParameters()[1]->isDefaultValueAvailable());
         $this->assertNull($validationFailedMethod->getParameters()[1]->getDefaultValue());
-        $this->assertSame('self', $validationFailedMethod->getReturnType()?->getName());
+        $this->assertSelfReturnType($validationFailedMethod, WebhookProcessingResult::class);
 
         $missingProviderProcessorMethod = $reflection->getMethod('missingProviderProcessor');
 
@@ -782,7 +782,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($missingProviderProcessorMethod->getParameters()[1]->getType()?->allowsNull());
         $this->assertTrue($missingProviderProcessorMethod->getParameters()[1]->isDefaultValueAvailable());
         $this->assertNull($missingProviderProcessorMethod->getParameters()[1]->getDefaultValue());
-        $this->assertSame('self', $missingProviderProcessorMethod->getReturnType()?->getName());
+        $this->assertSelfReturnType($missingProviderProcessorMethod, WebhookProcessingResult::class);
 
         $unknownEventMethod = $reflection->getMethod('unknownEvent');
 
@@ -798,7 +798,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($unknownEventMethod->getParameters()[1]->getType()?->allowsNull());
         $this->assertTrue($unknownEventMethod->getParameters()[1]->isDefaultValueAvailable());
         $this->assertNull($unknownEventMethod->getParameters()[1]->getDefaultValue());
-        $this->assertSame('self', $unknownEventMethod->getReturnType()?->getName());
+        $this->assertSelfReturnType($unknownEventMethod, WebhookProcessingResult::class);
 
         $unsupportedEventMethod = $reflection->getMethod('unsupportedEvent');
 
@@ -815,7 +815,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($unsupportedEventMethod->getParameters()[2]->getType()?->allowsNull());
         $this->assertTrue($unsupportedEventMethod->getParameters()[2]->isDefaultValueAvailable());
         $this->assertNull($unsupportedEventMethod->getParameters()[2]->getDefaultValue());
-        $this->assertSame('self', $unsupportedEventMethod->getReturnType()?->getName());
+        $this->assertSelfReturnType($unsupportedEventMethod, WebhookProcessingResult::class);
     }
 
     public function testWebhookReasonCodeContractIsStable(): void
@@ -913,6 +913,14 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame('array', $reflection->getMethod('all')->getReturnType()?->getName());
         $this->assertSame('int', $reflection->getMethod('count')->getReturnType()?->getName());
         $this->assertSame('Traversable', $reflection->getMethod('getIterator')->getReturnType()?->getName());
+    }
+
+    private function assertSelfReturnType(ReflectionMethod $method, string $className): void
+    {
+        $returnType = $method->getReturnType();
+
+        $this->assertNotNull($returnType);
+        $this->assertContains($returnType->getName(), ['self', $className]);
     }
 
     /**
