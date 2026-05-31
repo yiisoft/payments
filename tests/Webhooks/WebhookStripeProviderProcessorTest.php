@@ -52,7 +52,7 @@ final class WebhookStripeProviderProcessorTest extends TestCase
     {
         $processor = new WebhookStripeProviderProcessor();
         $input = new WebhookInput(
-            rawBody: '{"id":"evt_123","type":"payment_intent.processing","data":{"object":{"status":"processing"}}}',
+            rawBody: '{"id":"evt_123","type":"charge.refunded","data":{"object":{"status":"succeeded"}}}',
             headers: ['Stripe-Signature' => 't=123,v1=signature'],
             providerId: 'stripe',
         );
@@ -60,12 +60,12 @@ final class WebhookStripeProviderProcessorTest extends TestCase
         $result = $processor->process($input);
 
         $this->assertSame(WebhookProcessingStatus::UnsupportedEvent, $result->status);
-        $this->assertSame(WebhookEventType::PaymentProcessing, $result->eventType);
+        $this->assertSame(WebhookEventType::PaymentRefunded, $result->eventType);
         $this->assertNotNull($result->reason);
         $this->assertSame('unsupported_event_type', $result->reason->code->value);
-        $this->assertSame('payment_intent.processing', $result->reason->providerEventType);
+        $this->assertSame('charge.refunded', $result->reason->providerEventType);
         $this->assertNotNull($result->rawData);
-        $this->assertSame('payment_intent.processing', $result->rawData->providerEventType);
+        $this->assertSame('charge.refunded', $result->rawData->providerEventType);
     }
 
     public function testReturnsUnknownEventForUnknownStripeProviderEventType(): void
