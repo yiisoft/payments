@@ -826,6 +826,16 @@ Architecture boundaries:
 - provider auto-detection from a raw HTTP request is not part of Release 1. The application selects the provider for the configured endpoint and passes its identifier in `WebhookInput`;
 - provider-specific webhook processors are configured in the webhook object graph, not retrieved from outbound gateway instances such as `StripeGateway->getWebhookHandler()`.
 
+### R1 Payment Webhook Support Matrix
+
+This subsection documents built-in provider support for normalized payment webhook outcomes in Release 1.
+It is intentionally limited to payment webhook processing through the current `WebhookProcessorInterface` flow.
+It does not describe refund normalization, recurring or subscription webhooks, provider-specific extras,
+idempotency helpers, application controllers, queues, or persistence.
+
+The provider rows below describe only R1 payment webhook support and must be read together with the
+provider capability declarations exposed through `WebhookCapabilitiesProviderInterface`.
+
 ### Common Contracts
 
 #### `WebhookProcessorInterface`
