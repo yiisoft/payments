@@ -1325,9 +1325,11 @@ readonly class WebhookInput
 ```
 
 A JSON webhook endpoint can build `WebhookInput` directly from a PSR-7 server request.
-The raw JSON body remains in `rawBody`, headers are passed as received, query parameters
-are preserved when the provider uses them, and `bodyParams` stays empty because JSON
-provider fields are decoded later by provider-specific processing.
+The raw JSON body must remain unchanged in `rawBody`, headers are passed as received,
+query parameters are preserved when the provider uses them, and `bodyParams` stays empty.
+Do not pre-decode the JSON body into `bodyParams`; built-in JSON payload parsers decode
+`rawBody` later and preserve the decoded provider payload in `WebhookPayload` and
+`WebhookRawData`.
 
 ```php
 <?php
@@ -1337,8 +1339,10 @@ use Yiisoft\Payments\Webhooks\WebhookInput;
 
 function createJsonWebhookInput(ServerRequestInterface $request, string $providerId): WebhookInput
 {
+    $rawBody = $request->getBody()->getContents();
+
     return new WebhookInput(
-        rawBody: $request->getBody()->getContents(),
+        rawBody: $rawBody,
         headers: $request->getHeaders(),
         queryParams: $request->getQueryParams(),
         bodyParams: [],
