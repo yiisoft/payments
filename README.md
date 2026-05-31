@@ -841,11 +841,11 @@ The main idea is:
 - provider-specific validation verifies signatures, secrets, headers, and other authenticity markers before event processing starts;
 - provider-specific processing recognizes payment-related events and selects the correct normalization path;
 - provider payload parsing converts the original request payload into an internal representation instead of requiring application code to read raw provider payloads directly;
-- mapping converts parsed provider data into a common `WebhookContext` that application code can handle consistently;
+- mapping converts parsed provider data into a `WebhookProcessingResult` that the common processor wraps into a `WebhookContext` for application code;
 - common payment status extraction gives the application one payment-status model across providers;
 - raw request data remains available for logging, diagnostics, fallback handling, and provider-specific application logic;
 - unknown or unsupported events return predictable context instead of breaking the integration;
-- each gateway declares its supported, partially supported, and unsupported webhook capabilities explicitly;
+- each gateway declares its supported and unsupported R1 webhook capabilities explicitly; the public capability model can also represent partially supported capabilities for future extensions;
 - Release 1 includes minimal documentation and support matrix information needed to use payment webhook support.
 
 Architecture boundaries:
@@ -950,8 +950,9 @@ outbound `PaymentGatewayInterface` instance.
 
 Provider-specific webhook event processor registered under a stable provider identifier.
 The identifier returned by `getProviderId()` is the value used by the common processor to
-match the processor with `WebhookInput::$providerId`. The provider processor is called only
-after the matching provider validator returns a successful `WebhookValidationResult`.
+match the processor with `WebhookInput::$providerId`. The provider processor is called after
+the matching provider validator returns a successful `WebhookValidationResult`, or directly
+when no validator is configured for that provider.
 
 ```php
 interface WebhookProviderProcessorInterface
@@ -984,8 +985,8 @@ obtained from `PaymentGatewayInterface` implementations or from methods such as
 
 Registry and resolver for provider-specific webhook processors. The common processor uses it
 to select the processor that exactly matches `WebhookInput::$providerId` after validation
-succeeds. Applications register processors explicitly, usually one processor per configured
-webhook endpoint provider.
+succeeds or when no validator is configured for that provider. Applications register processors
+explicitly, usually one processor per configured webhook endpoint provider.
 
 The registry is intentionally small and deterministic: it does not auto-detect providers,
 does not create processors lazily, and does not fall back to another provider when the
@@ -1071,8 +1072,9 @@ fail-fast `ValidationFailed` result before provider event recognition, parsing, 
 
 #### Provider processing stages
 
-After provider-specific validation succeeds, the provider processor runs the R1 payment webhook
-pipeline. These stages are provider-specific implementation details behind
+After provider-specific validation succeeds, or when no validator is configured for that provider,
+the provider processor runs the R1 payment webhook pipeline. These stages are provider-specific
+implementation details behind
 `WebhookProviderProcessorInterface`; application code should pass `WebhookInput` to the common
 processor and handle the returned `WebhookContext`, not build these intermediate objects itself.
 
@@ -1207,7 +1209,8 @@ raw provider fields as normalized payment data.
 Webhook capabilities are declared explicitly by each gateway/provider. This declaration is separate
 from incoming HTTP routing, request validation, event recognition, payload parsing, and provider
 processing. It is a discoverability contract: it tells application code which normalized webhook
-outcomes the provider declares as supported, partially supported, or unsupported.
+outcomes the provider declares as supported or unsupported in R1, while the public model also
+keeps a `PartiallySupported` status available for future capability extensions.
 
 A gateway/provider that declares webhook capabilities implements `WebhookCapabilitiesProviderInterface`
 and returns an immutable `WebhookCapabilities` collection. Each `WebhookCapability` describes one
