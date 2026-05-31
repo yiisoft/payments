@@ -924,9 +924,10 @@ final class WebhookProviderProcessorRegistry
 
 #### `WebhookProviderValidatorInterface`
 
-Provider-specific verification of signatures, secrets, headers, and other authenticity markers for one payment provider.
-Validation is a separate stage that runs before provider event recognition, payload parsing, and mapping.
-A validator is selected by the same provider identifier that the application passes in `WebhookInput::$providerId`.
+Provider-specific verification contract for one configured payment webhook provider. The
+identifier returned by `getProviderId()` is matched against `WebhookInput::$providerId`
+by the validator registry before provider event recognition, payload parsing, and
+mapping are allowed to run.
 
 ```php
 interface WebhookProviderValidatorInterface
@@ -937,8 +938,19 @@ interface WebhookProviderValidatorInterface
 }
 ```
 
-A failed validation result is fail-fast: the common processor returns a `ValidationFailed`
-`WebhookContext` and does not call the provider processor.
+`validate()` receives the original `WebhookInput`, so provider validators can inspect the
+raw body, headers, query parameters, and form body parameters required by the provider's
+authenticity model. R1 includes provider-specific validators for the supported payment
+webhook inputs: Stripe signature validation, PayPal transmission-header preconditions
+with delegated signature verification, YooKassa Basic Auth and payload precondition
+checks, and Robokassa ResultURL parameter/signature validation.
+
+A successful validator returns `WebhookValidationResult::success()`. A failed validator
+returns `WebhookValidationResult::failure()` with a `WebhookReason`; the common processor
+then returns a fail-fast `ValidationFailed` `WebhookContext` and does not call the provider
+processor. Validation is therefore an authenticity and request-precondition gate, while
+unknown, unsupported, or not mappable provider events are handled later by the provider
+processor.
 
 #### `WebhookProviderValidatorRegistry`
 
