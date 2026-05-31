@@ -17,7 +17,25 @@ final readonly class WebhookProcessingResult
         public ?WebhookEventType $eventType = null,
         public ?WebhookReason $reason = null,
         public ?WebhookRawData $rawData = null,
+        public ?string $paymentStatus = null,
     ) {
+    }
+
+    /**
+     * Creates a result for a webhook payload that was mapped successfully.
+     */
+    public static function processed(
+        WebhookEventType $eventType,
+        ?WebhookRawData $rawData = null,
+        ?string $paymentStatus = null,
+    ): self
+    {
+        return new self(
+            status: WebhookProcessingStatus::Processed,
+            eventType: $eventType,
+            rawData: $rawData,
+            paymentStatus: $paymentStatus,
+        );
     }
 
     /**
@@ -58,7 +76,7 @@ final readonly class WebhookProcessingResult
     /**
      * Creates a result for a valid provider webhook event type that is not present in the provider mapping.
      */
-    public static function unknownEvent(string $providerEventType): self
+    public static function unknownEvent(?string $providerEventType = null, ?WebhookRawData $rawData = null): self
     {
         return new self(
             status: WebhookProcessingStatus::UnknownEvent,
@@ -67,6 +85,7 @@ final readonly class WebhookProcessingResult
                 message: 'Provider event type is not recognized by the webhook event mapping.',
                 providerEventType: $providerEventType,
             ),
+            rawData: $rawData,
         );
     }
 

@@ -16,6 +16,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 final class GatewayWebhookCapabilitiesTest extends TestCase
@@ -44,9 +45,169 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
 
             foreach ($capabilities as $capability) {
                 $this->assertSame(WebhookEntityKind::Payment, $capability->entityKind);
-                $this->assertSame(WebhookSupportStatus::Supported, $capability->supportStatus);
             }
         }
+    }
+
+    public function testStripeWebhookCapabilitiesMatchImplementedR1PaymentMapping(): void
+    {
+        $psr17Factory = new Psr17Factory();
+        $gateway = new StripeGateway(
+            'test_api_key',
+            new TestHttpClient($psr17Factory),
+            $psr17Factory,
+            $psr17Factory,
+            new NullLogger(),
+        );
+
+        $this->assertSame([
+            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
+        ], $this->capabilitySupportStatuses($gateway));
+    }
+
+    public function testPayPalWebhookCapabilitiesMatchImplementedR1PaymentMapping(): void
+    {
+        $psr17Factory = new Psr17Factory();
+        $gateway = new PayPalGateway(
+            'test_client_id',
+            'test_client_secret',
+            true,
+            new TestHttpClient($psr17Factory),
+            $psr17Factory,
+            $psr17Factory,
+            new NullLogger(),
+        );
+
+        $this->assertSame([
+            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
+        ], $this->capabilitySupportStatuses($gateway));
+    }
+
+    public function testYooKassaWebhookCapabilitiesMatchImplementedR1PaymentMapping(): void
+    {
+        $psr17Factory = new Psr17Factory();
+        $gateway = new YooKassaGateway(
+            'test_shop_id',
+            'test_secret_key',
+            new TestHttpClient($psr17Factory),
+            $psr17Factory,
+            $psr17Factory,
+            new NullLogger(),
+        );
+
+        $this->assertSame([
+            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
+        ], $this->capabilitySupportStatuses($gateway));
+    }
+
+    public function testGatewayCapabilityDeclarationsMatchR1PaymentOutcomeScope(): void
+    {
+        $expectedEventTypes = [
+            ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+            ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+        ];
+
+        foreach ($this->createGateways() as $gateway) {
+            $capabilities = $gateway->getWebhookCapabilities()->all();
+            $actualEventTypes = array_map(
+                static fn (WebhookCapability $capability): WebhookEventType => $capability->eventType,
+                $capabilities,
+            );
+
+            $this->assertSame($expectedEventTypes, $actualEventTypes);
+            $this->assertSameSize(array_unique($actualEventTypes, SORT_REGULAR), $actualEventTypes);
+
+            foreach ($capabilities as $capability) {
+                $this->assertSame(WebhookEntityKind::Payment, $capability->entityKind);
+            }
+        }
+    }
+
+    public function testSupportedGatewayCapabilitiesStayWithinR1ProcessedPaymentOutcomeScope(): void
+    {
+        $processedOutcomeValues = array_map(
+            static fn (WebhookEventType $eventType): string => $eventType->value,
+            WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+        );
+        $unsupportedOutcomeValues = array_map(
+            static fn (WebhookEventType $eventType): string => $eventType->value,
+            WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+        );
+
+        foreach ($this->createGateways() as $gateway) {
+            foreach ($gateway->getWebhookCapabilities() as $capability) {
+                if ($capability->supportStatus === WebhookSupportStatus::Supported) {
+                    $this->assertContains($capability->eventType->value, $processedOutcomeValues);
+                    $this->assertNotContains($capability->eventType->value, $unsupportedOutcomeValues);
+
+                    continue;
+                }
+
+                $this->assertSame(WebhookSupportStatus::Unsupported, $capability->supportStatus);
+            }
+        }
+    }
+
+    public function testPaymentRefundedStaysUnsupportedInAllR1CapabilityDeclarations(): void
+    {
+        foreach ($this->createGateways() as $gateway) {
+            $refundCapabilities = array_values(array_filter(
+                $gateway->getWebhookCapabilities()->all(),
+                static fn (WebhookCapability $capability): bool => $capability->eventType === WebhookEventType::PaymentRefunded,
+            ));
+
+            $this->assertCount(1, $refundCapabilities);
+            $this->assertSame(WebhookEntityKind::Payment, $refundCapabilities[0]->entityKind);
+            $this->assertSame(WebhookSupportStatus::Unsupported, $refundCapabilities[0]->supportStatus);
+        }
+    }
+
+    public function testRobokassaWebhookCapabilitiesMatchImplementedR1PaymentMapping(): void
+    {
+        $psr17Factory = new Psr17Factory();
+        $gateway = new RobokassaGateway(
+            'test_merchant_login',
+            'test_password1',
+            'test_password2',
+            'test_password3',
+            true,
+            new TestHttpClient($psr17Factory),
+            $psr17Factory,
+            $psr17Factory,
+            new NullLogger(),
+        );
+
+        $this->assertSame([
+            WebhookEventType::PaymentCreated->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentProcessing->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresAction->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRequiresCapture->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentSucceeded->value => WebhookSupportStatus::Supported,
+            WebhookEventType::PaymentFailed->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentCanceled->value => WebhookSupportStatus::Unsupported,
+            WebhookEventType::PaymentRefunded->value => WebhookSupportStatus::Unsupported,
+        ], $this->capabilitySupportStatuses($gateway));
     }
 
     /**
@@ -95,6 +256,20 @@ final class GatewayWebhookCapabilitiesTest extends TestCase
                 $logger,
             ),
         ];
+    }
+
+    /**
+     * @return array<string, WebhookSupportStatus>
+     */
+    private function capabilitySupportStatuses(WebhookCapabilitiesProviderInterface $gateway): array
+    {
+        $supportStatuses = [];
+
+        foreach ($gateway->getWebhookCapabilities() as $capability) {
+            $supportStatuses[$capability->eventType->value] = $capability->supportStatus;
+        }
+
+        return $supportStatuses;
     }
 
     /**

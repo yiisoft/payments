@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
@@ -14,69 +15,32 @@ final class WebhookYooKassaValidatorTest extends TestCase
 {
     public function testImplementsProviderValidatorContract(): void
     {
-        $validator = new WebhookYooKassaValidator();
+        $validator = self::validator();
 
         $this->assertInstanceOf(WebhookProviderValidatorInterface::class, $validator);
         $this->assertSame('yookassa', $validator->getProviderId());
     }
 
-    public function testReturnsFailClosedWhenAuthenticityIndicatorsAreNotAvailable(): void
+    public function testRejectsEmptyShopId(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
-            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
-            headers: [],
-            providerId: 'yookassa',
-        ));
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('YooKassa shop ID must be a non-empty string.');
 
-        $this->assertFalse($result->isValid);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
-        $this->assertSame(
-            'YooKassa webhook signature-level validation is not supported in R1 because the current API/config does not expose a webhook-specific authenticity indicator.',
-            $result->reason->message,
-        );
-        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+        new WebhookYooKassaValidator(' ', 'secret-key');
     }
 
-    public function testDoesNotReturnSuccessWhenSignatureLevelValidationIsUnavailableInR1(): void
+    public function testRejectsEmptySecretKey(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
-            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
-            headers: [
-                'Content-Type' => ['application/json'],
-                'User-Agent' => ['YooKassa'],
-            ],
-            providerId: 'yookassa',
-        ));
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('YooKassa secret key must be a non-empty string.');
 
-        $this->assertFalse($result->isValid);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
-        $this->assertStringContainsString('signature-level validation is not supported in R1', $result->reason->message);
-        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+        new WebhookYooKassaValidator('shop-id', ' ');
     }
 
-    public function testCurrentApiAndConfigDoNotExposeWebhookSpecificAuthenticityIndicator(): void
+    public function testAcceptsValidBasicAuthWebhook(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
-            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
-            headers: [
-                'Content-Type' => ['application/json'],
-                'User-Agent' => ['YooKassa'],
-            ],
-            providerId: 'yookassa',
-        ));
-
-        $this->assertFalse($result->isValid);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
-        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
-    }
-
-    public function testAcceptsValidPaymentSucceededRequestStructureBeforeR1AuthenticityLimitation(): void
-    {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
-            rawBody: json_encode([
+        $result = self::validator()->validate(new WebhookInput(
+            rawBody: self::payload([
                 'type' => 'notification',
                 'event' => 'payment.succeeded',
                 'object' => [
@@ -84,72 +48,179 @@ final class WebhookYooKassaValidatorTest extends TestCase
                     'status' => 'succeeded',
                     'paid' => true,
                 ],
-            ], JSON_THROW_ON_ERROR),
-            headers: ['Content-Type' => ['application/json']],
+            ]),
+            headers: self::headers(),
+            providerId: 'yookassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    public function testAcceptsCaseInsensitiveAuthorizationHeaderNameAndScheme(): void
+    {
+        $result = self::validator()->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: ['authorization' => ['bAsIc ' . base64_encode('shop-id:secret-key')]],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    #[DataProvider('validBasicAuthHeaderProvider')]
+    public function testAcceptsValidBasicAuthHeaders(
+        string $shopId,
+        string $secretKey,
+        string $authorizationHeader,
+    ): void {
+        $result = (new WebhookYooKassaValidator($shopId, $secretKey))->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: ['Authorization' => [$authorizationHeader]],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+    }
+
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function validBasicAuthHeaderProvider(): iterable
+    {
+        yield 'numeric YooKassa shop ID and secret key' => [
+            '123456',
+            'test_secret_key',
+            'Basic ' . base64_encode('123456:test_secret_key'),
+        ];
+
+        yield 'secret key containing colon' => [
+            '123456',
+            'secret:with:colon',
+            'Basic ' . base64_encode('123456:secret:with:colon'),
+        ];
+
+        yield 'authorization value with surrounding whitespace' => [
+            'shop-id',
+            'secret-key',
+            '  Basic ' . base64_encode('shop-id:secret-key') . '  ',
+        ];
+    }
+
+    /**
+     * @param array<string, string|list<string>> $headers
+     */
+    #[DataProvider('missingAuthorizationHeaderProvider')]
+    public function testRejectsMissingAuthorizationHeader(array $headers): void
+    {
+        $result = self::validator()->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: $headers,
             providerId: 'yookassa',
         ));
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
+        $this->assertSame('yookassa_authorization_header_missing', $result->reason->code->value);
+        $this->assertSame('YooKassa Authorization header is missing.', $result->reason->message);
         $this->assertSame('payment.succeeded', $result->reason->providerEventType);
     }
 
-    public function testAcceptsValidRefundSucceededRequestStructureBeforeR1AuthenticityLimitation(): void
+    /**
+     * @return iterable<string, array{array<string, string|list<string>>}>
+     */
+    public static function missingAuthorizationHeaderProvider(): iterable
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
-            rawBody: json_encode([
-                'type' => 'notification',
-                'event' => 'refund.succeeded',
-                'object' => [
-                    'id' => 'refund-id',
-                    'status' => 'succeeded',
-                    'payment_id' => 'payment-id',
-                ],
-            ], JSON_THROW_ON_ERROR),
-            headers: ['Content-Type' => ['application/json']],
+        yield 'no headers' => [[]];
+        yield 'only content type header' => [['Content-Type' => ['application/json']]];
+        yield 'only unrelated webhook header' => [['X-YooKassa-Event' => ['payment.succeeded']]];
+    }
+
+    #[DataProvider('invalidAuthorizationHeaderProvider')]
+    public function testRejectsInvalidAuthorizationHeader(string $authorizationHeader): void
+    {
+        $result = self::validator()->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: ['Authorization' => [$authorizationHeader]],
             providerId: 'yookassa',
         ));
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
-        $this->assertSame('refund.succeeded', $result->reason->providerEventType);
+        $this->assertSame('yookassa_basic_auth_mismatch', $result->reason->code->value);
+        $this->assertSame(
+            'YooKassa Basic Auth credentials do not match the configured shop ID and secret key.',
+            $result->reason->message,
+        );
+        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
     }
 
-    public function testAcceptsValidRequestStructureWithAdditionalPayloadFieldsBeforeR1AuthenticityLimitation(): void
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidAuthorizationHeaderProvider(): iterable
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
-            rawBody: json_encode([
-                'type' => 'notification',
-                'event' => 'payment.canceled',
-                'object' => [
-                    'id' => 'payment-id',
-                    'status' => 'canceled',
-                    'metadata' => [
-                        'order_id' => 'order-123',
-                    ],
-                ],
-                'extra_provider_field' => 'extra-value',
-            ], JSON_THROW_ON_ERROR),
+        yield 'unsupported scheme' => ['Bearer token'];
+        yield 'empty basic credentials' => ['Basic '];
+        yield 'malformed base64 credentials' => ['Basic not-base64'];
+        yield 'credentials without colon' => ['Basic ' . base64_encode('shop-id')];
+        yield 'empty shop id' => ['Basic ' . base64_encode(':secret-key')];
+        yield 'empty secret key' => ['Basic ' . base64_encode('shop-id:')];
+        yield 'wrong shop id' => ['Basic ' . base64_encode('wrong-shop:secret-key')];
+        yield 'wrong secret key' => ['Basic ' . base64_encode('shop-id:wrong-secret')];
+        yield 'wrong shop id and secret key' => ['Basic ' . base64_encode('wrong-shop:wrong-secret')];
+        yield 'invalid credentials with leading whitespace' => ['Basic ' . base64_encode(' shop-id:secret-key')];
+        yield 'invalid credentials with trailing whitespace' => ['Basic ' . base64_encode('shop-id:secret-key ')];
+    }
+
+    public function testRejectsMultipleInvalidAuthorizationHeaders(): void
+    {
+        $result = self::validator()->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
             headers: [
-                'Content-Type' => ['application/json'],
-                'User-Agent' => ['YooKassa'],
+                'Authorization' => [
+                    'Bearer token',
+                    'Basic not-base64',
+                    'Basic ' . base64_encode('wrong-shop:wrong-secret'),
+                ],
             ],
             providerId: 'yookassa',
         ));
 
         $this->assertFalse($result->isValid);
         $this->assertNotNull($result->reason);
-        $this->assertSame('yookassa_authenticity_indicators_not_available', $result->reason->code->value);
-        $this->assertSame('payment.canceled', $result->reason->providerEventType);
+        $this->assertSame('yookassa_basic_auth_mismatch', $result->reason->code->value);
+        $this->assertSame(
+            'YooKassa Basic Auth credentials do not match the configured shop ID and secret key.',
+            $result->reason->message,
+        );
+        $this->assertSame('payment.succeeded', $result->reason->providerEventType);
+    }
+
+    public function testAcceptsAnyValidAuthorizationHeaderWhenMultipleAreProvided(): void
+    {
+        $result = self::validator()->validate(new WebhookInput(
+            rawBody: '{"event":"payment.succeeded","object":{"id":"payment-id"}}',
+            headers: [
+                'Authorization' => [
+                    'Bearer token',
+                    'Basic ' . base64_encode('shop-id:secret-key'),
+                ],
+            ],
+            providerId: 'yookassa',
+        ));
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
     }
 
     public function testRejectsEmptyPayload(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: '   ',
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -161,9 +232,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
 
     public function testRejectsMalformedJsonPayload(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: '{"event":"payment.succeeded",',
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -175,9 +246,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
 
     public function testRejectsNonObjectJsonPayload(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: '"payment.succeeded"',
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -189,9 +260,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
 
     public function testRejectsPayloadWithoutEvent(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: '{"object":{"id":"payment-id"}}',
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -203,9 +274,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
 
     public function testRejectsPayloadWithEmptyEvent(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: '{"event":"   ","object":{"id":"payment-id"}}',
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -217,9 +288,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
 
     public function testRejectsPayloadWithoutObject(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: '{"event":"payment.succeeded"}',
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -231,9 +302,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
 
     public function testRejectsPayloadWithNonObjectObjectField(): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: '{"event":"payment.succeeded","object":"payment-id"}',
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -246,9 +317,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
     #[DataProvider('invalidEventPayloadProvider')]
     public function testRejectsPayloadWithInvalidEventField(string $rawBody): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: $rawBody,
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -272,9 +343,9 @@ final class WebhookYooKassaValidatorTest extends TestCase
     #[DataProvider('invalidObjectPayloadProvider')]
     public function testRejectsPayloadWithAdditionalInvalidObjectFields(string $rawBody): void
     {
-        $result = (new WebhookYooKassaValidator())->validate(new WebhookInput(
+        $result = self::validator()->validate(new WebhookInput(
             rawBody: $rawBody,
-            headers: ['Content-Type' => ['application/json']],
+            headers: self::headers(),
             providerId: 'yookassa',
         ));
 
@@ -292,5 +363,26 @@ final class WebhookYooKassaValidatorTest extends TestCase
         yield 'object is null' => ['{"event":"payment.succeeded","object":null}'];
         yield 'object is boolean' => ['{"event":"payment.succeeded","object":false}'];
         yield 'object is number' => ['{"event":"payment.succeeded","object":123}'];
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private static function headers(): array
+    {
+        return ['Authorization' => ['Basic ' . base64_encode('shop-id:secret-key')]];
+    }
+
+    private static function validator(): WebhookYooKassaValidator
+    {
+        return new WebhookYooKassaValidator('shop-id', 'secret-key');
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function payload(array $payload): string
+    {
+        return json_encode($payload, JSON_THROW_ON_ERROR);
     }
 }

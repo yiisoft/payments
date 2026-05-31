@@ -51,6 +51,7 @@ final class WebhookContextTest extends TestCase
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             status: WebhookProcessingStatus::Processed,
+            paymentStatus: 'succeeded',
             validationFailureReason: $validationFailureReason,
             unsupportedEventReason: $unsupportedEventReason,
             unknownEventReason: $unknownEventReason,
@@ -61,6 +62,7 @@ final class WebhookContextTest extends TestCase
         $this->assertSame('stripe', $context->providerId);
         $this->assertSame(WebhookEventType::PaymentSucceeded, $context->eventType);
         $this->assertSame(WebhookProcessingStatus::Processed, $context->status);
+        $this->assertSame('succeeded', $context->paymentStatus);
         $this->assertSame($validationFailureReason, $context->validationFailureReason);
         $this->assertSame($unsupportedEventReason, $context->unsupportedEventReason);
         $this->assertSame($unknownEventReason, $context->unknownEventReason);
@@ -75,6 +77,7 @@ final class WebhookContextTest extends TestCase
         $this->assertNull($context->providerId);
         $this->assertNull($context->eventType);
         $this->assertNull($context->status);
+        $this->assertNull($context->paymentStatus);
         $this->assertNull($context->validationFailureReason);
         $this->assertNull($context->unsupportedEventReason);
         $this->assertNull($context->unknownEventReason);
@@ -91,6 +94,7 @@ final class WebhookContextTest extends TestCase
                 'providerId',
                 'eventType',
                 'status',
+                'paymentStatus',
                 'validationFailureReason',
                 'unsupportedEventReason',
                 'unknownEventReason',
@@ -113,6 +117,7 @@ final class WebhookContextTest extends TestCase
         $this->assertTrue($reflection->getProperty('providerId')->isReadOnly());
         $this->assertTrue($reflection->getProperty('eventType')->isReadOnly());
         $this->assertTrue($reflection->getProperty('status')->isReadOnly());
+        $this->assertTrue($reflection->getProperty('paymentStatus')->isReadOnly());
         $this->assertTrue($reflection->getProperty('validationFailureReason')->isReadOnly());
         $this->assertTrue($reflection->getProperty('unsupportedEventReason')->isReadOnly());
         $this->assertTrue($reflection->getProperty('unknownEventReason')->isReadOnly());

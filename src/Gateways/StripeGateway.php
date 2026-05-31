@@ -17,6 +17,7 @@ use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
 use Yiisoft\Payments\Webhooks\WebhookCapability;
 use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 class StripeGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
@@ -335,47 +336,18 @@ class StripeGateway extends AbstractGateway implements WebhookCapabilitiesProvid
 
     public function getWebhookCapabilities(): WebhookCapabilities
     {
-        return new WebhookCapabilities(
-            new WebhookCapability(
-                WebhookEventType::PaymentCreated,
+        return new WebhookCapabilities(...array_map(
+            fn (WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
+                $eventType,
                 WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
+                WebhookPaymentOutcomeRules::shouldProcess($eventType)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
             ),
-            new WebhookCapability(
-                WebhookEventType::PaymentProcessing,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRequiresAction,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRequiresCapture,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentSucceeded,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentFailed,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentCanceled,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-            new WebhookCapability(
-                WebhookEventType::PaymentRefunded,
-                WebhookEntityKind::Payment,
-                WebhookSupportStatus::Supported,
-            ),
-        );
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ],
+        ));
     }
 }

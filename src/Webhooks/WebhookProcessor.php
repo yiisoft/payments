@@ -70,6 +70,7 @@ final class WebhookProcessor implements WebhookProcessorInterface
             providerId: $input->providerId,
             eventType: $result->eventType,
             status: $result->status,
+            paymentStatus: $result->paymentStatus,
             validationFailureReason: $result->status === WebhookProcessingStatus::ValidationFailed ? $result->reason : null,
             unsupportedEventReason: $result->status === WebhookProcessingStatus::UnsupportedEvent ? $result->reason : null,
             unknownEventReason: $result->status === WebhookProcessingStatus::UnknownEvent ? $result->reason : null,

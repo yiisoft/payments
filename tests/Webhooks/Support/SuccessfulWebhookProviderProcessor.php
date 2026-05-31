@@ -24,6 +24,7 @@ final class SuccessfulWebhookProviderProcessor implements WebhookProviderProcess
         private readonly WebhookEventType $eventType = WebhookEventType::PaymentSucceeded,
         private readonly ?string $providerEventType = 'test.payment_succeeded',
         private readonly mixed $payload = null,
+        private readonly ?string $paymentStatus = null,
     ) {
     }
 
@@ -46,6 +47,7 @@ final class SuccessfulWebhookProviderProcessor implements WebhookProviderProcess
                 payload: $this->payload,
                 providerEventType: $this->providerEventType,
             ),
+            paymentStatus: $this->paymentStatus,
         );
     }
 }

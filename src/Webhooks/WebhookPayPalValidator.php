@@ -7,25 +7,14 @@ namespace Yiisoft\Payments\Webhooks;
 use InvalidArgumentException;
 
 /**
- * Provider-specific validator skeleton for PayPal webhook requests.
+ * Provider-specific validator for PayPal webhook requests.
  *
- * R1 only checks the local validation preconditions required to identify a
- * PayPal webhook validation attempt. It intentionally does not perform live
- * certificate or PayPal API verification until that behavior is agreed and
- * introduced explicitly.
+ * R1 checks the local validation preconditions required for PayPal signature
+ * verification, then delegates provider authenticity verification to the
+ * configured signature verifier.
  */
 final readonly class WebhookPayPalValidator implements WebhookProviderValidatorInterface
 {
-    private const R1_LIMITATION_REASON_CODE = 'paypal_live_verification_not_supported_in_r1';
-
-    public function __construct(
-        private string $webhookId,
-    ) {
-        if (trim($webhookId) === '') {
-            throw new InvalidArgumentException('PayPal webhook ID must be a non-empty string.');
-        }
-    }
-
     /**
      * @var list<string>
      */
@@ -36,6 +25,15 @@ final readonly class WebhookPayPalValidator implements WebhookProviderValidatorI
         'PayPal-Auth-Algo',
         'PayPal-Transmission-Sig',
     ];
+
+    public function __construct(
+        private WebhookPayPalSignatureVerifierInterface $signatureVerifier,
+        private string $webhookId,
+    ) {
+        if (trim($webhookId) === '') {
+            throw new InvalidArgumentException('PayPal webhook ID must be a non-empty string.');
+        }
+    }
 
     public function getProviderId(): string
     {
@@ -62,9 +60,6 @@ final readonly class WebhookPayPalValidator implements WebhookProviderValidatorI
             }
         }
 
-        return WebhookValidationResult::failure(new WebhookReason(
-            code: new WebhookReasonCode(self::R1_LIMITATION_REASON_CODE),
-            message: 'PayPal webhook validation in R1 does not perform live certificate or PayPal API verification.',
-        ));
+        return $this->signatureVerifier->verify($input, $this->webhookId);
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Models;
 
-use Yiisoft\Payments\Constants\PaymentIntentStatus;
 use Yiisoft\Payments\Exceptions\InvalidArgumentException;
 
 /**

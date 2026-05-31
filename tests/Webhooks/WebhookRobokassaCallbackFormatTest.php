@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 
 final class WebhookRobokassaCallbackFormatTest extends TestCase
@@ -31,6 +33,33 @@ final class WebhookRobokassaCallbackFormatTest extends TestCase
         $this->assertTrue(WebhookRobokassaCallbackFormat::isRequiredParameter('SignatureValue'));
         $this->assertFalse(WebhookRobokassaCallbackFormat::isRequiredParameter('Shp_order'));
         $this->assertFalse(WebhookRobokassaCallbackFormat::isRequiredParameter('Culture'));
+    }
+
+    public function testDefinesOnlyPaymentSucceededAsSupportedR1PaymentOutcome(): void
+    {
+        $this->assertSame(
+            WebhookEventType::PaymentSucceeded,
+            WebhookRobokassaCallbackFormat::supportedR1PaymentOutcome(),
+        );
+    }
+
+    #[DataProvider('unsupportedR1PaymentOutcomeProvider')]
+    public function testDoesNotSupportNonSuccessR1PaymentOutcomes(WebhookEventType $eventType): void
+    {
+        $this->assertFalse(WebhookRobokassaCallbackFormat::supportsR1PaymentOutcome($eventType));
+    }
+
+    /**
+     * @return iterable<string, array{WebhookEventType}>
+     */
+    public static function unsupportedR1PaymentOutcomeProvider(): iterable
+    {
+        yield 'created' => [WebhookEventType::PaymentCreated];
+        yield 'processing' => [WebhookEventType::PaymentProcessing];
+        yield 'requires action' => [WebhookEventType::PaymentRequiresAction];
+        yield 'requires capture' => [WebhookEventType::PaymentRequiresCapture];
+        yield 'failed' => [WebhookEventType::PaymentFailed];
+        yield 'canceled' => [WebhookEventType::PaymentCanceled];
     }
 
     public function testDefinesOptionalCustomParameterPrefix(): void

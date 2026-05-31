@@ -10,6 +10,9 @@ use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
+use Yiisoft\Payments\Webhooks\WebhookInput;
+use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
+use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
 final class PayPalGatewayTest extends TestCase
@@ -29,6 +32,41 @@ final class PayPalGatewayTest extends TestCase
             httpClient: $this->httpClient,
             requestFactory: $factory,
             streamFactory: $factory
+        );
+    }
+
+    public function testCreatesRecommendedWebhookValidatorWithDefaultSignatureVerifier(): void
+    {
+        $this->httpClient->queueJsonResponse([
+            'access_token' => 'test_access_token',
+            'expires_in' => 3600,
+        ]);
+        $this->httpClient->queueJsonResponse([
+            'verification_status' => 'SUCCESS',
+        ]);
+
+        $validator = $this->gateway->createWebhookValidator('WH-GATEWAY-123');
+
+        $this->assertInstanceOf(WebhookPayPalValidator::class, $validator);
+
+        $result = $validator->validate($this->paypalWebhookInput());
+
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
+        $this->assertSame('POST', $this->httpClient->lastRequest['method']);
+        $this->assertStringContainsString('/v1/notifications/verify-webhook-signature', $this->httpClient->lastRequest['uri']);
+
+        $requestBody = json_decode($this->httpClient->lastRequest['body'], true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame('WH-GATEWAY-123', $requestBody['webhook_id']);
+        $this->assertSame('WH-EVENT-123', $requestBody['webhook_event']['id']);
+    }
+
+    public function testCreatesDefaultWebhookSignatureVerifier(): void
+    {
+        $this->assertInstanceOf(
+            WebhookPayPalSignatureVerifier::class,
+            $this->gateway->createWebhookSignatureVerifier(),
         );
     }
 
@@ -134,6 +172,28 @@ final class PayPalGatewayTest extends TestCase
         $lastRequest = $this->httpClient->lastRequest;
         $this->assertSame('POST', $lastRequest['method']);
         $this->assertStringContainsString('/v2/payments/captures/CAPTURE-123/refund', $lastRequest['uri']);
+    }
+
+    private function paypalWebhookInput(): WebhookInput
+    {
+        return new WebhookInput(
+            rawBody: json_encode([
+                'id' => 'WH-EVENT-123',
+                'event_type' => 'PAYMENT.CAPTURE.COMPLETED',
+                'resource' => [
+                    'id' => 'CAPTURE-123',
+                    'status' => 'COMPLETED',
+                ],
+            ], JSON_THROW_ON_ERROR),
+            headers: [
+                'PayPal-Auth-Algo' => ['SHA256withRSA'],
+                'PayPal-Cert-Url' => ['https://api-m.paypal.com/certs/test.pem'],
+                'PayPal-Transmission-Id' => ['transmission-id'],
+                'PayPal-Transmission-Sig' => ['signature'],
+                'PayPal-Transmission-Time' => ['2026-04-29T10:00:00Z'],
+            ],
+            providerId: 'paypal',
+        );
     }
 
     private function queueToken(): void

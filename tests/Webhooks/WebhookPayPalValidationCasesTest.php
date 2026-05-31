@@ -8,7 +8,9 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
+use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
+use Yiisoft\Payments\Webhooks\WebhookValidationResult;
 
 final class WebhookPayPalValidationCasesTest extends TestCase
 {
@@ -21,14 +23,8 @@ final class WebhookPayPalValidationCasesTest extends TestCase
             providerId: 'paypal',
         ));
 
-        $this->assertFalse($result->isValid);
-        $this->assertNotNull($result->reason);
-        $this->assertSame('paypal_live_verification_not_supported_in_r1', $result->reason->code->value);
-        $this->assertSame(
-            'PayPal webhook validation in R1 does not perform live certificate or PayPal API verification.',
-            $result->reason->message,
-        );
-        $this->assertNull($result->reason->providerEventType);
+        $this->assertTrue($result->isValid);
+        $this->assertNull($result->reason);
     }
 
     /**
@@ -150,12 +146,22 @@ final class WebhookPayPalValidationCasesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('PayPal webhook ID must be a non-empty string.');
 
-        new WebhookPayPalValidator(" \t\n ");
+        new WebhookPayPalValidator(self::successfulVerifier(), " \t\n ");
     }
 
     private function validator(): WebhookPayPalValidator
     {
-        return new WebhookPayPalValidator('WH-123');
+        return new WebhookPayPalValidator(self::successfulVerifier(), 'WH-123');
+    }
+
+    private static function successfulVerifier(): WebhookPayPalSignatureVerifierInterface
+    {
+        return new class implements WebhookPayPalSignatureVerifierInterface {
+            public function verify(WebhookInput $input, string $webhookId): WebhookValidationResult
+            {
+                return WebhookValidationResult::success();
+            }
+        };
     }
 
     /**
