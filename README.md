@@ -1230,15 +1230,19 @@ made symmetrical when a provider cannot produce a given R1 payment outcome:
 The application-owned input object passed into the library.
 
 `WebhookInput` must contain the original request data that provider-specific validators and processors need.
-The application builds it at the HTTP boundary and passes provider fields as received from the provider.
-Do not rename, normalize, or map provider fields to application-specific names before passing them to this object.
+The application builds it at the HTTP boundary for one configured provider endpoint and passes provider fields
+as received from the provider. Do not rename, normalize, or map provider fields to application-specific names
+before passing them to this object.
 
 - `rawBody` is the exact HTTP request body string. For JSON webhooks, keep the complete JSON payload here.
-- `headers` contains the original HTTP request headers received by the endpoint.
+- `headers` contains the original HTTP request headers received by the endpoint. Header names and values are
+  preserved as supplied, while `getHeader()` provides case-insensitive lookup for validators.
 - `queryParams` contains original provider fields from the HTTP query string, with provider field names preserved.
 - `bodyParams` contains original provider fields from a form-like request body, such as
   `application/x-www-form-urlencoded` or `multipart/form-data`, with provider field names preserved.
   For JSON webhooks, pass an empty array and keep the payload in `rawBody`.
+- `providerId` identifies the provider configured for the current endpoint. R1 does not auto-detect the
+  provider from raw HTTP data; validators and processors are selected by this explicit value.
 
 ```php
 readonly class WebhookInput
@@ -1250,6 +1254,16 @@ readonly class WebhookInput
         public array $bodyParams = [],
         public ?string $providerId = null,
     ) {
+    }
+
+    public function getHeaders(): array
+    {
+        // Returns the original header map.
+    }
+
+    public function getHeader(string $name): array
+    {
+        // Returns matching header values using case-insensitive lookup.
     }
 }
 ```
