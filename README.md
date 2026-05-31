@@ -1613,23 +1613,36 @@ derived from the ResultURL request shape. It is not the normalized `WebhookEvent
 
 `WebhookContext` is the final normalized context returned to application code after validation
 and provider-specific processing. It is the application-facing webhook outcome, while
-`WebhookPayload` remains an intermediate provider-processing representation.
+`WebhookPayload` remains an intermediate provider-processing representation and
+`WebhookProcessingResult` remains a provider-processor result that the common processor wraps.
 
 The context exposes the provider identifier, recognized common event type, processing status,
-single failure reason for the matching failure category when processing does not complete, and
-the original input/raw data for diagnostics and application-level handling.
+optional minimal R1 payment status, a single failure reason for the matching failure category
+when processing does not complete, and the original input/raw data for diagnostics and
+application-level handling.
+
+`paymentStatus` is the same nullable provider status string carried by `WebhookPayload` and
+`WebhookProcessingResult` for supported R1 payment events when such a status is available. It is
+not a rich common payment state machine and does not replace `WebhookProcessingStatus`, which
+continues to describe the processing outcome category.
+
+Only the reason property that matches the processing failure category is populated. Validation
+failures use `validationFailureReason`, unsupported known events use `unsupportedEventReason`,
+and unknown provider event types use `unknownEventReason`. A processed context normally has no
+failure reason.
 
 It does not expose the older draft-model fields such as `isValid`, `isSupported`, `provider`,
 `entityKind`, `paymentIntent`, `rawBody`, or `rawHeaders` as direct context fields. Raw request
 data is available through `rawInput` and `rawData`.
 
 ```php
-readonly class WebhookContext
+final readonly class WebhookContext
 {
     public function __construct(
         public ?string $providerId = null,
         public ?WebhookEventType $eventType = null,
         public ?WebhookProcessingStatus $status = null,
+        public ?string $paymentStatus = null,
         public ?WebhookReason $validationFailureReason = null,
         public ?WebhookReason $unsupportedEventReason = null,
         public ?WebhookReason $unknownEventReason = null,
