@@ -1319,15 +1319,18 @@ function createFormCallbackWebhookInput(ServerRequestInterface $request, string 
 
 #### `WebhookValidationResult`
 
-Validation result for the incoming webhook request. The result uses a single-reason model:
+Immutable result for the provider-specific request validation stage. It is used by
+`WebhookProviderValidatorInterface` before event recognition, payload parsing, and mapping.
+The result uses a single-reason model:
 
 - `success()` creates a successful result without a reason;
 - `failure(WebhookReason $reason)` creates a failed result with exactly one reason;
-- a successful result must not contain a reason;
-- a failed result must contain a `WebhookReason`.
+- `isValid: true` must not be combined with a failure reason;
+- `isValid: false` must always include a `WebhookReason`;
+- validation failures are represented by one `reason`, not by `errors` or `reasons` arrays.
 
 ```php
-readonly class WebhookValidationResult
+final readonly class WebhookValidationResult
 {
     public function __construct(
         public bool $isValid,
@@ -1341,9 +1344,13 @@ readonly class WebhookValidationResult
 }
 ```
 
-`WebhookValidationResult` is only for the provider-specific request validation stage. Later
-recognition, parsing, mapping, unknown-event, and unsupported-event outcomes are represented by
-webhook processing results and final `WebhookContext` reasons, not by validation errors.
+`WebhookValidationResult` only describes authenticity and provider-specific request precondition
+checks. A failed validation result stops the common processor before the provider processor is
+called and is converted to a validation-failed processing outcome/context reason by the common
+webhook processor.
+
+Later recognition, parsing, mapping, unknown-event, and unsupported-event outcomes are represented
+by `WebhookProcessingResult` and final `WebhookContext` reasons, not by validation errors.
 
 #### `WebhookReasonCode`
 
