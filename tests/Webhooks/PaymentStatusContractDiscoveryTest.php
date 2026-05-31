@@ -9,7 +9,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
 use Yiisoft\Payments\Models\PaymentIntent;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 
 final class PaymentStatusContractDiscoveryTest extends TestCase
@@ -98,7 +98,7 @@ final class PaymentStatusContractDiscoveryTest extends TestCase
 
     public function testMapperStatusExtractionReturnsMinimalR1NullableStringRepresentation(): void
     {
-        $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, 'extractPaymentStatus');
+        $method = new ReflectionMethod(WebhookPaymentMapperInterface::class, 'extractPaymentStatus');
         $parameters = $method->getParameters();
         $returnType = $method->getReturnType();
 

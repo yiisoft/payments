@@ -9,7 +9,7 @@ use IteratorAggregate;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
@@ -40,9 +40,9 @@ use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
 
 final class WebhookPublicContractTest extends TestCase
 {
-    public function testPaymentWebhookMapperInterfaceContractIsStable(): void
+    public function testWebhookPaymentMapperInterfaceContractIsStable(): void
     {
-        $reflection = new ReflectionClass(PaymentWebhookMapperInterface::class);
+        $reflection = new ReflectionClass(WebhookPaymentMapperInterface::class);
 
         $this->assertTrue($reflection->isInterface());
         $this->assertSame(['extractPaymentStatus', 'mapPaymentWebhook'], $this->methodNames($reflection, ReflectionMethod::IS_PUBLIC));

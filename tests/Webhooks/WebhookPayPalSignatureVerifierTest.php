@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use Nyholm\Psr7\Factory\Psr17Factory;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Endpoints\PayPalEndpoints;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
@@ -107,9 +108,7 @@ final class WebhookPayPalSignatureVerifierTest extends TestCase
     }
 
 
-    /**
-     * @dataProvider malformedVerificationResponseProvider
-     */
+    #[DataProvider('malformedVerificationResponseProvider')]
     public function testReturnsFailureForMalformedPayPalVerificationResponse(
         string $responseBody,
         string $expectedCode,
@@ -182,9 +181,7 @@ final class WebhookPayPalSignatureVerifierTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider malformedAccessTokenResponseProvider
-     */
+    #[DataProvider('malformedAccessTokenResponseProvider')]
     public function testReturnsFailureForMalformedPayPalAccessTokenResponse(
         string $responseBody,
         string $expectedMessage,

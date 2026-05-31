@@ -6,25 +6,25 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
 
-final class WebhookStripePaymentWebhookMapperTest extends TestCase
+final class WebhookStripePaymentMapperTest extends TestCase
 {
-    public function testImplementsPaymentWebhookMapperInterface(): void
+    public function testImplementsWebhookPaymentMapperInterface(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
 
-        $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
+        $this->assertInstanceOf(WebhookPaymentMapperInterface::class, $mapper);
     }
 
     public function testMapsSuccessfulStripePaymentPayload(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"type":"payment_intent.succeeded"}',
             headers: ['Stripe-Signature' => 't=123,v1=signature'],
@@ -54,7 +54,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
         string $providerEventType,
         string $paymentStatus,
     ): void {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: sprintf('{"type":"%s"}', $providerEventType),
             headers: ['Stripe-Signature' => 't=123,v1=signature'],
@@ -81,7 +81,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testKeepsUnsupportedResultForRecognizedStripeRefundLikePayload(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"type":"charge.refunded"}',
             headers: ['Stripe-Signature' => 't=123,v1=signature'],
@@ -113,7 +113,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"type":"payment_intent.future_event"}',
             headers: ['Stripe-Signature' => 't=123,v1=signature'],
@@ -140,7 +140,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testExtractsStripePaymentStatusFromPayload(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -154,7 +154,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testExtractsStripePaymentStatusFromProviderObjectWhenPayloadStatusIsMissing(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentProcessing,
@@ -167,7 +167,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testKeepsExplicitStripePaymentStatusWhenProviderObjectContainsDifferentStatus(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -181,7 +181,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testReturnsNullWhenStripeProviderObjectStatusIsNotString(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -194,7 +194,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testReturnsNullWhenStripePaymentStatusIsMissing(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -207,7 +207,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testMapsSuccessfulStripePaymentPayloadWithoutRawData(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -226,7 +226,7 @@ final class WebhookStripePaymentWebhookMapperTest extends TestCase
 
     public function testReturnsUnknownEventForPayloadWithoutProviderEventType(): void
     {
-        $mapper = new WebhookStripePaymentWebhookMapper();
+        $mapper = new WebhookStripePaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'stripe',
             eventType: null,

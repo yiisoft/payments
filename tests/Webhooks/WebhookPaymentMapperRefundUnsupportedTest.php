@@ -6,21 +6,21 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
-use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
-final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
+final class WebhookPaymentMapperRefundUnsupportedTest extends TestCase
 {
     #[DataProvider('refundLikePayloadProvider')]
     public function testRefundLikeEventsDoNotReturnProcessedInR1PaymentMappers(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         WebhookPayload $payload,
     ): void {
         $result = $mapper->mapPaymentWebhook($payload);
@@ -35,12 +35,12 @@ final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, WebhookPayload}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, WebhookPayload}>
      */
     public static function refundLikePayloadProvider(): iterable
     {
         yield 'stripe charge refunded' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             self::payload(
                 providerId: 'stripe',
                 providerEventType: 'charge.refunded',
@@ -51,7 +51,7 @@ final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
         ];
 
         yield 'paypal capture refunded' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             self::payload(
                 providerId: 'paypal',
                 providerEventType: 'PAYMENT.CAPTURE.REFUNDED',
@@ -62,7 +62,7 @@ final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
         ];
 
         yield 'paypal capture reversed' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             self::payload(
                 providerId: 'paypal',
                 providerEventType: 'PAYMENT.CAPTURE.REVERSED',
@@ -73,7 +73,7 @@ final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
         ];
 
         yield 'yookassa refund succeeded' => [
-            new WebhookYooKassaPaymentWebhookMapper(),
+            new WebhookYooKassaPaymentMapper(),
             self::payload(
                 providerId: 'yookassa',
                 providerEventType: 'refund.succeeded',
@@ -84,7 +84,7 @@ final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
         ];
 
         yield 'robokassa synthetic refunded outcome' => [
-            new WebhookRobokassaPaymentWebhookMapper(),
+            new WebhookRobokassaPaymentMapper(),
             self::payload(
                 providerId: 'robokassa',
                 providerEventType: 'payment.refunded',

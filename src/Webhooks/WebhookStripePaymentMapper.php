@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Webhooks;
 
 /**
- * Provider-specific mapper skeleton for YooKassa payment webhook payloads.
+ * Provider-specific mapper skeleton for Stripe payment webhook payloads.
  */
-final readonly class WebhookYooKassaPaymentWebhookMapper implements PaymentWebhookMapperInterface
+final readonly class WebhookStripePaymentMapper implements WebhookPaymentMapperInterface
 {
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
     {
@@ -36,7 +36,7 @@ final readonly class WebhookYooKassaPaymentWebhookMapper implements PaymentWebho
             return $payload->paymentStatus;
         }
 
-        $object = $payload->data['object'] ?? null;
+        $object = $payload->data['data']['object'] ?? null;
 
         if (!is_array($object)) {
             return null;

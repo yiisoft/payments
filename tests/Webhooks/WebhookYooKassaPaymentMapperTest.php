@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
-final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
+final class WebhookYooKassaPaymentMapperTest extends TestCase
 {
-    public function testImplementsPaymentWebhookMapperInterface(): void
+    public function testImplementsWebhookPaymentMapperInterface(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
 
-        $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
+        $this->assertInstanceOf(WebhookPaymentMapperInterface::class, $mapper);
     }
 
     public function testMapsSuccessfulYooKassaPaymentPayload(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"event":"payment.succeeded"}',
             headers: ['Content-Type' => 'application/json'],
@@ -47,15 +48,13 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
-    /**
-     * @dataProvider processedYooKassaNonSuccessPaymentOutcomeProvider
-     */
+    #[DataProvider('processedYooKassaNonSuccessPaymentOutcomeProvider')]
     public function testProcessesYooKassaNonSuccessPaymentOutcomes(
         WebhookEventType $eventType,
         string $providerEventType,
         string $paymentStatus,
     ): void {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: sprintf(
                 '{"type":"notification","event":"%s","object":{"status":"%s"}}',
@@ -108,15 +107,13 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider unsupportedYooKassaRefundLikePayloadProvider
-     */
+    #[DataProvider('unsupportedYooKassaRefundLikePayloadProvider')]
     public function testKeepsUnsupportedResultForRecognizedYooKassaRefundLikePayloads(
         WebhookEventType $eventType,
         string $providerEventType,
         string $paymentStatus,
     ): void {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: sprintf('{"event":"%s"}', $providerEventType),
             headers: ['Content-Type' => 'application/json'],
@@ -159,7 +156,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"event":"payment.future_event"}',
             headers: ['Content-Type' => 'application/json'],
@@ -186,7 +183,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testExtractsYooKassaPaymentStatusFromPayload(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -200,7 +197,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testExtractsYooKassaPaymentStatusFromProviderObject(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: WebhookEventType::PaymentRequiresCapture,
@@ -213,7 +210,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testPrefersExplicitYooKassaPaymentStatusFromPayload(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -227,7 +224,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsNullWhenYooKassaProviderObjectStatusIsNotString(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -240,7 +237,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsNullWhenYooKassaPaymentStatusIsMissing(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -253,7 +250,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testMapsSuccessfulYooKassaPaymentPayloadWithoutRawData(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -272,7 +269,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsUnknownEventForPayloadWithoutProviderEventType(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'yookassa',
             eventType: null,

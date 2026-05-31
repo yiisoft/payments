@@ -6,29 +6,29 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
-final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
+final class WebhookPaymentMapperStatusExtractionContractTest extends TestCase
 {
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, string, string}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, string, string}>
      */
     public static function providerStatusMapperProvider(): iterable
     {
-        yield 'stripe' => [new WebhookStripePaymentWebhookMapper(), 'stripe', 'succeeded'];
-        yield 'paypal' => [new WebhookPayPalPaymentWebhookMapper(), 'paypal', 'COMPLETED'];
-        yield 'yookassa' => [new WebhookYooKassaPaymentWebhookMapper(), 'yookassa', 'succeeded'];
+        yield 'stripe' => [new WebhookStripePaymentMapper(), 'stripe', 'succeeded'];
+        yield 'paypal' => [new WebhookPayPalPaymentMapper(), 'paypal', 'COMPLETED'];
+        yield 'yookassa' => [new WebhookYooKassaPaymentMapper(), 'yookassa', 'succeeded'];
     }
 
     #[DataProvider('providerStatusMapperProvider')]
     public function testMapperExtractsProviderStatusStringWhenItIsAvailableInPayload(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         string $providerId,
         string $paymentStatus,
     ): void {
@@ -43,18 +43,18 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, string}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, string}>
      */
     public static function nullableStatusMapperProvider(): iterable
     {
-        yield 'stripe' => [new WebhookStripePaymentWebhookMapper(), 'stripe'];
-        yield 'paypal' => [new WebhookPayPalPaymentWebhookMapper(), 'paypal'];
-        yield 'yookassa' => [new WebhookYooKassaPaymentWebhookMapper(), 'yookassa'];
+        yield 'stripe' => [new WebhookStripePaymentMapper(), 'stripe'];
+        yield 'paypal' => [new WebhookPayPalPaymentMapper(), 'paypal'];
+        yield 'yookassa' => [new WebhookYooKassaPaymentMapper(), 'yookassa'];
     }
 
     #[DataProvider('nullableStatusMapperProvider')]
     public function testMapperReturnsNullWhenProviderStatusIsNotAvailable(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         string $providerId,
     ): void {
         $payload = new WebhookPayload(
@@ -68,7 +68,7 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
 
     public function testRobokassaExtractsStatusFromSupportedResultUrlStatusSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'robokassa',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -80,7 +80,7 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
 
     public function testRobokassaReturnsNullForMissingStatusSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'robokassa',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -92,7 +92,7 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
 
     public function testRobokassaReturnsNullForAmbiguousStatusSignal(): void
     {
-        $mapper = new WebhookRobokassaPaymentWebhookMapper();
+        $mapper = new WebhookRobokassaPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'robokassa',
             eventType: null,

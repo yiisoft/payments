@@ -10,18 +10,18 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Endpoints\PayPalEndpoints;
 use Yiisoft\Payments\Gateways\PayPalGateway;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
-use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
 final class WebhookR1FinalCodeReadinessTest extends TestCase
 {
@@ -51,7 +51,7 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
 
     #[DataProvider('unknownEventMapperProvider')]
     public function testUnknownPaymentWebhookMappersPreserveRawDataForR1Debugging(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         string $providerId,
         string $providerEventType,
         array $payloadData,
@@ -81,12 +81,12 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, string, string, array<string, mixed>}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, string, string, array<string, mixed>}>
      */
     public static function unknownEventMapperProvider(): iterable
     {
         yield 'stripe' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             'stripe',
             'payment_intent.future_r1_event',
             [
@@ -97,7 +97,7 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
         ];
 
         yield 'paypal' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             'paypal',
             'PAYMENT.CAPTURE.FUTURE_R1_EVENT',
             [
@@ -108,7 +108,7 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
         ];
 
         yield 'yookassa' => [
-            new WebhookYooKassaPaymentWebhookMapper(),
+            new WebhookYooKassaPaymentMapper(),
             'yookassa',
             'payment.future_r1_event',
             [
@@ -119,7 +119,7 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
         ];
 
         yield 'robokassa' => [
-            new WebhookRobokassaPaymentWebhookMapper(),
+            new WebhookRobokassaPaymentMapper(),
             WebhookRobokassaCallbackFormat::PROVIDER_ID,
             'robokassa.future_r1_event',
             [

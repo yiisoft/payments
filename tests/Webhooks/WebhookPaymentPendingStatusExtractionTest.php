@@ -6,22 +6,22 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookStripePaymentWebhookMapper;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
-final class PaymentWebhookPendingStatusExtractionTest extends TestCase
+final class WebhookPaymentPendingStatusExtractionTest extends TestCase
 {
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, WebhookPayload, string}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, WebhookPayload, string}>
      */
     public static function pendingAuthorizedPaymentStatusProvider(): iterable
     {
         yield 'stripe processing payment intent' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             new WebhookPayload(
                 providerId: 'stripe',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -32,7 +32,7 @@ final class PaymentWebhookPendingStatusExtractionTest extends TestCase
         ];
 
         yield 'stripe requires capture payment intent' => [
-            new WebhookStripePaymentWebhookMapper(),
+            new WebhookStripePaymentMapper(),
             new WebhookPayload(
                 providerId: 'stripe',
                 eventType: WebhookEventType::PaymentRequiresCapture,
@@ -43,7 +43,7 @@ final class PaymentWebhookPendingStatusExtractionTest extends TestCase
         ];
 
         yield 'paypal pending capture' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             new WebhookPayload(
                 providerId: 'paypal',
                 eventType: WebhookEventType::PaymentProcessing,
@@ -54,7 +54,7 @@ final class PaymentWebhookPendingStatusExtractionTest extends TestCase
         ];
 
         yield 'paypal created authorization' => [
-            new WebhookPayPalPaymentWebhookMapper(),
+            new WebhookPayPalPaymentMapper(),
             new WebhookPayload(
                 providerId: 'paypal',
                 eventType: WebhookEventType::PaymentRequiresCapture,
@@ -65,7 +65,7 @@ final class PaymentWebhookPendingStatusExtractionTest extends TestCase
         ];
 
         yield 'yookassa waiting for capture payment' => [
-            new WebhookYooKassaPaymentWebhookMapper(),
+            new WebhookYooKassaPaymentMapper(),
             new WebhookPayload(
                 providerId: 'yookassa',
                 eventType: WebhookEventType::PaymentRequiresCapture,
@@ -78,7 +78,7 @@ final class PaymentWebhookPendingStatusExtractionTest extends TestCase
 
     #[DataProvider('pendingAuthorizedPaymentStatusProvider')]
     public function testExtractsPendingAuthorizedLikeStatusWhereProviderExposesIt(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         WebhookPayload $payload,
         string $expectedStatus,
     ): void {

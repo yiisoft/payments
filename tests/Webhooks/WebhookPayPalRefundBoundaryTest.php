@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalEventRecognizer;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
@@ -44,7 +44,7 @@ final class WebhookPayPalRefundBoundaryTest extends TestCase
         string $providerEventType,
         string $paymentStatus,
     ): void {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: sprintf('{"event_type":"%s","resource":{"status":"%s"}}', $providerEventType, $paymentStatus),
             headers: ['PayPal-Transmission-Id' => 'transmission-id'],

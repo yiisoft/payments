@@ -12,7 +12,7 @@ final readonly class WebhookRobokassaProviderProcessor implements WebhookProvide
     public function __construct(
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookRobokassaEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookRobokassaPayloadParser(),
-        private PaymentWebhookMapperInterface $paymentWebhookMapper = new WebhookRobokassaPaymentWebhookMapper(),
+        private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookRobokassaPaymentMapper(),
     ) {
     }
 

@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookSuccessfulProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 
-final class SuccessfulWebhookProviderProcessorTest extends TestCase
+final class WebhookSuccessfulProviderProcessorTest extends TestCase
 {
     public function testProcessorImplementsProviderProcessorContract(): void
     {
-        $processor = new SuccessfulWebhookProviderProcessor('stripe');
+        $processor = new WebhookSuccessfulProviderProcessor('stripe');
 
         $this->assertInstanceOf(WebhookProviderProcessorInterface::class, $processor);
         $this->assertSame('stripe', $processor->getProviderId());
@@ -23,7 +23,7 @@ final class SuccessfulWebhookProviderProcessorTest extends TestCase
 
     public function testProcessorReturnsSuccessfulProcessedResult(): void
     {
-        $processor = new SuccessfulWebhookProviderProcessor(
+        $processor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',
@@ -49,7 +49,7 @@ final class SuccessfulWebhookProviderProcessorTest extends TestCase
 
     public function testProcessorKeepsProcessedInputForFlowAssertions(): void
     {
-        $processor = new SuccessfulWebhookProviderProcessor('stripe');
+        $processor = new WebhookSuccessfulProviderProcessor('stripe');
         $input = new WebhookInput(rawBody: '{}', providerId: 'stripe');
 
         $result = $processor->process($input);

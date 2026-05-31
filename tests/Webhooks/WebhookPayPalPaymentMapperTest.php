@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
-use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
-final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
+final class WebhookPayPalPaymentMapperTest extends TestCase
 {
-    public function testImplementsPaymentWebhookMapperInterface(): void
+    public function testImplementsWebhookPaymentMapperInterface(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
 
-        $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
+        $this->assertInstanceOf(WebhookPaymentMapperInterface::class, $mapper);
     }
 
     public function testMapsSuccessfulPayPalPaymentPayload(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"event_type":"PAYMENT.CAPTURE.COMPLETED"}',
             headers: ['PayPal-Transmission-Id' => 'transmission-id'],
@@ -48,15 +49,13 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
     }
 
 
-    /**
-     * @dataProvider processedPayPalNonSuccessPaymentOutcomeProvider
-     */
+    #[DataProvider('processedPayPalNonSuccessPaymentOutcomeProvider')]
     public function testProcessesPayPalNonSuccessPaymentOutcomes(
         WebhookEventType $eventType,
         string $providerEventType,
         string $paymentStatus,
     ): void {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: sprintf('{"event_type":"%s","resource":{"status":"%s"}}', $providerEventType, $paymentStatus),
             headers: ['PayPal-Transmission-Id' => 'transmission-id'],
@@ -112,15 +111,13 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider unsupportedPayPalRefundLikePayloadProvider
-     */
+    #[DataProvider('unsupportedPayPalRefundLikePayloadProvider')]
     public function testKeepsUnsupportedResultForPayPalRefundLikePayloads(
         WebhookEventType $eventType,
         string $providerEventType,
         string $paymentStatus,
     ): void {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: sprintf('{"event_type":"%s"}', $providerEventType),
             headers: ['PayPal-Transmission-Id' => 'transmission-id'],
@@ -168,7 +165,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsUnknownEventForPayloadWithoutNormalizedEventType(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"event_type":"PAYMENT.CAPTURE.FUTURE_EVENT"}',
             headers: ['PayPal-Transmission-Id' => 'transmission-id'],
@@ -195,7 +192,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testExtractsPayPalPaymentStatusFromPayload(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -209,7 +206,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testExtractsPayPalPaymentStatusFromProviderResourceWhenPayloadStatusIsMissing(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentProcessing,
@@ -222,7 +219,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testKeepsExplicitPayPalPaymentStatusWhenProviderResourceContainsDifferentStatus(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -236,7 +233,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsNullWhenPayPalProviderResourceStatusIsNotString(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -249,7 +246,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsNullWhenPayPalPaymentStatusIsMissing(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -262,7 +259,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testMapsSuccessfulPayPalPaymentPayloadWithoutRawData(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentSucceeded,
@@ -281,7 +278,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 
     public function testReturnsUnknownEventForPayloadWithoutProviderEventType(): void
     {
-        $mapper = new WebhookPayPalPaymentWebhookMapper();
+        $mapper = new WebhookPayPalPaymentMapper();
         $payload = new WebhookPayload(
             providerId: 'paypal',
             eventType: null,

@@ -12,7 +12,7 @@ use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaEventRecognizer;
-use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
 final class WebhookYooKassaRefundBoundaryTest extends TestCase
 {
@@ -33,7 +33,7 @@ final class WebhookYooKassaRefundBoundaryTest extends TestCase
 
     public function testKeepsRefundSucceededUnsupportedInR1YooKassaMapper(): void
     {
-        $mapper = new WebhookYooKassaPaymentWebhookMapper();
+        $mapper = new WebhookYooKassaPaymentMapper();
         $rawData = new WebhookRawData(
             rawBody: '{"type":"notification","event":"refund.succeeded","object":{"status":"succeeded"}}',
             headers: ['Content-Type' => 'application/json'],

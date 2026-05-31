@@ -8,7 +8,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
-use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderValidator;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookSuccessfulProviderValidator;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
 
@@ -38,8 +38,8 @@ final class WebhookProviderValidatorRegistryTest extends TestCase
 
     public function testRegistryReturnsValidatorByProviderId(): void
     {
-        $stripeValidator = new SuccessfulWebhookProviderValidator('stripe');
-        $paypalValidator = new SuccessfulWebhookProviderValidator('paypal');
+        $stripeValidator = new WebhookSuccessfulProviderValidator('stripe');
+        $paypalValidator = new WebhookSuccessfulProviderValidator('paypal');
         $registry = new WebhookProviderValidatorRegistry($stripeValidator, $paypalValidator);
 
         $this->assertSame($stripeValidator, $registry->get('stripe'));
@@ -55,7 +55,7 @@ final class WebhookProviderValidatorRegistryTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Webhook provider validator ID must be a non-empty string.');
 
-        new WebhookProviderValidatorRegistry(new SuccessfulWebhookProviderValidator('  '));
+        new WebhookProviderValidatorRegistry(new WebhookSuccessfulProviderValidator('  '));
     }
 
     public function testRegistryRejectsDuplicateProviderValidatorId(): void
@@ -64,8 +64,8 @@ final class WebhookProviderValidatorRegistryTest extends TestCase
         $this->expectExceptionMessage('Webhook provider validator with ID "stripe" is already registered.');
 
         new WebhookProviderValidatorRegistry(
-            new SuccessfulWebhookProviderValidator('stripe'),
-            new SuccessfulWebhookProviderValidator('stripe'),
+            new WebhookSuccessfulProviderValidator('stripe'),
+            new WebhookSuccessfulProviderValidator('stripe'),
         );
     }
 

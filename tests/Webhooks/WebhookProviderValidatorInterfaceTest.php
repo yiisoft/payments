@@ -42,7 +42,7 @@ final class WebhookProviderValidatorInterfaceTest extends TestCase
 
     public function testValidatorCanStopAtFirstDecisiveValidationFailure(): void
     {
-        $validator = new FailFastWebhookProviderValidator();
+        $validator = new WebhookFailFastProviderValidator();
         $input = new WebhookInput(
             rawBody: '{"id":"evt_1"}',
             headers: [],
@@ -59,7 +59,7 @@ final class WebhookProviderValidatorInterfaceTest extends TestCase
 
     public function testValidatorReturnsSuccessOnlyAfterAllChecksPass(): void
     {
-        $validator = new FailFastWebhookProviderValidator();
+        $validator = new WebhookFailFastProviderValidator();
         $input = new WebhookInput(
             rawBody: '{"id":"evt_1"}',
             headers: [
@@ -77,7 +77,7 @@ final class WebhookProviderValidatorInterfaceTest extends TestCase
     }
 }
 
-final class FailFastWebhookProviderValidator implements WebhookProviderValidatorInterface
+final class WebhookFailFastProviderValidator implements WebhookProviderValidatorInterface
 {
     public int $executedChecks = 0;
 

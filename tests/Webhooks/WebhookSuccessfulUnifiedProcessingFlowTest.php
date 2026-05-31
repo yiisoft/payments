@@ -6,7 +6,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
-use Yiisoft\Payments\Tests\Webhooks\Support\SuccessfulWebhookProviderProcessor;
+use Yiisoft\Payments\Tests\Webhooks\Support\WebhookSuccessfulProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
@@ -19,19 +19,19 @@ final class WebhookSuccessfulUnifiedProcessingFlowTest extends TestCase
 {
     public function testProcessorIsSelectedByInputProviderId(): void
     {
-        $stripeProcessor = new SuccessfulWebhookProviderProcessor(
+        $stripeProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',
             payload: ['type' => 'payment_intent.succeeded'],
         );
-        $paypalProcessor = new SuccessfulWebhookProviderProcessor(
+        $paypalProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'paypal',
             eventType: WebhookEventType::PaymentRefunded,
             providerEventType: 'PAYMENT.CAPTURE.REFUNDED',
             payload: ['event_type' => 'PAYMENT.CAPTURE.REFUNDED'],
         );
-        $robokassaProcessor = new SuccessfulWebhookProviderProcessor(
+        $robokassaProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'robokassa',
             eventType: WebhookEventType::PaymentFailed,
             providerEventType: 'ResultURL',
@@ -69,7 +69,7 @@ final class WebhookSuccessfulUnifiedProcessingFlowTest extends TestCase
 
     public function testWebhookInputIsPassedToSelectedProcessorWithoutRawDataLoss(): void
     {
-        $selectedProcessor = new SuccessfulWebhookProviderProcessor(providerId: 'stripe');
+        $selectedProcessor = new WebhookSuccessfulProviderProcessor(providerId: 'stripe');
         $processor = new WebhookProcessor(new WebhookProviderProcessorRegistry($selectedProcessor));
         $input = new WebhookInput(
             rawBody: '{"id":"evt_123","data":{"object":{"id":"pi_123"}}}',
@@ -111,7 +111,7 @@ final class WebhookSuccessfulUnifiedProcessingFlowTest extends TestCase
 
     public function testSuccessfulFlowReturnsWebhookContext(): void
     {
-        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+        $providerProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',
@@ -151,7 +151,7 @@ final class WebhookSuccessfulUnifiedProcessingFlowTest extends TestCase
         $this->assertSame(WebhookContext::class, $method->getReturnType()?->getName());
         $this->assertFalse($method->getReturnType()?->allowsNull());
 
-        $providerProcessor = new SuccessfulWebhookProviderProcessor(
+        $providerProcessor = new WebhookSuccessfulProviderProcessor(
             providerId: 'stripe',
             eventType: WebhookEventType::PaymentSucceeded,
             providerEventType: 'payment_intent.succeeded',

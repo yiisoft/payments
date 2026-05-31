@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
-final class PaymentWebhookMapperMappingContractTest extends TestCase
+final class WebhookPaymentMapperMappingContractTest extends TestCase
 {
     public function testMappingContractReturnsProcessedResultForSupportedPaymentPayload(): void
     {
@@ -114,9 +114,9 @@ final class PaymentWebhookMapperMappingContractTest extends TestCase
         $this->assertNull($this->createContractMapper()->extractPaymentStatus($payload));
     }
 
-    private function createContractMapper(): PaymentWebhookMapperInterface
+    private function createContractMapper(): WebhookPaymentMapperInterface
     {
-        return new class implements PaymentWebhookMapperInterface {
+        return new class implements WebhookPaymentMapperInterface {
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {
                 if ($payload->eventType === null) {
