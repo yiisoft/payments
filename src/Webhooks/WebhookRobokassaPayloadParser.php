@@ -40,6 +40,12 @@ final readonly class WebhookRobokassaPayloadParser implements WebhookPayloadPars
      */
     private function collectCallbackData(WebhookInput $input): array
     {
-        return $input->queryParams + $input->bodyParams;
+        $data = $input->bodyParams;
+
+        foreach ($input->queryParams as $parameterName => $parameterValue) {
+            $data[$parameterName] = $parameterValue;
+        }
+
+        return $data;
     }
 }
