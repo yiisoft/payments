@@ -76,7 +76,7 @@ final readonly class WebhookProcessingResult
     /**
      * Creates a result for a valid provider webhook event type that is not present in the provider mapping.
      */
-    public static function unknownEvent(string $providerEventType, ?WebhookRawData $rawData = null): self
+    public static function unknownEvent(?string $providerEventType = null, ?WebhookRawData $rawData = null): self
     {
         return new self(
             status: WebhookProcessingStatus::UnknownEvent,
