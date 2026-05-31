@@ -24,7 +24,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(rawBody: '', queryParams: [
             'OutSum' => '100.00',
             'InvId' => '123',
             'SignatureValue' => 'abc123',
@@ -38,7 +38,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(bodyParams: [
+        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(rawBody: '', bodyParams: [
             'OutSum' => '100.00',
             'InvId' => '123',
             'SignatureValue' => 'abc123',
@@ -53,6 +53,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
         $recognizer = new WebhookRobokassaEventRecognizer();
 
         $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(
+            rawBody: '',
             queryParams: [
                 'OutSum' => '100.00',
                 'InvId' => '123',
@@ -73,7 +74,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+        $providerEventType = $recognizer->recognizeProviderEventType(new WebhookInput(rawBody: '', queryParams: [
             'OutSum' => '100.00',
             'InvId' => '123',
             'SignatureValue' => 'abc123',
@@ -98,7 +99,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(rawBody: '', queryParams: [
             'OutSum' => '100.00',
             'SignatureValue' => 'abc123',
         ])));
@@ -108,7 +109,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(rawBody: '', queryParams: [
             'OutSum' => '100.00',
             'InvId' => ' ',
             'SignatureValue' => 'abc123',
@@ -119,7 +120,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
     {
         $recognizer = new WebhookRobokassaEventRecognizer();
 
-        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(queryParams: [
+        $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(rawBody: '', queryParams: [
             'OutSum' => '100.00',
             'InvId' => 123,
             'SignatureValue' => 'abc123',
@@ -131,6 +132,7 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
         $recognizer = new WebhookRobokassaEventRecognizer();
 
         $this->assertNull($recognizer->recognizeProviderEventType(new WebhookInput(
+            rawBody: '',
             queryParams: [
                 'OutSum' => '100.00',
                 'InvId' => '123',
