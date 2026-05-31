@@ -846,6 +846,15 @@ provider capability declarations exposed through `WebhookCapabilitiesProviderInt
 | Stripe | `payment_intent.payment_failed` | `payment.failed` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
 | Stripe | `payment_intent.canceled` | `payment.canceled` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
 | Stripe | `charge.refunded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+| PayPal | `CHECKOUT.ORDER.APPROVED` | `payment.requires_capture` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
+| PayPal | `CHECKOUT.PAYMENT-APPROVAL.REVERSED` | `payment.canceled` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
+| PayPal | `PAYMENT.AUTHORIZATION.CREATED` | `payment.requires_capture` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
+| PayPal | `PAYMENT.CAPTURE.PENDING` | `payment.processing` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
+| PayPal | `PAYMENT.CAPTURE.COMPLETED` | `payment.succeeded` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
+| PayPal | `PAYMENT.CAPTURE.DENIED` | `payment.failed` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
+| PayPal | `PAYMENT.CAPTURE.DECLINED` | `payment.failed` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
+| PayPal | `PAYMENT.CAPTURE.REFUNDED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+| PayPal | `PAYMENT.CAPTURE.REVERSED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
 
 ### Common Contracts
 
