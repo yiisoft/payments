@@ -1724,13 +1724,49 @@ declare(strict_types=1);
 use Psr\Http\Message\ServerRequestInterface;
 use Yiisoft\Payments\Webhooks\WebhookContext;
 use Yiisoft\Payments\Webhooks\WebhookInput;
+use Yiisoft\Payments\Webhooks\WebhookPayPalProviderProcessor;
+use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
+use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
+use Yiisoft\Payments\Webhooks\WebhookProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaProviderProcessor;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaValidator;
 use Yiisoft\Payments\Webhooks\WebhookStripeProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaProviderProcessor;
+use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
+
+function createPaymentWebhookProcessor(
+    string $stripeWebhookSecret,
+    WebhookPayPalSignatureVerifierInterface $paypalSignatureVerifier,
+    string $paypalWebhookId,
+    string $robokassaPassword2,
+    string $yooKassaShopId,
+    string $yooKassaSecretKey,
+): WebhookProcessorInterface {
+    $providerProcessorRegistry = new WebhookProviderProcessorRegistry(
+        new WebhookStripeProviderProcessor(),
+        new WebhookPayPalProviderProcessor(),
+        new WebhookYooKassaProviderProcessor(),
+        new WebhookRobokassaProviderProcessor(),
+    );
+
+    $providerValidatorRegistry = new WebhookProviderValidatorRegistry(
+        new WebhookStripeValidator($stripeWebhookSecret),
+        new WebhookPayPalValidator($paypalSignatureVerifier, $paypalWebhookId),
+        new WebhookYooKassaValidator($yooKassaShopId, $yooKassaSecretKey),
+        new WebhookRobokassaValidator($robokassaPassword2),
+    );
+
+    return new WebhookProcessor(
+        providerProcessorRegistry: $providerProcessorRegistry,
+        providerValidatorRegistry: $providerValidatorRegistry,
+    );
+}
 
 /**
  * @param array<string, string|list<string>> $headers
@@ -1738,6 +1774,7 @@ use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
  * @param array<string, mixed> $bodyParams Original provider fields from a form-like request body; use [] for JSON webhooks.
  */
 function handleStripeWebhook(
+    WebhookProcessorInterface $commonProcessor,
     string $rawBody,
     array $headers,
     array $queryParams = [],
@@ -1751,25 +1788,13 @@ function handleStripeWebhook(
         providerId: 'stripe',
     );
 
-    $providerProcessorRegistry = new WebhookProviderProcessorRegistry(
-        new WebhookStripeProviderProcessor(),
-    );
-
-    $providerValidatorRegistry = new WebhookProviderValidatorRegistry(
-        new WebhookStripeValidator('YOUR_STRIPE_WEBHOOK_SECRET'),
-    );
-
-    $commonProcessor = new WebhookProcessor(
-        providerProcessorRegistry: $providerProcessorRegistry,
-        providerValidatorRegistry: $providerValidatorRegistry,
-    );
-
     return $commonProcessor->process($input);
 }
 
-function handleStripeHttpRequest(ServerRequestInterface $httpRequest): void
+function handleStripeHttpRequest(ServerRequestInterface $httpRequest, WebhookProcessorInterface $commonProcessor): void
 {
     $context = handleStripeWebhook(
+        commonProcessor: $commonProcessor,
         rawBody: $httpRequest->getBody()->getContents(),
         headers: $httpRequest->getHeaders(),
     );
