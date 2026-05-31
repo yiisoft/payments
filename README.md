@@ -1117,9 +1117,9 @@ raw provider fields as normalized payment data.
 #### Capability declaration contracts
 
 Webhook capabilities are declared explicitly by each gateway/provider. This declaration is separate
-from incoming HTTP routing and from provider-specific webhook processing: it describes which
-normalized payment webhook events the gateway/provider supports, partially supports, or explicitly
-does not support.
+from incoming HTTP routing, request validation, event recognition, payload parsing, and provider
+processing. It is a discoverability contract: it tells application code which normalized webhook
+outcomes the provider declares as supported, partially supported, or unsupported.
 
 A gateway/provider that declares webhook capabilities implements `WebhookCapabilitiesProviderInterface`
 and returns an immutable `WebhookCapabilities` collection. Each `WebhookCapability` describes one
@@ -1131,7 +1131,7 @@ interface WebhookCapabilitiesProviderInterface
     public function getWebhookCapabilities(): WebhookCapabilities;
 }
 
-final readonly class WebhookCapabilities
+final readonly class WebhookCapabilities implements Countable, IteratorAggregate
 {
     public function __construct(WebhookCapability ...$capabilities)
     {
@@ -1148,6 +1148,13 @@ final readonly class WebhookCapabilities
         ?string $providerEventType = null,
         ?WebhookRawData $rawData = null,
     ): ?WebhookProcessingResult;
+
+    public function count(): int;
+
+    /**
+     * @return Traversable<int, WebhookCapability>
+     */
+    public function getIterator(): Traversable;
 }
 
 final readonly class WebhookCapability
@@ -1187,16 +1194,36 @@ enum WebhookEventType: string
 
 The support status has the following meaning:
 
-- `Supported` means the provider-specific webhook processor is expected to validate, recognize,
-  parse, and map this normalized payment event in the common webhook flow.
-- `PartiallySupported` means the event is declared intentionally, but provider-specific behavior may
-  be limited by the provider API, available payload fields, or the current R1 implementation scope.
+- `Supported` means the provider-specific webhook processor is expected to validate when a validator
+  is configured, recognize, parse, and map this normalized payment event in the common webhook flow.
+- `PartiallySupported` is available in the public capability model for future provider-specific
+  limitations, but the R1 built-in provider declarations currently use `Supported` or `Unsupported`
+  for normalized payment outcomes.
 - `Unsupported` means the event is known but intentionally not handled as a supported payment
   webhook event; the common flow can return a predictable unsupported-event result instead of
   treating the event as an accidental unknown case.
 
+`WebhookCapabilities` is also a small utility collection. `all()` returns the declared capabilities,
+`count()` and iteration expose the same immutable list, and `unsupportedResultFor()` returns an
+`UnsupportedEvent` processing result only when the matching declared capability is explicitly
+`Unsupported`. It returns `null` when the event is not declared or when the declaration is supported
+or partially supported.
+
 For R1, capability declarations are focused on payment webhook events represented by
-`WebhookEventType` with `WebhookEntityKind::Payment`.
+`WebhookEventType` with `WebhookEntityKind::Payment`. Refund-like events are intentionally declared
+as known-but-unsupported payment capabilities through `PaymentRefunded`, because refund normalization
+is reserved for R2. The actual built-in provider support is provider-specific and intentionally not
+made symmetrical when a provider cannot produce a given R1 payment outcome:
+
+- Stripe declares all processed R1 payment outcomes as `Supported` and `PaymentRefunded` as
+  `Unsupported`.
+- PayPal declares `PaymentProcessing`, `PaymentRequiresCapture`, `PaymentSucceeded`, `PaymentFailed`,
+  and `PaymentCanceled` as `Supported`; `PaymentCreated`, `PaymentRequiresAction`, and
+  `PaymentRefunded` are `Unsupported`.
+- YooKassa declares `PaymentRequiresCapture`, `PaymentSucceeded`, and `PaymentCanceled` as
+  `Supported`; other R1 payment outcomes and `PaymentRefunded` are `Unsupported`.
+- Robokassa declares only `PaymentSucceeded` as `Supported` for the R1 ResultURL callback format;
+  other R1 payment outcomes and `PaymentRefunded` are `Unsupported`.
 
 #### `WebhookInput`
 
