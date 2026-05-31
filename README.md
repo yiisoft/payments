@@ -1505,7 +1505,7 @@ for diagnostics and custom fallback handling.
 
 #### `WebhookPayload`
 
-Intermediate internal representation of the parsed provider webhook payload. `WebhookPayload` is
+Intermediate provider-processing representation of a parsed webhook payload. `WebhookPayload` is
 created by the provider parser after validation and event recognition, then consumed by the
 payment mapper. It carries provider-specific parsed data together with normalized event metadata
 needed to build `WebhookProcessingResult`.
@@ -1515,7 +1515,7 @@ to application code. Applications pass `WebhookInput` into the common processor 
 `WebhookContext` back.
 
 ```php
-readonly class WebhookPayload
+final readonly class WebhookPayload
 {
     public function __construct(
         public ?string $providerId = null,
@@ -1528,6 +1528,26 @@ readonly class WebhookPayload
     }
 }
 ```
+
+`WebhookPayload::$providerId` is the explicit provider identifier from the original
+`WebhookInput`. `WebhookPayload::$eventType` is the normalized library-level event type recognized
+from the provider request. `WebhookPayload::$providerEventType` preserves the raw provider event
+name or callback code, such as a Stripe `type`, PayPal `event_type`, YooKassa `event`, or the
+Robokassa ResultURL callback identity.
+
+`WebhookPayload::$data` contains decoded provider payload data preserved for provider-specific
+mapping. JSON providers store decoded JSON payloads there; Robokassa stores the received form/query
+callback fields without renaming provider keys such as `OutSum`, `InvId`, `SignatureValue`, or
+`Shp_*`. Malformed JSON is represented as an empty decoded data array by the parser, while the
+original request remains available through `WebhookRawData`.
+
+`WebhookPayload::$paymentStatus` is the minimal R1 payment-oriented status extracted from provider
+data when available. It is a nullable provider status string, not a rich normalized payment state
+machine and not a replacement for `WebhookProcessingStatus`.
+
+`WebhookPayload::$rawData` keeps the original request data attached to the parsed payload so mapping,
+unknown-event handling, unsupported-event handling, and custom fallback logic can preserve the raw
+request through `WebhookProcessingResult` and the final `WebhookContext`.
 
 #### `WebhookRawData`
 
