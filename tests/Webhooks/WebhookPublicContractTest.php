@@ -15,6 +15,7 @@ use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
+use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookCapabilities;
