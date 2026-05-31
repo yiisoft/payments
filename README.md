@@ -1712,7 +1712,7 @@ final readonly class WebhookContext
 ### Example: Application Flow
 
 For each webhook endpoint, the application selects the provider explicitly and wires the common
-`WebhookProcessorInterface` with the provider-specific processor and validator used by that endpoint.
+`WebhookProcessorInterface` with the built-in provider-specific processor and validator used by that endpoint.
 It then converts the incoming HTTP request into `WebhookInput`, passes it to the processor,
 and works with the resulting `WebhookContext`.
 
@@ -1723,50 +1723,14 @@ declare(strict_types=1);
 
 use Psr\Http\Message\ServerRequestInterface;
 use Yiisoft\Payments\Webhooks\WebhookContext;
-use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
-use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookProcessor;
-use Yiisoft\Payments\Webhooks\WebhookProviderProcessorInterface;
 use Yiisoft\Payments\Webhooks\WebhookProviderProcessorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorRegistry;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
+use Yiisoft\Payments\Webhooks\WebhookStripeProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
-
-final class ApplicationStripePaymentWebhookProcessor implements WebhookProviderProcessorInterface
-{
-    public function getProviderId(): string
-    {
-        return 'stripe';
-    }
-
-    public function process(WebhookInput $input): WebhookProcessingResult
-    {
-        $payload = json_decode($input->rawBody, true);
-        $providerEventType = is_array($payload) && isset($payload['type']) && is_string($payload['type'])
-            ? $payload['type']
-            : 'unknown';
-
-        $rawData = new WebhookRawData(
-            rawBody: $input->rawBody,
-            headers: $input->headers,
-            payload: $payload,
-            providerEventType: $providerEventType,
-            queryParams: $input->queryParams,
-            bodyParams: $input->bodyParams,
-        );
-
-        return match ($providerEventType) {
-            'payment_intent.succeeded' => new WebhookProcessingResult(
-                status: WebhookProcessingStatus::Processed,
-                eventType: WebhookEventType::PaymentSucceeded,
-                rawData: $rawData,
-            ),
-            default => WebhookProcessingResult::unknownEvent($providerEventType),
-        };
-    }
-}
 
 /**
  * @param array<string, string|list<string>> $headers
@@ -1787,10 +1751,8 @@ function handleStripeWebhook(
         providerId: 'stripe',
     );
 
-    $providerSpecificProcessor = new ApplicationStripePaymentWebhookProcessor();
-
     $providerProcessorRegistry = new WebhookProviderProcessorRegistry(
-        $providerSpecificProcessor,
+        new WebhookStripeProviderProcessor(),
     );
 
     $providerValidatorRegistry = new WebhookProviderValidatorRegistry(
