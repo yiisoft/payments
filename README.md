@@ -836,6 +836,10 @@ idempotency helpers, application controllers, queues, or persistence.
 The provider rows below describe only R1 payment webhook support and must be read together with the
 provider capability declarations exposed through `WebhookCapabilitiesProviderInterface`.
 
+`PaymentRefunded` is unsupported for every built-in provider in R1. Refund-like provider events may
+be recognized so they can return an explicit unsupported webhook result, but refund normalization is
+reserved for R2 and must not be treated as an R1 payment outcome.
+
 | Provider | Provider event / callback | Normalized event type | Entity kind | R1 status | R1 payment status source | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Stripe | `payment_intent.created` | `payment.created` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
@@ -845,7 +849,7 @@ provider capability declarations exposed through `WebhookCapabilitiesProviderInt
 | Stripe | `payment_intent.succeeded` | `payment.succeeded` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
 | Stripe | `payment_intent.payment_failed` | `payment.failed` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
 | Stripe | `payment_intent.canceled` | `payment.canceled` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
-| Stripe | `charge.refunded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+| Stripe | `charge.refunded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for R2. |
 | PayPal | `CHECKOUT.ORDER.APPROVED` | `payment.requires_capture` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
 | PayPal | `CHECKOUT.PAYMENT-APPROVAL.REVERSED` | `payment.canceled` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
 | PayPal | `PAYMENT.AUTHORIZATION.CREATED` | `payment.requires_capture` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
@@ -853,14 +857,15 @@ provider capability declarations exposed through `WebhookCapabilitiesProviderInt
 | PayPal | `PAYMENT.CAPTURE.COMPLETED` | `payment.succeeded` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
 | PayPal | `PAYMENT.CAPTURE.DENIED` | `payment.failed` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
 | PayPal | `PAYMENT.CAPTURE.DECLINED` | `payment.failed` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
-| PayPal | `PAYMENT.CAPTURE.REFUNDED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
-| PayPal | `PAYMENT.CAPTURE.REVERSED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+| PayPal | `PAYMENT.CAPTURE.REFUNDED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for R2. |
+| PayPal | `PAYMENT.CAPTURE.REVERSED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for R2. |
 | YooKassa | `payment.waiting_for_capture` | `payment.requires_capture` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
 | YooKassa | `payment.succeeded` | `payment.succeeded` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
 | YooKassa | `payment.canceled` | `payment.canceled` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
-| YooKassa | `refund.succeeded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+| YooKassa | `refund.succeeded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for R2. |
 | Robokassa | ResultURL callback with `OutSum`, `InvId`, and `SignatureValue` | `payment.succeeded` | `payment` | `Supported` | Validated ResultURL callback signal | Processed as the only R1 payment outcome available from Robokassa ResultURL. |
 | Robokassa | No separate ResultURL callback for non-success payment outcomes | `payment.created`, `payment.processing`, `payment.requires_action`, `payment.requires_capture`, `payment.failed`, `payment.canceled` | `payment` | `Unsupported` | Not provided by ResultURL | Robokassa ResultURL does not provide separate R1 signals for these payment outcomes. |
+| Robokassa | No R1 ResultURL callback for refund normalization | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | `PaymentRefunded` remains unsupported in R1 for Robokassa; refund normalization is reserved for R2. |
 
 ### Common Contracts
 
