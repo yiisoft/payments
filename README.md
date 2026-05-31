@@ -1358,8 +1358,15 @@ Machine-readable reason code for a webhook validation or processing outcome.
 The value must be a non-empty string and is intended for application branching, logging, and tests.
 Reason codes keep failure handling predictable without exposing provider-specific exception details.
 
+`WebhookReasonCode` is intentionally an open string value object, not an enum. R1 keeps provider-specific
+validation/precondition codes explicit without freezing the whole future error taxonomy as a closed list.
+Common processing codes currently used by the built-in pipeline include `validation_failed`,
+`missing_provider_processor`, `unknown_event_type`, and `unsupported_event_type`; provider validators may
+return provider-prefixed codes such as `stripe_signature_mismatch`, `paypal_signature_verification_failed`,
+`yookassa_payload_malformed_json`, or `robokassa_signature_mismatch`.
+
 ```php
-readonly class WebhookReasonCode
+final readonly class WebhookReasonCode
 {
     public function __construct(
         public string $value,
@@ -1374,10 +1381,17 @@ readonly class WebhookReasonCode
 
 Human-readable explanation for a webhook validation or processing outcome.
 Validation and processing failures use a single reason object instead of an array of errors.
-The reason combines a machine-readable `WebhookReasonCode`, a non-empty message, and an optional provider event type when it is known.
+The reason combines a machine-readable `WebhookReasonCode`, a non-empty message, and an optional raw
+provider event type when it is known.
+
+Both `WebhookReasonCode::$value` and `WebhookReason::$message` must be non-empty strings.
+`WebhookReason::$providerEventType` is nullable, but when provided it must also be non-empty. The provider
+event type is the original provider event name/code, for example `payment_intent.succeeded`,
+`CHECKOUT.ORDER.APPROVED`, `payment.succeeded`, or a Robokassa callback event marker; it is not the
+normalized `WebhookEventType`.
 
 ```php
-readonly class WebhookReason
+final readonly class WebhookReason
 {
     public function __construct(
         public WebhookReasonCode $code,
