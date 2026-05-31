@@ -775,27 +775,47 @@ sequenceDiagram
     participant A as Application Endpoint
     participant I as WebhookInput
     participant C as WebhookProcessorInterface
-    participant V as Provider Validator
-    participant P as Provider Processor
-    participant F as Recognizer / Parser / Mapper
+    participant VR as WebhookProviderValidatorRegistry
+    participant V as WebhookProviderValidatorInterface
+    participant PR as WebhookProviderProcessorRegistry
+    participant P as WebhookProviderProcessorInterface
+    participant E as WebhookEventRecognizerInterface
+    participant D as WebhookPayloadParserInterface
+    participant M as WebhookPaymentMapperInterface
     participant R as WebhookContext
 
     A->>A: Receive HTTP request for one configured provider
-    A->>I: Build from raw body, headers, query params, form body params
+    A->>I: Build from raw body, headers, query params, form body params, provider ID
     A->>C: process(input)
     C->>C: Preserve raw request data
-    C->>V: validate(input)
-    alt Validation fails
-        V-->>C: WebhookValidationResult::failure(reason)
-        C->>R: Build ValidationFailed context with raw input and raw data
+    C->>VR: Resolve validator by provider ID
+    alt Validator is configured
+        VR-->>C: WebhookProviderValidatorInterface
+        C->>V: validate(input)
+        alt Validation fails
+            V-->>C: WebhookValidationResult::failure(reason)
+            C->>R: Build ValidationFailed context with raw input and raw data
+            R-->>A: WebhookContext
+        else Validation succeeds
+            V-->>C: WebhookValidationResult::success()
+        end
+    else Validator is not configured
+        VR-->>C: No validator
+    end
+    C->>PR: Resolve processor by provider ID
+    alt Processor is missing
+        PR-->>C: No processor
+        C->>R: Build ValidationFailed context with missing_provider_processor
         R-->>A: WebhookContext
-    else Validation succeeds
-        V-->>C: WebhookValidationResult::success()
+    else Processor is configured
+        PR-->>C: WebhookProviderProcessorInterface
         C->>P: process(input)
-        P->>F: recognize payment event
-        P->>F: parse provider payload
-        P->>F: map to common payment event and status
-        F-->>P: WebhookProcessingResult
+        P->>E: Recognize provider event
+        E-->>P: WebhookEventType
+        P->>D: Parse provider payload
+        D-->>P: WebhookPayload
+        P->>M: Map payment payload and event
+        M-->>P: WebhookProcessingResult
         P-->>C: WebhookProcessingResult
         C->>R: Build normalized context with raw input and raw data
         R-->>A: WebhookContext
