@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
@@ -48,9 +49,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
     }
 
 
-    /**
-     * @dataProvider processedPayPalNonSuccessPaymentOutcomeProvider
-     */
+    #[DataProvider('processedPayPalNonSuccessPaymentOutcomeProvider')]
     public function testProcessesPayPalNonSuccessPaymentOutcomes(
         WebhookEventType $eventType,
         string $providerEventType,
@@ -112,9 +111,7 @@ final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider unsupportedPayPalRefundLikePayloadProvider
-     */
+    #[DataProvider('unsupportedPayPalRefundLikePayloadProvider')]
     public function testKeepsUnsupportedResultForPayPalRefundLikePayloads(
         WebhookEventType $eventType,
         string $providerEventType,

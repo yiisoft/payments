@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Tests\Webhooks;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
@@ -47,9 +48,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         $this->assertSame($rawData, $result->rawData);
     }
 
-    /**
-     * @dataProvider processedYooKassaNonSuccessPaymentOutcomeProvider
-     */
+    #[DataProvider('processedYooKassaNonSuccessPaymentOutcomeProvider')]
     public function testProcessesYooKassaNonSuccessPaymentOutcomes(
         WebhookEventType $eventType,
         string $providerEventType,
@@ -108,9 +107,7 @@ final class WebhookYooKassaPaymentWebhookMapperTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider unsupportedYooKassaRefundLikePayloadProvider
-     */
+    #[DataProvider('unsupportedYooKassaRefundLikePayloadProvider')]
     public function testKeepsUnsupportedResultForRecognizedYooKassaRefundLikePayloads(
         WebhookEventType $eventType,
         string $providerEventType,
