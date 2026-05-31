@@ -1405,15 +1405,29 @@ final readonly class WebhookReason
 #### `WebhookProcessingStatus`
 
 Normalized status of the provider webhook processing outcome. These statuses describe the result
-of the common processor plus the provider-specific payment webhook pipeline:
+of the common processor plus the provider-specific R1 payment webhook pipeline. They are outcome
+categories for predictable webhook handling, not HTTP response codes and not provider payment
+statuses. Provider payment statuses, when available, are exposed separately as nullable
+`paymentStatus` values on `WebhookProcessingResult` and `WebhookContext`.
 
-- `Processed` means the request was validated, recognized, parsed, and mapped successfully;
-- `ValidationFailed` means processing stopped before provider event processing started. This
-  includes provider-specific validation failures and missing provider processors;
-- `UnknownEvent` means the request was valid, but the provider event type is not recognized by
-  the payment webhook mapping;
-- `UnsupportedEvent` means the request was valid and recognized, but the event is outside the
-  supported R1 payment webhook normalization scope.
+- `Processed` means the request passed validation when a validator was registered, the provider
+  event was recognized, the payload was parsed, and the event was mapped successfully into the
+  R1 payment webhook result. It is the only successful processing status.
+- `ValidationFailed` means processing stopped before provider event processing completed. This
+  includes provider-specific validation failures and the common missing provider processor path.
+  The reason is available through `WebhookProcessingResult::$reason` and, after wrapping, through
+  `WebhookContext::$validationFailureReason`.
+- `UnknownEvent` means the request is structurally usable for the selected provider processor, but
+  the raw provider event type is not recognized by the R1 recognizer/mapping layer. This keeps new
+  or unexpected provider events explicit without treating them as successful payment processing.
+- `UnsupportedEvent` means the provider event was recognized and mapped to a normalized webhook
+  event type, but that normalized event is outside the supported R1 payment webhook normalization
+  scope for the provider. For example, refund-like events can be recognized and then reported as
+  unsupported because refund normalization is reserved for R2.
+
+The built-in R1 flow uses exactly these four statuses. Normal unknown, unsupported, validation, and
+missing-provider cases should be represented with explicit results rather than `null` or provider
+exceptions.
 
 ```php
 enum WebhookProcessingStatus: string
