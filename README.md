@@ -1441,31 +1441,44 @@ enum WebhookProcessingStatus: string
 
 #### `WebhookProcessingResult`
 
-Provider webhook processing outcome returned by `WebhookProviderProcessorInterface` and then
-wrapped by the common processor into `WebhookContext`. It represents both successful payment
-webhook processing and predictable non-success outcomes such as validation failure, unknown
-events, unsupported events, or a missing provider processor.
+Immutable provider webhook processing outcome returned by `WebhookProviderProcessorInterface`
+and then wrapped by the common processor into `WebhookContext`. It represents both successful
+R1 payment webhook processing and predictable non-success outcomes such as validation failure,
+unknown events, unsupported events, or a missing provider processor.
 
 `WebhookProcessingResult` is not the final application-facing context. Application code receives
 `WebhookContext`; provider processors return `WebhookProcessingResult` so the common processor
-can attach the original `WebhookInput` and preserved `WebhookRawData` consistently.
+can attach the original `WebhookInput`, preserved `WebhookRawData`, normalized event type, reason,
+and optional provider payment status consistently.
+
+`paymentStatus` is a minimal R1 payment-oriented status extracted from the provider payload when
+available. It is intentionally a nullable provider status string. It is not a rich common payment
+state machine and must not be confused with `WebhookProcessingStatus`, which describes processing
+outcome categories.
 
 ```php
-readonly class WebhookProcessingResult
+final readonly class WebhookProcessingResult
 {
     public function __construct(
         public WebhookProcessingStatus $status,
         public ?WebhookEventType $eventType = null,
         public ?WebhookReason $reason = null,
         public ?WebhookRawData $rawData = null,
+        public ?string $paymentStatus = null,
     ) {
     }
+
+    public static function processed(
+        WebhookEventType $eventType,
+        ?WebhookRawData $rawData = null,
+        ?string $paymentStatus = null,
+    ): self;
 
     public static function validationFailed(?WebhookRawData $rawData = null, ?WebhookReason $reason = null): self;
 
     public static function missingProviderProcessor(string $providerId, ?WebhookRawData $rawData = null): self;
 
-    public static function unknownEvent(string $providerEventType): self;
+    public static function unknownEvent(?string $providerEventType = null, ?WebhookRawData $rawData = null): self;
 
     public static function unsupportedEvent(
         WebhookEventType $eventType,
@@ -1475,10 +1488,20 @@ readonly class WebhookProcessingResult
 }
 ```
 
+Use `processed()` only for events that are recognized and supported by the current R1 payment
+webhook contract. It keeps the normalized event type, preserved raw data, and optional extracted
+payment status together in a successful processing result.
+
 Validation failures are limited to failures before provider event processing starts. Later
 recognition, parsing, and mapping outcomes must not be added to `WebhookValidationResult`; they
 are represented by `WebhookProcessingResult` statuses and the corresponding reason on
 `WebhookContext`.
+
+`unknownEvent()` is for provider event types that are not recognized by the R1 provider mapping.
+`unsupportedEvent()` is for known normalized event types that are intentionally outside the current
+R1 processing scope, such as refund-like events before R2 refund normalization. Both paths return
+explicit results instead of `null` or provider exceptions, and both may preserve `WebhookRawData`
+for diagnostics and custom fallback handling.
 
 #### `WebhookPayload`
 
