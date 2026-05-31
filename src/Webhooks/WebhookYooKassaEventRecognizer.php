@@ -12,7 +12,7 @@ final readonly class WebhookYooKassaEventRecognizer implements WebhookEventRecog
     /**
      * @var array<string, WebhookEventType>
      */
-    private const array EVENT_TYPES = [
+    private const EVENT_TYPES = [
         'payment.waiting_for_capture' => WebhookEventType::PaymentRequiresCapture,
         'payment.succeeded' => WebhookEventType::PaymentSucceeded,
         'payment.canceled' => WebhookEventType::PaymentCanceled,

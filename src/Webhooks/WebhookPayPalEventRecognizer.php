@@ -12,7 +12,7 @@ final readonly class WebhookPayPalEventRecognizer implements WebhookEventRecogni
     /**
      * @var array<string, WebhookEventType>
      */
-    private const array EVENT_TYPES = [
+    private const EVENT_TYPES = [
         'CHECKOUT.ORDER.APPROVED' => WebhookEventType::PaymentRequiresCapture,
         'CHECKOUT.PAYMENT-APPROVAL.REVERSED' => WebhookEventType::PaymentCanceled,
         'PAYMENT.AUTHORIZATION.CREATED' => WebhookEventType::PaymentRequiresCapture,

@@ -12,7 +12,7 @@ final readonly class WebhookStripeEventRecognizer implements WebhookEventRecogni
     /**
      * @var array<string, WebhookEventType>
      */
-    private const array EVENT_TYPES = [
+    private const EVENT_TYPES = [
         'payment_intent.created' => WebhookEventType::PaymentCreated,
         'payment_intent.processing' => WebhookEventType::PaymentProcessing,
         'payment_intent.requires_action' => WebhookEventType::PaymentRequiresAction,
