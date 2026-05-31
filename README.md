@@ -834,7 +834,9 @@ It does not describe refund normalization, recurring or subscription webhooks, p
 idempotency helpers, application controllers, queues, or persistence.
 
 The provider rows below describe only R1 payment webhook support and must be read together with the
-provider capability declarations exposed through `WebhookCapabilitiesProviderInterface`.
+provider capability declarations exposed through `WebhookCapabilitiesProviderInterface`. Any references to
+R2 are boundary notes that explain what is intentionally not normalized by R1; they do not document R2,
+R3, or R4 behavior and should not be read as a promise of later-release API shape.
 
 `PaymentRefunded` is unsupported for every built-in provider in R1. Refund-like provider events may
 be recognized so they can return an explicit unsupported webhook result, but refund normalization is
