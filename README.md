@@ -1564,8 +1564,15 @@ field names must remain provider field names as received; they must not be mappe
 application-specific names or normalized payment data.
 
 ```php
-readonly class WebhookRawData
+final readonly class WebhookRawData
 {
+    /**
+     * @param array<string, string|list<string>> $headers
+     * @param mixed $payload Provider payload decoded by a later processing step, if available.
+     * @param string|null $providerEventType Provider-specific event type extracted by a later processing step, if available.
+     * @param array<string, mixed> $queryParams Raw provider query fields preserved without renaming.
+     * @param array<string, mixed> $bodyParams Raw provider form/body fields preserved without renaming.
+     */
     public function __construct(
         public string $rawBody,
         public array $headers = [],
@@ -1575,8 +1582,32 @@ readonly class WebhookRawData
         public array $bodyParams = [],
     ) {
     }
+
+    /** @return array<string, string|list<string>> */
+    public function getHeaders(): array;
+
+    /** @return array<string, mixed> */
+    public function getQueryParams(): array;
+
+    /** @return array<string, mixed> */
+    public function getBodyParams(): array;
+
+    public function getPayload(): mixed;
+
+    public function getProviderEventType(): ?string;
 }
 ```
+
+`WebhookRawData::$headers`, `getHeaders()`, `getQueryParams()`, and `getBodyParams()` preserve
+the original provider request data for diagnostics and fallback handling. Header names and
+provider field names are not normalized by this object. Use `WebhookInput::getHeader()` at the
+input boundary when validator code needs case-insensitive header lookup.
+
+`WebhookRawData::$payload` is optional decoded provider data. For JSON providers it is usually
+the decoded request body after parsing; for malformed JSON or validation/missing-processor paths
+it can remain `null`. `WebhookRawData::$providerEventType` is the raw provider event name/code,
+for example Stripe `type`, PayPal `event_type`, YooKassa `event`, or Robokassa callback identity
+derived from the ResultURL request shape. It is not the normalized `WebhookEventType`.
 
 #### `WebhookContext`
 
