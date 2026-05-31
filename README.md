@@ -1301,7 +1301,7 @@ before passing them to this object.
   provider from raw HTTP data; validators and processors are selected by this explicit value.
 
 ```php
-readonly class WebhookInput
+final readonly class WebhookInput
 {
     public function __construct(
         public string $rawBody,
