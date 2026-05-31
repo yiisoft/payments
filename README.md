@@ -955,10 +955,10 @@ processor.
 #### `WebhookProviderValidatorRegistry`
 
 Registry and resolver for provider-specific webhook validators. The common processor uses it to select
-the validator that matches `WebhookInput::$providerId` before running provider event processing.
-If no validator is registered for a provider, the common processor can continue only when the selected
-provider processing flow does not require a validator; provider-specific authenticity failures must be
-reported by `WebhookValidationResult::failure()`.
+the validator that exactly matches `WebhookInput::$providerId` before running provider event processing.
+Validator registration is explicit: the registry accepts provider validator instances in the constructor,
+indexes them by `WebhookProviderValidatorInterface::getProviderId()`, and does not auto-detect providers
+from the raw request.
 
 ```php
 final class WebhookProviderValidatorRegistry
@@ -970,6 +970,16 @@ final class WebhookProviderValidatorRegistry
     public function has(string $providerId): bool;
 }
 ```
+
+`get()` returns the registered validator for the exact provider ID or `null` when there is no validator
+for that provider. `has()` can be used by integration code to check registration explicitly. Empty
+provider validator IDs and duplicate provider validator IDs are rejected when the registry is created.
+
+`WebhookProcessor` accepts the validator registry as optional infrastructure. If no validator registry is
+passed, or if the registry has no validator for the selected provider, the common processor continues to
+provider processing without validation. This is useful for intentionally unvalidated test or custom flows,
+but production endpoints should register the relevant provider validator so authenticity failures become a
+fail-fast `ValidationFailed` result before provider event recognition, parsing, and mapping.
 
 #### Provider processing stages
 
