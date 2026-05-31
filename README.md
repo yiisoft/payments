@@ -840,6 +840,19 @@ provider capability declarations exposed through `WebhookCapabilitiesProviderInt
 be recognized so they can return an explicit unsupported webhook result, but refund normalization is
 reserved for R2 and must not be treated as an R1 payment outcome.
 
+R1 status values in this matrix have the following meaning:
+
+- `Supported` means the built-in provider flow validates the request when validation is configured,
+  recognizes the provider event or callback, parses the payload, maps it to the listed normalized
+  payment event, and exposes an R1 payment status source for application handling.
+- `Unsupported` means the provider event or callback is known or intentionally listed, but the
+  built-in R1 flow does not normalize it as a supported payment outcome. It may be used to produce a
+  predictable unsupported-event result instead of treating the input as an accidental unknown event.
+
+This R1 matrix does not use `PartiallySupported`. The public capability model can represent that
+status, but the built-in R1 payment webhook documentation below intentionally documents only
+`Supported` and `Unsupported` rows.
+
 | Provider | Provider event / callback | Normalized event type | Entity kind | R1 status | R1 payment status source | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Stripe | `payment_intent.created` | `payment.created` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
