@@ -53,9 +53,12 @@ final readonly class WebhookPayPalProviderProcessor implements WebhookProviderPr
 
     private function createRawData(WebhookInput $input, ?string $providerEventType = null): WebhookRawData
     {
+        $payload = (new WebhookJsonPayloadDecoder())->decode($input->rawBody);
+
         return new WebhookRawData(
             rawBody: $input->rawBody,
             headers: $input->headers,
+            payload: $payload,
             providerEventType: $providerEventType,
             queryParams: $input->queryParams,
             bodyParams: $input->bodyParams,
