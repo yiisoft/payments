@@ -874,9 +874,23 @@ interface WebhookProviderProcessorInterface
 }
 ```
 
-`process()` runs the provider-specific payment webhook pipeline and returns
-`WebhookProcessingResult`. The common processor then wraps that processing outcome into the
-final `WebhookContext` returned to application code.
+`process()` owns the provider-specific R1 payment webhook pipeline and returns a
+`WebhookProcessingResult` for the common processor to wrap into the final
+`WebhookContext`. The built-in provider processors connect three provider-specific stages:
+
+1. recognize the original provider event or callback type from `WebhookInput`;
+2. parse supported payment webhook payloads into a `WebhookPayload`;
+3. map the payload into the common processing result, including a normalized
+   `paymentStatus` when the provider event is supported by R1.
+
+When the provider event type is missing, unknown, unsupported, or not mappable in R1, the
+provider processor still returns an explicit `WebhookProcessingResult` instead of throwing
+or returning `null`. The result preserves `WebhookRawData` so application code can inspect
+the original request for debugging or provider-specific fallback handling.
+
+A provider processor is independent from outbound payment gateway objects. It should not be
+obtained from `PaymentGatewayInterface` implementations or from methods such as
+`StripeGateway->getWebhookHandler()`.
 
 #### `WebhookProviderProcessorRegistry`
 
