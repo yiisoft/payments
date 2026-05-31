@@ -836,6 +836,17 @@ idempotency helpers, application controllers, queues, or persistence.
 The provider rows below describe only R1 payment webhook support and must be read together with the
 provider capability declarations exposed through `WebhookCapabilitiesProviderInterface`.
 
+| Provider | Provider event / callback | Normalized event type | Entity kind | R1 status | R1 payment status source | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Stripe | `payment_intent.created` | `payment.created` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
+| Stripe | `payment_intent.processing` | `payment.processing` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
+| Stripe | `payment_intent.requires_action` | `payment.requires_action` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
+| Stripe | `payment_intent.amount_capturable_updated` | `payment.requires_capture` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
+| Stripe | `payment_intent.succeeded` | `payment.succeeded` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
+| Stripe | `payment_intent.payment_failed` | `payment.failed` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
+| Stripe | `payment_intent.canceled` | `payment.canceled` | `payment` | `Supported` | `data.object.status` | Processed as an R1 payment outcome. |
+| Stripe | `charge.refunded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+
 ### Common Contracts
 
 #### `WebhookProcessorInterface`
