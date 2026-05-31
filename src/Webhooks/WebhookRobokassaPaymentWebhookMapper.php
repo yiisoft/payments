@@ -42,7 +42,8 @@ final readonly class WebhookRobokassaPaymentWebhookMapper implements PaymentWebh
          * ambiguous, or unsupported callback formats remain unmapped and are represented as null.
          */
         if (
-            WebhookRobokassaCallbackFormat::supportsR1PaymentOutcome($payload->eventType)
+            $payload->eventType !== null
+            && WebhookRobokassaCallbackFormat::supportsR1PaymentOutcome($payload->eventType)
             && $payload->providerEventType === WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL
         ) {
             return WebhookRobokassaCallbackFormat::PAYMENT_SUCCEEDED_STATUS_SIGNAL;
