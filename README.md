@@ -1734,6 +1734,7 @@ declare(strict_types=1);
 
 use Psr\Http\Message\ServerRequestInterface;
 use Yiisoft\Payments\Webhooks\WebhookContext;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifierInterface;
@@ -1855,10 +1856,31 @@ function handleWebhookContext(WebhookContext $context): void
 function handleProcessedWebhookContext(WebhookContext $context): void
 {
     $eventType = $context->eventType;
+    $paymentStatus = $context->paymentStatus;
     $rawData = $context->rawData;
+
+    if ($paymentStatus !== null) {
+        storeProviderPaymentStatus($context, $paymentStatus);
+    }
+
+    match ($eventType) {
+        WebhookEventType::PaymentSucceeded => markLocalPaymentAsSucceeded($context),
+        WebhookEventType::PaymentFailed => markLocalPaymentAsFailed($context),
+        WebhookEventType::PaymentCanceled => markLocalPaymentAsCanceled($context),
+        WebhookEventType::PaymentProcessing,
+        WebhookEventType::PaymentCreated,
+        WebhookEventType::PaymentRequiresAction,
+        WebhookEventType::PaymentRequiresCapture => syncLocalPaymentState($context),
+        default => logWebhookDiagnostic(
+            reason: 'Processed webhook context has no R1 payment handler.',
+            providerEventType: $rawData?->providerEventType,
+            rawData: $rawData,
+        ),
+    };
 
     // Application-specific handling:
     // - update the local payment record using the normalized payment event type;
+    // - use paymentStatus only as the minimal provider status string exposed by R1;
     // - use provider payload fields only when additional provider-specific details are needed;
     // - keep raw webhook data for diagnostics and audit logs when appropriate.
 }
@@ -1867,6 +1889,12 @@ function handleUnsupportedWebhookContext(WebhookContext $context): void
 {
     $eventType = $context->eventType;
     $rawData = $context->rawData;
+
+    if ($eventType === WebhookEventType::PaymentRefunded) {
+        // R1 recognizes refund-like events only to return an explicit unsupported outcome.
+        // Refund normalization is reserved for R2, so application code should handle it
+        // through a custom provider-specific fallback or ignore it intentionally.
+    }
 
     // Application-specific fallback handling:
     // - keep the raw request data for diagnostics;
@@ -1884,8 +1912,10 @@ function logWebhookDiagnostic(string $reason, ?string $providerEventType, ?Webho
 ```
 
 `WebhookProcessingStatus::Processed` means the request was validated, recognized, parsed, and mapped successfully.
-Application code should use `WebhookContext::$eventType` as the normalized payment event type and may inspect
-`WebhookContext::$rawData` for provider-specific diagnostics or audit logs.
+Application code should use `WebhookContext::$eventType` as the normalized R1 payment event type.
+`WebhookContext::$paymentStatus` is an optional minimal provider status string extracted by the mapper when available;
+it is not a replacement for `WebhookProcessingStatus` and is not a rich cross-provider payment state machine.
+Applications may inspect `WebhookContext::$rawData` for provider-specific diagnostics or audit logs.
 
 `WebhookProcessingStatus::ValidationFailed` means processing stopped before provider event processing started.
 This includes provider-specific request validation failures and missing provider processors, for example with the
