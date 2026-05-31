@@ -13,6 +13,13 @@ use Yiisoft\Payments\Exceptions\PaymentException;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
+use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 /**
  * Robokassa gateway implementation.
@@ -40,7 +47,7 @@ use Yiisoft\Payments\Models\PaymentMethod;
  * - Internally this library uses integer minor units (e.g. cents). Robokassa expects decimal strings (e.g. "10.00").
  * - This gateway converts between these representations assuming 2 decimal places.
  */
-final class RobokassaGateway extends AbstractGateway
+final class RobokassaGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     private const STATUS_SUCCEEDED = 'SUCCEEDED';
     private const STATUS_PENDING = 'PENDING';
@@ -528,6 +535,28 @@ final class RobokassaGateway extends AbstractGateway
         }
 
         return $data;
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        $capabilities = [];
+
+        foreach (
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ] as $eventType
+        ) {
+            $capabilities[] = new WebhookCapability(
+                $eventType,
+                WebhookEntityKind::Payment,
+                WebhookRobokassaCallbackFormat::supportsR1PaymentOutcome($eventType)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
+            );
+        }
+
+        return new WebhookCapabilities(...$capabilities);
     }
 
     private function extractRobokassaErrorMessage(array $data): ?string

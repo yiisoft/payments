@@ -13,6 +13,15 @@ use Yiisoft\Payments\Exceptions\PaymentException;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
+use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
+use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
 /**
  * PayPal gateway implementation based on PayPal REST API:
@@ -31,7 +40,7 @@ use Yiisoft\Payments\Models\PaymentMethod;
  * - Internally this library uses integer minor units (e.g. cents). PayPal API expects decimal strings (e.g. "10.00").
  * - This gateway converts between these representations assuming 2 decimal places for currencies that use decimals.
  */
-final class PayPalGateway extends AbstractGateway
+final class PayPalGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     /** Access token cache. */
     private ?string $accessToken = null;
@@ -577,6 +586,57 @@ final class PayPalGateway extends AbstractGateway
             }
         }
         return null;
+    }
+
+    public function createWebhookValidator(string $webhookId): WebhookPayPalValidator
+    {
+        return new WebhookPayPalValidator($this->createWebhookSignatureVerifier(), $webhookId);
+    }
+
+    public function createWebhookSignatureVerifier(): WebhookPayPalSignatureVerifier
+    {
+        return new WebhookPayPalSignatureVerifier(
+            clientId: $this->clientId,
+            clientSecret: $this->clientSecret,
+            sandbox: $this->sandbox,
+            httpClient: $this->httpClient,
+            requestFactory: $this->requestFactory,
+            streamFactory: $this->streamFactory,
+            endpoints: $this->endpoints ?? new PayPalEndpoints(),
+        );
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        return new WebhookCapabilities(...array_map(
+            fn (WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
+                $eventType,
+                WebhookEntityKind::Payment,
+                in_array($eventType, self::supportedR1PaymentOutcomes(), true)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
+            ),
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ],
+        ));
+    }
+
+    /**
+     * Returns R1 payment outcomes that PayPal can actually recognize and process.
+     *
+     * @return list<WebhookEventType>
+     */
+    private static function supportedR1PaymentOutcomes(): array
+    {
+        return [
+            WebhookEventType::PaymentProcessing,
+            WebhookEventType::PaymentRequiresCapture,
+            WebhookEventType::PaymentSucceeded,
+            WebhookEventType::PaymentFailed,
+            WebhookEventType::PaymentCanceled,
+        ];
     }
 
     private static function formatAmount(int $amountMinor): string

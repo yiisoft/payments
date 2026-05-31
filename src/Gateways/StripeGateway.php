@@ -12,8 +12,15 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Yiisoft\Payments\Endpoints\StripeEndpoints;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
-class StripeGateway extends AbstractGateway
+class StripeGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     private string $apiVersion = '2023-10-16';
 
@@ -325,5 +332,22 @@ class StripeGateway extends AbstractGateway
             status: $response['status'],
             createdAt: $response['created'],
         );
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        return new WebhookCapabilities(...array_map(
+            fn (WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
+                $eventType,
+                WebhookEntityKind::Payment,
+                WebhookPaymentOutcomeRules::shouldProcess($eventType)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
+            ),
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ],
+        ));
     }
 }

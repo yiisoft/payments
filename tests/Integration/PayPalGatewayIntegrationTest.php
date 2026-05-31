@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Integration;
 
 use Nyholm\Psr7\Factory\Psr17Factory;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
@@ -32,9 +33,8 @@ final class PayPalGatewayIntegrationTest extends TestCase
 
     /**
      * Variant A (default): create order and verify API connectivity.
-     *
-     * @group integration
      */
+    #[Group('integration')]
     public function testCreateOrderConnectivity(): void
     {
         $gateway = $this->createGateway();
@@ -83,9 +83,8 @@ final class PayPalGatewayIntegrationTest extends TestCase
      * Variant B (optional): advanced card payments (confirm payment source) + capture.
      *
      * Enable it by setting enable_advanced_card_payments_flow=true in tests/config/paypal.php.
-     *
-     * @group integration
      */
+    #[Group('integration')]
     public function testAdvancedCardPaymentsFlowOptional(): void
     {
         if (empty($this->config['enable_advanced_card_payments_flow'])) {

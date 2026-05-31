@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Integration;
 
 use Nyholm\Psr7\Factory\Psr17Factory;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
@@ -32,9 +33,8 @@ final class RobokassaGatewayIntegrationTest extends TestCase
 
     /**
      * Variant A (default): create invoice and verify API connectivity.
-     *
-     * @group integration
      */
+    #[Group('integration')]
     public function testCreateInvoiceConnectivity(): void
     {
         $gateway = $this->createGateway();

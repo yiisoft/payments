@@ -14,8 +14,15 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use Yiisoft\Payments\Endpoints\YooKassaEndpoints;
+use Yiisoft\Payments\Webhooks\WebhookCapabilities;
+use Yiisoft\Payments\Webhooks\WebhookCapabilitiesProviderInterface;
+use Yiisoft\Payments\Webhooks\WebhookCapability;
+use Yiisoft\Payments\Webhooks\WebhookEntityKind;
+use Yiisoft\Payments\Webhooks\WebhookEventType;
+use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
+use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
-class YooKassaGateway extends AbstractGateway
+class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     public function __construct(
         private string $shopId,
@@ -205,6 +212,37 @@ class YooKassaGateway extends AbstractGateway
             'created_at' => $response['created_at'],
             'amount' => $amount['value'],
             'currency' => $amount['currency']
+        ];
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        return new WebhookCapabilities(...array_map(
+            fn (WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
+                $eventType,
+                WebhookEntityKind::Payment,
+                in_array($eventType, self::supportedR1PaymentOutcomes(), true)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
+            ),
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ],
+        ));
+    }
+
+    /**
+     * Returns R1 payment outcomes that YooKassa can actually recognize and process.
+     *
+     * @return list<WebhookEventType>
+     */
+    private static function supportedR1PaymentOutcomes(): array
+    {
+        return [
+            WebhookEventType::PaymentRequiresCapture,
+            WebhookEventType::PaymentSucceeded,
+            WebhookEventType::PaymentCanceled,
         ];
     }
 
