@@ -831,8 +831,8 @@ Architecture boundaries:
 #### `WebhookProcessorInterface`
 
 The common public entry point for incoming webhook processing. Application code passes a
-`WebhookInput` built from the original HTTP request and receives a normalized
-`WebhookContext` for the handled payment webhook.
+`WebhookInput` built from the original HTTP request for one configured provider and
+receives a normalized `WebhookContext` for the webhook processing outcome.
 
 ```php
 interface WebhookProcessorInterface
@@ -843,13 +843,17 @@ interface WebhookProcessorInterface
 
 The common processor flow is provider-independent:
 
-1. preserve the raw request data from `WebhookInput`;
+1. require `WebhookInput::$providerId`, because R1 provider auto-detection from a raw
+   HTTP request is intentionally out of scope;
 2. resolve and run the provider-specific validator, when one is configured;
-3. return a `ValidationFailed` context immediately when validation fails;
+3. preserve the raw request data in `WebhookRawData` and return a `ValidationFailed`
+   context immediately when validation fails;
 4. resolve the provider-specific processor by `WebhookInput::$providerId`;
-5. return a predictable `ValidationFailed` context when no provider processor is registered;
+5. return a predictable `ValidationFailed` context with the `missing_provider_processor`
+   reason when no provider processor is registered;
 6. delegate successful provider processing to the resolved provider processor and wrap the
-   resulting processing outcome into `WebhookContext`.
+   resulting processing outcome, including any normalized payment status, into
+   `WebhookContext`.
 
 The common entry point does not expose provider gateway methods and does not depend on an
 outbound `PaymentGatewayInterface` instance.
