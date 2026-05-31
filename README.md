@@ -855,6 +855,10 @@ provider capability declarations exposed through `WebhookCapabilitiesProviderInt
 | PayPal | `PAYMENT.CAPTURE.DECLINED` | `payment.failed` | `payment` | `Supported` | `resource.status` | Processed as an R1 payment outcome. |
 | PayPal | `PAYMENT.CAPTURE.REFUNDED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
 | PayPal | `PAYMENT.CAPTURE.REVERSED` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+| YooKassa | `payment.waiting_for_capture` | `payment.requires_capture` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
+| YooKassa | `payment.succeeded` | `payment.succeeded` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
+| YooKassa | `payment.canceled` | `payment.canceled` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
+| YooKassa | `refund.succeeded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
 
 ### Common Contracts
 
