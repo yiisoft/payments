@@ -7,7 +7,7 @@ namespace Yiisoft\Payments\Webhooks;
 /**
  * Provider-specific mapper skeleton for PayPal payment webhook payloads.
  */
-final readonly class WebhookPayPalPaymentWebhookMapper implements PaymentWebhookMapperInterface
+final readonly class WebhookPayPalPaymentWebhookMapper implements WebhookPaymentMapperInterface
 {
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
     {

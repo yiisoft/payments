@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Endpoints\PayPalEndpoints;
 use Yiisoft\Payments\Gateways\PayPalGateway;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
@@ -51,7 +51,7 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
 
     #[DataProvider('unknownEventMapperProvider')]
     public function testUnknownPaymentWebhookMappersPreserveRawDataForR1Debugging(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         string $providerId,
         string $providerEventType,
         array $payloadData,
@@ -81,7 +81,7 @@ final class WebhookR1FinalCodeReadinessTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, string, string, array<string, mixed>}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, string, string, array<string, mixed>}>
      */
     public static function unknownEventMapperProvider(): iterable
     {

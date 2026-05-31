@@ -6,7 +6,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
@@ -17,7 +17,7 @@ use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
 final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
 {
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, string, string}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, string, string}>
      */
     public static function providerStatusMapperProvider(): iterable
     {
@@ -28,7 +28,7 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
 
     #[DataProvider('providerStatusMapperProvider')]
     public function testMapperExtractsProviderStatusStringWhenItIsAvailableInPayload(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         string $providerId,
         string $paymentStatus,
     ): void {
@@ -43,7 +43,7 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, string}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, string}>
      */
     public static function nullableStatusMapperProvider(): iterable
     {
@@ -54,7 +54,7 @@ final class PaymentWebhookMapperStatusExtractionContractTest extends TestCase
 
     #[DataProvider('nullableStatusMapperProvider')]
     public function testMapperReturnsNullWhenProviderStatusIsNotAvailable(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         string $providerId,
     ): void {
         $payload = new WebhookPayload(

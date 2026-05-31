@@ -6,7 +6,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventRecognizerInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
@@ -31,7 +31,7 @@ final class CrossProviderRefundNormalizationBoundaryTest extends TestCase
     public function testRefundLikeEventsStayOutsideR1RefundNormalizationAcrossProviders(
         string $providerId,
         WebhookEventRecognizerInterface $recognizer,
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         string $rawBody,
         string $providerEventType,
         array $data,
@@ -80,7 +80,7 @@ final class CrossProviderRefundNormalizationBoundaryTest extends TestCase
      * @return iterable<string, array{
      *     string,
      *     WebhookEventRecognizerInterface,
-     *     PaymentWebhookMapperInterface,
+     *     WebhookPaymentMapperInterface,
      *     string,
      *     string,
      *     array<string, mixed>,

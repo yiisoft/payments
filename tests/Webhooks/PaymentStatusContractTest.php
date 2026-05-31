@@ -7,7 +7,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Yiisoft\Payments\Models\PaymentIntent;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
@@ -40,7 +40,7 @@ final class PaymentStatusContractTest extends TestCase
 
     public function testMapperMayExposeProviderStatusStringWithoutNormalizingToDomainModel(): void
     {
-        $mapper = new class implements PaymentWebhookMapperInterface {
+        $mapper = new class implements WebhookPaymentMapperInterface {
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {
                 return WebhookProcessingResult::processed($payload->eventType ?? WebhookEventType::PaymentSucceeded);
@@ -64,7 +64,7 @@ final class PaymentStatusContractTest extends TestCase
 
     public function testMapperReturnsNullForUnmappedProviderStatusInsteadOfUnknownSentinel(): void
     {
-        $mapper = new class implements PaymentWebhookMapperInterface {
+        $mapper = new class implements WebhookPaymentMapperInterface {
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {
                 return WebhookProcessingResult::processed($payload->eventType ?? WebhookEventType::PaymentSucceeded);

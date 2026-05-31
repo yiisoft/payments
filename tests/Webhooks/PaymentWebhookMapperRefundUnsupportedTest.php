@@ -6,7 +6,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
@@ -20,7 +20,7 @@ final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
 {
     #[DataProvider('refundLikePayloadProvider')]
     public function testRefundLikeEventsDoNotReturnProcessedInR1PaymentMappers(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         WebhookPayload $payload,
     ): void {
         $result = $mapper->mapPaymentWebhook($payload);
@@ -35,7 +35,7 @@ final class PaymentWebhookMapperRefundUnsupportedTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, WebhookPayload}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, WebhookPayload}>
      */
     public static function refundLikePayloadProvider(): iterable
     {

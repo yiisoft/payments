@@ -7,7 +7,7 @@ namespace Yiisoft\Payments\Webhooks;
 /**
  * Provider-specific mapper skeleton for YooKassa payment webhook payloads.
  */
-final readonly class WebhookYooKassaPaymentWebhookMapper implements PaymentWebhookMapperInterface
+final readonly class WebhookYooKassaPaymentWebhookMapper implements WebhookPaymentMapperInterface
 {
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
     {

@@ -12,7 +12,7 @@ final readonly class WebhookYooKassaProviderProcessor implements WebhookProvider
     public function __construct(
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookYooKassaEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookYooKassaPayloadParser(),
-        private PaymentWebhookMapperInterface $paymentWebhookMapper = new WebhookYooKassaPaymentWebhookMapper(),
+        private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookYooKassaPaymentWebhookMapper(),
     ) {
     }
 

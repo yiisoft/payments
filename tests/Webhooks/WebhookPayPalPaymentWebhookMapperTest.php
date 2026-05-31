@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
@@ -14,11 +14,11 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 
 final class WebhookPayPalPaymentWebhookMapperTest extends TestCase
 {
-    public function testImplementsPaymentWebhookMapperInterface(): void
+    public function testImplementsWebhookPaymentMapperInterface(): void
     {
         $mapper = new WebhookPayPalPaymentWebhookMapper();
 
-        $this->assertInstanceOf(PaymentWebhookMapperInterface::class, $mapper);
+        $this->assertInstanceOf(WebhookPaymentMapperInterface::class, $mapper);
     }
 
     public function testMapsSuccessfulPayPalPaymentPayload(): void

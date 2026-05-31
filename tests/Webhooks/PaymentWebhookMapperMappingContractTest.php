@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
@@ -114,9 +114,9 @@ final class PaymentWebhookMapperMappingContractTest extends TestCase
         $this->assertNull($this->createContractMapper()->extractPaymentStatus($payload));
     }
 
-    private function createContractMapper(): PaymentWebhookMapperInterface
+    private function createContractMapper(): WebhookPaymentMapperInterface
     {
-        return new class implements PaymentWebhookMapperInterface {
+        return new class implements WebhookPaymentMapperInterface {
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {
                 if ($payload->eventType === null) {

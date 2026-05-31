@@ -6,7 +6,7 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookPayPalPaymentWebhookMapper;
@@ -18,7 +18,7 @@ use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentWebhookMapper;
 final class PaymentWebhookSuccessfulStatusExtractionTest extends TestCase
 {
     /**
-     * @return iterable<string, array{PaymentWebhookMapperInterface, WebhookPayload, string}>
+     * @return iterable<string, array{WebhookPaymentMapperInterface, WebhookPayload, string}>
      */
     public static function successfulPaymentStatusProvider(): iterable
     {
@@ -68,7 +68,7 @@ final class PaymentWebhookSuccessfulStatusExtractionTest extends TestCase
 
     #[DataProvider('successfulPaymentStatusProvider')]
     public function testExtractsSuccessfulPaidLikeStatusForAllProviders(
-        PaymentWebhookMapperInterface $mapper,
+        WebhookPaymentMapperInterface $mapper,
         WebhookPayload $payload,
         string $expectedStatus,
     ): void {

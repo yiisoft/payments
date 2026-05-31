@@ -12,7 +12,7 @@ final readonly class WebhookStripeProviderProcessor implements WebhookProviderPr
     public function __construct(
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookStripeEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookStripePayloadParser(),
-        private PaymentWebhookMapperInterface $paymentWebhookMapper = new WebhookStripePaymentWebhookMapper(),
+        private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookStripePaymentWebhookMapper(),
     ) {
     }
 

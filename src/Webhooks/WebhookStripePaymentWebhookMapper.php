@@ -7,7 +7,7 @@ namespace Yiisoft\Payments\Webhooks;
 /**
  * Provider-specific mapper skeleton for Stripe payment webhook payloads.
  */
-final readonly class WebhookStripePaymentWebhookMapper implements PaymentWebhookMapperInterface
+final readonly class WebhookStripePaymentWebhookMapper implements WebhookPaymentMapperInterface
 {
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
     {

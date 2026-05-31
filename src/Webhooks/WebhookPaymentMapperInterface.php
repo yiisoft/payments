@@ -7,7 +7,7 @@ namespace Yiisoft\Payments\Webhooks;
 /**
  * Provider-specific mapper of parsed payment webhook payloads into a normalized processing result.
  */
-interface PaymentWebhookMapperInterface
+interface WebhookPaymentMapperInterface
 {
     /**
      * Maps an intermediate provider payment webhook payload into the common processing outcome.

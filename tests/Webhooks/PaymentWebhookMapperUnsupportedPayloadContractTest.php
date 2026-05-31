@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Tests\Webhooks;
 
 use PHPUnit\Framework\TestCase;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
@@ -109,9 +109,9 @@ final class PaymentWebhookMapperUnsupportedPayloadContractTest extends TestCase
     /**
      * @param list<string> $nonPaymentProviderEvents
      */
-    private function createContractMapper(array $nonPaymentProviderEvents = []): PaymentWebhookMapperInterface
+    private function createContractMapper(array $nonPaymentProviderEvents = []): WebhookPaymentMapperInterface
     {
-        return new class ($nonPaymentProviderEvents) implements PaymentWebhookMapperInterface {
+        return new class ($nonPaymentProviderEvents) implements WebhookPaymentMapperInterface {
             /**
              * @param list<string> $nonPaymentProviderEvents
              */

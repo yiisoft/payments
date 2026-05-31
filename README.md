@@ -1127,7 +1127,7 @@ Malformed JSON is not converted into application-specific data and does not disc
 request. Built-in JSON parsing keeps decoded payload data empty when the body cannot be decoded, so
 later processing can still return a predictable result with preserved raw request data.
 
-#### `PaymentWebhookMapperInterface`
+#### `WebhookPaymentMapperInterface`
 
 Provider-specific mapping of the intermediate `WebhookPayload` into the common R1 payment
 webhook processing outcome. The mapper is the last provider-specific stage of the built-in
@@ -1137,7 +1137,7 @@ into `WebhookProcessingResult`. The common `WebhookProcessor` then wraps the res
 `WebhookContext` returned to application code.
 
 ```php
-interface PaymentWebhookMapperInterface
+interface WebhookPaymentMapperInterface
 {
     public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult;
 

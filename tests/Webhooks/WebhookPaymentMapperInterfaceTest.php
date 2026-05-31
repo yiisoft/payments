@@ -7,18 +7,18 @@ namespace Yiisoft\Payments\Tests\Webhooks;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
-use Yiisoft\Payments\Webhooks\PaymentWebhookMapperInterface;
+use Yiisoft\Payments\Webhooks\WebhookPaymentMapperInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingResult;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
-final class PaymentWebhookMapperInterfaceTest extends TestCase
+final class WebhookPaymentMapperInterfaceTest extends TestCase
 {
     public function testInterfaceExposesOnlyStableMapperContractMethods(): void
     {
-        $reflection = new ReflectionClass(PaymentWebhookMapperInterface::class);
+        $reflection = new ReflectionClass(WebhookPaymentMapperInterface::class);
 
         $this->assertTrue($reflection->isInterface());
         $this->assertSame(
@@ -36,7 +36,7 @@ final class PaymentWebhookMapperInterfaceTest extends TestCase
     public function testMapperContractMethodsArePublicInstanceMethods(): void
     {
         foreach (['mapPaymentWebhook', 'extractPaymentStatus'] as $methodName) {
-            $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, $methodName);
+            $method = new ReflectionMethod(WebhookPaymentMapperInterface::class, $methodName);
 
             $this->assertTrue($method->isPublic());
             $this->assertFalse($method->isStatic());
@@ -45,7 +45,7 @@ final class PaymentWebhookMapperInterfaceTest extends TestCase
 
     public function testMapPaymentWebhookAcceptsPayloadAndReturnsProcessingResult(): void
     {
-        $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, 'mapPaymentWebhook');
+        $method = new ReflectionMethod(WebhookPaymentMapperInterface::class, 'mapPaymentWebhook');
         $parameters = $method->getParameters();
         $returnType = $method->getReturnType();
 
@@ -60,7 +60,7 @@ final class PaymentWebhookMapperInterfaceTest extends TestCase
 
     public function testExtractPaymentStatusAcceptsPayloadAndReturnsNullableString(): void
     {
-        $method = new ReflectionMethod(PaymentWebhookMapperInterface::class, 'extractPaymentStatus');
+        $method = new ReflectionMethod(WebhookPaymentMapperInterface::class, 'extractPaymentStatus');
         $parameters = $method->getParameters();
         $returnType = $method->getReturnType();
 
@@ -75,7 +75,7 @@ final class PaymentWebhookMapperInterfaceTest extends TestCase
 
     public function testMapperCanMapPaymentPayloadIntoProcessingResult(): void
     {
-        $mapper = new class implements PaymentWebhookMapperInterface {
+        $mapper = new class implements WebhookPaymentMapperInterface {
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {
                 return new WebhookProcessingResult(
@@ -116,7 +116,7 @@ final class PaymentWebhookMapperInterfaceTest extends TestCase
 
     public function testMapperCanReturnNullWhenPaymentStatusIsNotAvailable(): void
     {
-        $mapper = new class implements PaymentWebhookMapperInterface {
+        $mapper = new class implements WebhookPaymentMapperInterface {
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {
                 return new WebhookProcessingResult(
@@ -143,7 +143,7 @@ final class PaymentWebhookMapperInterfaceTest extends TestCase
 
     public function testMapperReturnsNullForUnmappedProviderStatus(): void
     {
-        $mapper = new class implements PaymentWebhookMapperInterface {
+        $mapper = new class implements WebhookPaymentMapperInterface {
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {
                 return new WebhookProcessingResult(
