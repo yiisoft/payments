@@ -1033,10 +1033,10 @@ refund webhook normalization is reserved for R2.
 
 #### `WebhookPayloadParserInterface`
 
-Provider-specific parsing of original request data into an intermediate provider payload used by
-the provider processing pipeline. The parser reads from `WebhookInput` after validation and
+Provider-specific parsing of original request data into an intermediate `WebhookPayload` used by
+the provider processing pipeline. The parser reads from `WebhookInput` after validation and event
 recognition; it does not replace `WebhookInput` as the application-owned boundary object and does
-not produce the final application-facing result.
+not produce the final application-facing `WebhookContext`.
 
 ```php
 interface WebhookPayloadParserInterface
@@ -1048,6 +1048,26 @@ interface WebhookPayloadParserInterface
     ): WebhookPayload;
 }
 ```
+
+`parsePayload()` receives the normalized `WebhookEventType` selected by the recognizer and the raw
+provider event name/code when it was available. The returned `WebhookPayload` preserves provider
+identity, normalized event type, raw provider event type, decoded provider data, optional minimal
+R1 payment status, and `WebhookRawData` for diagnostics and fallback handling.
+
+Built-in JSON parsers decode the original raw body into provider data and extract the minimal
+provider payment status when the provider exposes it in the payment object:
+
+- Stripe reads payment status from `data.object.status`.
+- PayPal reads payment status from `resource.status`.
+- YooKassa reads payment status from `object.status`.
+
+Robokassa callbacks are form/query based, so the built-in parser combines `bodyParams` and
+`queryParams` while preserving original Robokassa field names such as `OutSum`, `InvId`,
+`SignatureValue`, and `Shp_*`.
+
+Malformed JSON is not converted into application-specific data and does not discard the original
+request. Built-in JSON parsing keeps decoded payload data empty when the body cannot be decoded, so
+later processing can still return a predictable result with preserved raw request data.
 
 #### `PaymentWebhookMapperInterface`
 
