@@ -859,6 +859,8 @@ provider capability declarations exposed through `WebhookCapabilitiesProviderInt
 | YooKassa | `payment.succeeded` | `payment.succeeded` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
 | YooKassa | `payment.canceled` | `payment.canceled` | `payment` | `Supported` | `object.status` | Processed as an R1 payment outcome. |
 | YooKassa | `refund.succeeded` | `payment.refunded` | `payment` | `Unsupported` | Not normalized in R1 | Recognized for explicit unsupported handling; refund normalization is reserved for a later release. |
+| Robokassa | ResultURL callback with `OutSum`, `InvId`, and `SignatureValue` | `payment.succeeded` | `payment` | `Supported` | Validated ResultURL callback signal | Processed as the only R1 payment outcome available from Robokassa ResultURL. |
+| Robokassa | No separate ResultURL callback for non-success payment outcomes | `payment.created`, `payment.processing`, `payment.requires_action`, `payment.requires_capture`, `payment.failed`, `payment.canceled` | `payment` | `Unsupported` | Not provided by ResultURL | Robokassa ResultURL does not provide separate R1 signals for these payment outcomes. |
 
 ### Common Contracts
 
