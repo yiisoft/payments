@@ -1353,8 +1353,15 @@ function createJsonWebhookInput(ServerRequestInterface $request, string $provide
 
 A form or query callback endpoint can also build `WebhookInput` from the original PSR-7
 server request. Provider fields must be passed as received in `queryParams` or `bodyParams`.
-For example, Robokassa fields such as `OutSum`, `InvId`, `SignatureValue`, and `Shp_*`
-custom fields keep their provider names and are not renamed to application-specific names.
+For example, Robokassa ResultURL fields such as `OutSum`, `InvId`, `SignatureValue`, and
+`Shp_*` custom fields keep their provider names and are not renamed to application-specific
+names.
+
+Robokassa R1 accepts ResultURL fields from either the query string or a form-like body. When
+both locations contain the same Robokassa callback parameter, their values must be identical;
+conflicting values are rejected as validation failure. The built-in Robokassa parser preserves
+both original arrays in `WebhookRawData` and uses the original provider field names in the
+parsed payload.
 
 ```php
 <?php
@@ -1362,7 +1369,7 @@ custom fields keep their provider names and are not renamed to application-speci
 use Psr\Http\Message\ServerRequestInterface;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 
-function createFormCallbackWebhookInput(ServerRequestInterface $request, string $providerId): WebhookInput
+function createRobokassaResultUrlWebhookInput(ServerRequestInterface $request): WebhookInput
 {
     $rawBody = $request->getBody()->getContents();
     $parsedBody = $request->getParsedBody();
@@ -1372,7 +1379,7 @@ function createFormCallbackWebhookInput(ServerRequestInterface $request, string 
         headers: $request->getHeaders(),
         queryParams: $request->getQueryParams(),
         bodyParams: is_array($parsedBody) ? $parsedBody : [],
-        providerId: $providerId,
+        providerId: 'robokassa',
     );
 }
 ```
