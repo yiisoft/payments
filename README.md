@@ -527,6 +527,18 @@ $refund = $gateway->createRefund($intent->id, [
 
 > PayPal does not expose generic Customer/PaymentMethod resources compatible with the library's models, so `Customer` / `PaymentMethod` operations are treated as lightweight placeholders (no persistent “vault” is created).
 
+### YooKassa (`YooKassaGateway`)
+
+- Payment Intents are mapped to YooKassa **payments** (`/v3/payments`)
+- `createPaymentIntent()` creates a payment and may return a confirmation URL in `PaymentIntent::$nextAction['redirect_to_url']['url']`
+- `retrievePaymentIntent()` checks payment status (`/v3/payments/{id}`)
+- `confirmPaymentIntent()` delegates to `capturePaymentIntent()` for YooKassa payment flows
+- `capturePaymentIntent()` captures a payment (`/v3/payments/{id}/capture`)
+- `cancelPaymentIntent()` cancels a payment (`/v3/payments/{id}/cancel`)
+- `createRefund()` creates a refund for a payment and requires amount and currency parameters
+
+> YooKassa does not expose standalone Customer/PaymentMethod resources compatible with the library's generic models, so `Customer` / `PaymentMethod` operations are treated as placeholders for interface compatibility where applicable.
+
 ### Robokassa (`RobokassaGateway`)
 
 - Payment Intents are mapped to Robokassa **invoices** (Invoice API JWT)
