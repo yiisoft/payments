@@ -331,6 +331,8 @@ Payment Intents can have these statuses:
 - `canceled`: Payment was canceled
 - `succeeded`: Payment was successful
 
+For the authorize-then-capture (hold) flow, when to use it, and per-provider support, see [Capture flow](docs/capture-flow.md).
+
 ### 4. Refunds
 
 ```php
