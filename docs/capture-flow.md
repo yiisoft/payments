@@ -75,4 +75,19 @@ The hold depends on what each provider's API offers, so the same `captureMethod:
 
 ## Capturing a partial amount
 
-Capturing less than the authorized amount depends on the gateway, and this library wires it up unevenly. Stripe forwards whatever you pass to `capturePaymentIntent()` straight to its capture call, so a smaller amount is one parameter away: `['amount_to_capture' => ...]`. PayPal supports it on the authorization-capture call only, and only if you hand it PayPal's own nested shape under `$params['capture']`, for example `capturePaymentIntent($orderId, ['authorization_id' => $authId, 'capture' => ['amount' => ['value' => '5.00', 'currency_code' => 'USD']]])`. YooKassa ignores capture parameters and always takes the full amount, and Robokassa has no capture step. So Stripe is the only gateway that takes a partial amount through the plain interface, without provider-specific payloads.
+Capturing less than the authorized amount depends on the gateway.
+
+Stripe accepts a partial amount directly: pass `['amount_to_capture' => ...]` to `capturePaymentIntent()` and it forwards to Stripe's capture call.
+
+PayPal supports it on the authorization-capture call only, and only with PayPal's own nested shape under `$params['capture']`. For example:
+
+```php
+$gateway->capturePaymentIntent($orderId, [
+    'authorization_id' => $authId,
+    'capture' => ['amount' => ['value' => '5.00', 'currency_code' => 'USD']],
+]);
+```
+
+YooKassa ignores capture parameters and always takes the full amount. Robokassa has no capture step at all.
+
+So Stripe is the only gateway that takes a partial amount through the plain interface, without provider-specific payloads.
