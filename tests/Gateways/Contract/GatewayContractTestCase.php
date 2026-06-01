@@ -49,9 +49,15 @@ abstract class GatewayContractTestCase extends TestCase
 
     abstract protected function givenCreateCustomer(): Customer;
 
-    abstract protected function customerApiIsRemote(): bool;
+    protected function customerApiIsRemote(): bool
+    {
+        return false;
+    }
 
-    abstract protected function expectedRemoteCustomerId(): string;
+    protected function expectedRemoteCustomerId(): string
+    {
+        return '';
+    }
 
     public function testCreatePaymentIntentReturnsNormalizedIntent(): void
     {

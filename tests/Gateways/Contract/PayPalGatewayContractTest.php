@@ -101,6 +101,7 @@ final class PayPalGatewayContractTest extends GatewayContractTestCase
 
     protected function assertRefundShape(array $refund): void
     {
+        $this->assertArrayHasKey('id', $refund);
         $this->assertSame('RFD-123', $refund['id']);
         $this->assertSame('COMPLETED', $refund['status']);
         $this->assertSame(['value' => '10.00', 'currency_code' => 'USD'], $refund['amount']);
@@ -109,16 +110,6 @@ final class PayPalGatewayContractTest extends GatewayContractTestCase
     protected function givenCreateCustomer(): Customer
     {
         return new Customer(email: 'buyer@example.com', name: 'Test Buyer');
-    }
-
-    protected function customerApiIsRemote(): bool
-    {
-        return false;
-    }
-
-    protected function expectedRemoteCustomerId(): string
-    {
-        return '';
     }
 
     private function queueAccessToken(): void

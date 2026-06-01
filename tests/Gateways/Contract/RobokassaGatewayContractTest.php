@@ -99,6 +99,7 @@ final class RobokassaGatewayContractTest extends GatewayContractTestCase
 
     protected function assertRefundShape(array $refund): void
     {
+        $this->assertArrayHasKey('requestId', $refund);
         $this->assertTrue($refund['success']);
         $this->assertSame('REQ-123', $refund['requestId']);
     }
@@ -106,15 +107,5 @@ final class RobokassaGatewayContractTest extends GatewayContractTestCase
     protected function givenCreateCustomer(): Customer
     {
         return new Customer(email: 'buyer@example.com', name: 'Test Buyer');
-    }
-
-    protected function customerApiIsRemote(): bool
-    {
-        return false;
-    }
-
-    protected function expectedRemoteCustomerId(): string
-    {
-        return '';
     }
 }

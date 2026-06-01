@@ -84,6 +84,7 @@ final class StripeGatewayContractTest extends GatewayContractTestCase
 
     protected function assertRefundShape(array $refund): void
     {
+        $this->assertArrayHasKey('id', $refund);
         $this->assertSame('re_test123', $refund['id']);
         $this->assertSame(1000, $refund['amount']);
         $this->assertSame('usd', $refund['currency']);

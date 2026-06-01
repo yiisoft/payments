@@ -36,7 +36,7 @@ final class YooKassaGatewayContractTest extends GatewayContractTestCase
         ]);
 
         return new PaymentIntent(
-            amount: 1000,
+            amount: 10000,
             currency: 'rub',
             paymentMethodId: 'bank_card',
             metadata: ['return_url' => 'https://example.com/return'],
@@ -87,11 +87,12 @@ final class YooKassaGatewayContractTest extends GatewayContractTestCase
 
     protected function refundParams(): array
     {
-        return ['amount' => 1000, 'currency' => 'rub'];
+        return ['amount' => 10000, 'currency' => 'rub'];
     }
 
     protected function assertRefundShape(array $refund): void
     {
+        $this->assertArrayHasKey('id', $refund);
         $this->assertSame('30af6093-0015-5001-8000-196e1cbaceef', $refund['id']);
         $this->assertSame('30af50eb-000f-5001-8000-1533ca71a452', $refund['payment_id']);
         $this->assertSame(10000, $refund['amount']);
@@ -102,15 +103,5 @@ final class YooKassaGatewayContractTest extends GatewayContractTestCase
     protected function givenCreateCustomer(): Customer
     {
         return new Customer(email: 'buyer@example.com', name: 'Test Buyer');
-    }
-
-    protected function customerApiIsRemote(): bool
-    {
-        return false;
-    }
-
-    protected function expectedRemoteCustomerId(): string
-    {
-        return '';
     }
 }
