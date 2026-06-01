@@ -73,6 +73,6 @@ The hold depends on what each provider's API offers, so the same `captureMethod:
 | YooKassa | Yes, always | The payment is always created with `capture=false`, so it holds first and `captureMethod` is ignored. `capturePaymentIntent()` charges it (`confirmPaymentIntent()` delegates to the same capture call). One-step immediate capture is not exposed by this gateway. |
 | Robokassa | No | Invoice-based: the customer pays on a hosted page and the charge is final. `confirmPaymentIntent()` and `capturePaymentIntent()` re-fetch the invoice state, they do not place or capture a hold. |
 
-## Partial capture
+## Capturing a partial amount
 
-Some providers let you capture less than the authorized amount (a smaller final bill than the hold, for example). When supported, pass the amount in `capturePaymentIntent()` parameters; the accepted keys are provider-specific. Capturing less than the hold releases the remainder.
+Capturing less than the authorized amount depends on the gateway, and this library wires it up unevenly. Stripe forwards whatever you pass to `capturePaymentIntent()` straight to its capture call, so you can take a smaller amount with `['amount_to_capture' => ...]`. PayPal and YooKassa currently issue a full capture and ignore extra parameters, and Robokassa has no capture step at all. So partial capture is only reachable through the Stripe gateway today.
