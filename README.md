@@ -331,7 +331,7 @@ Payment Intents can have these statuses:
 - `canceled`: Payment was canceled
 - `succeeded`: Payment was successful
 
-For the authorize-then-capture (hold) flow, when to use it, and per-provider support, see [Capture flow](docs/capture-flow.md).
+These names follow Stripe's vocabulary and are not normalized across providers - YooKassa, PayPal, and Robokassa report their own status strings, so compare against the value your provider returns. For the authorize-then-capture (hold) flow and per-provider support, see [Capture flow](docs/capture-flow.md).
 
 ### 4. Refunds
 

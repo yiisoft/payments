@@ -69,7 +69,7 @@ The hold depends on what each provider's API offers, so the same `captureMethod:
 | Provider | Hold then capture | Notes |
 | --- | --- | --- |
 | Stripe | Yes | `captureMethod: true` sends `capture_method=manual`. After the customer confirms, the payment is authorized (Stripe reports `requires_capture`) and `capturePaymentIntent()` charges it. |
-| PayPal | Yes, two calls | `captureMethod: true` creates an `AUTHORIZE` order. The first `capturePaymentIntent()` authorizes the order and returns an `authorization_id` in metadata; call `capturePaymentIntent($id, ['authorization_id' => ...])` to capture that authorization. The two-call round trip through one method is a current implementation detail rather than a clean one-call capture. |
+| PayPal | Yes, two calls | `captureMethod: true` creates an `AUTHORIZE` order. Call `capturePaymentIntent($orderId)` to authorize it; it returns the `authorization_id` in metadata. Call `capturePaymentIntent($orderId, ['authorization_id' => ...])` again - the same order id, with the authorization id in params - to capture. This two-call round trip through one method is a current implementation detail rather than a clean one-call capture. |
 | YooKassa | Yes, always | The payment is always created with `capture=false`, so it holds first and `captureMethod` is ignored. `capturePaymentIntent()` charges it (`confirmPaymentIntent()` delegates to the same capture call). One-step immediate capture is not exposed by this gateway. |
 | Robokassa | No | Invoice-based: the customer pays on a hosted page and the charge is final. `confirmPaymentIntent()` and `capturePaymentIntent()` re-fetch the invoice state, they do not place or capture a hold. |
 
