@@ -130,7 +130,6 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertSame(WebhookProcessingResult::class, $processMethod->getReturnType()?->getName());
     }
 
-
     public function testWebhookValidationResultContractIsStable(): void
     {
         $reflection = new ReflectionClass(WebhookValidationResult::class);
@@ -143,7 +142,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertNotNull($constructor);
         $this->assertSame(['isValid', 'reason'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame('bool', $constructor->getParameters()[0]->getType()?->getName());
@@ -314,7 +313,7 @@ final class WebhookPublicContractTest extends TestCase
                 'supportedR1PaymentOutcome',
                 'supportsR1PaymentOutcome',
             ],
-            $this->methodNames($reflection)
+            $this->methodNames($reflection),
         );
         $this->assertTrue($reflection->getConstructor()?->isPrivate());
 
@@ -456,7 +455,7 @@ final class WebhookPublicContractTest extends TestCase
         $getMethod = $reflection->getMethod('get');
 
         $this->assertSame(['providerId'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $getMethod->getParameters(),
         ));
         $this->assertSame('string', $getMethod->getParameters()[0]->getType()?->getName());
@@ -466,7 +465,7 @@ final class WebhookPublicContractTest extends TestCase
         $hasMethod = $reflection->getMethod('has');
 
         $this->assertSame(['providerId'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $hasMethod->getParameters(),
         ));
         $this->assertSame('string', $hasMethod->getParameters()[0]->getType()?->getName());
@@ -491,7 +490,7 @@ final class WebhookPublicContractTest extends TestCase
         $getMethod = $reflection->getMethod('get');
 
         $this->assertSame(['providerId'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $getMethod->getParameters(),
         ));
         $this->assertSame('string', $getMethod->getParameters()[0]->getType()?->getName());
@@ -501,7 +500,7 @@ final class WebhookPublicContractTest extends TestCase
         $missingProcessorResultMethod = $reflection->getMethod('missingProcessorResult');
 
         $this->assertSame(['providerId', 'rawData'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $missingProcessorResultMethod->getParameters(),
         ));
         $this->assertSame('string', $missingProcessorResultMethod->getParameters()[0]->getType()?->getName());
@@ -515,7 +514,7 @@ final class WebhookPublicContractTest extends TestCase
         $hasMethod = $reflection->getMethod('has');
 
         $this->assertSame(['providerId'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $hasMethod->getParameters(),
         ));
         $this->assertSame('string', $hasMethod->getParameters()[0]->getType()?->getName());
@@ -547,7 +546,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertNotNull($constructor);
         $this->assertSame(['eventType', 'entityKind', 'supportStatus'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame(WebhookEventType::class, $constructor->getParameters()[0]->getType()?->getName());
@@ -577,7 +576,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertNotNull($constructor);
         $this->assertSame(['providerId', 'eventType', 'status', 'paymentStatus', 'validationFailureReason', 'unsupportedEventReason', 'unknownEventReason', 'rawInput', 'rawData'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
@@ -667,7 +666,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertNotNull($constructor);
         $this->assertSame(['rawBody', 'headers', 'payload', 'providerEventType', 'queryParams', 'bodyParams'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
@@ -698,7 +697,7 @@ final class WebhookPublicContractTest extends TestCase
         $this->assertTrue($reflection->isEnum());
         $this->assertTrue($reflection->isFinal());
         $this->assertSame(['Processed', 'ValidationFailed', 'UnknownEvent', 'UnsupportedEvent'], array_map(
-            static fn (WebhookProcessingStatus $status): string => $status->name,
+            static fn(WebhookProcessingStatus $status): string => $status->name,
             WebhookProcessingStatus::cases(),
         ));
     }
@@ -715,7 +714,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertNotNull($constructor);
         $this->assertSame(['status', 'eventType', 'reason', 'rawData', 'paymentStatus'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame(WebhookProcessingStatus::class, $constructor->getParameters()[0]->getType()?->getName());
@@ -758,7 +757,7 @@ final class WebhookPublicContractTest extends TestCase
         $validationFailedMethod = $reflection->getMethod('validationFailed');
 
         $this->assertSame(['rawData', 'reason'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $validationFailedMethod->getParameters(),
         ));
         $this->assertSame(WebhookRawData::class, $validationFailedMethod->getParameters()[0]->getType()?->getName());
@@ -774,7 +773,7 @@ final class WebhookPublicContractTest extends TestCase
         $missingProviderProcessorMethod = $reflection->getMethod('missingProviderProcessor');
 
         $this->assertSame(['providerId', 'rawData'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $missingProviderProcessorMethod->getParameters(),
         ));
         $this->assertSame('string', $missingProviderProcessorMethod->getParameters()[0]->getType()?->getName());
@@ -787,7 +786,7 @@ final class WebhookPublicContractTest extends TestCase
         $unknownEventMethod = $reflection->getMethod('unknownEvent');
 
         $this->assertSame(['providerEventType', 'rawData'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $unknownEventMethod->getParameters(),
         ));
         $this->assertSame('string', $unknownEventMethod->getParameters()[0]->getType()?->getName());
@@ -803,7 +802,7 @@ final class WebhookPublicContractTest extends TestCase
         $unsupportedEventMethod = $reflection->getMethod('unsupportedEvent');
 
         $this->assertSame(['eventType', 'providerEventType', 'rawData'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $unsupportedEventMethod->getParameters(),
         ));
         $this->assertSame(WebhookEventType::class, $unsupportedEventMethod->getParameters()[0]->getType()?->getName());
@@ -830,7 +829,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertNotNull($constructor);
         $this->assertSame(['value'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame('string', $constructor->getParameters()[0]->getType()?->getName());
@@ -853,7 +852,7 @@ final class WebhookPublicContractTest extends TestCase
 
         $this->assertNotNull($constructor);
         $this->assertSame(['code', 'message', 'providerEventType'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $constructor->getParameters(),
         ));
         $this->assertSame(WebhookReasonCode::class, $constructor->getParameters()[0]->getType()?->getName());
@@ -894,7 +893,7 @@ final class WebhookPublicContractTest extends TestCase
         $unsupportedResultForMethod = $reflection->getMethod('unsupportedResultFor');
 
         $this->assertSame(['eventType', 'entityKind', 'providerEventType', 'rawData'], array_map(
-            static fn ($parameter): string => $parameter->getName(),
+            static fn($parameter): string => $parameter->getName(),
             $unsupportedResultForMethod->getParameters(),
         ));
         $this->assertSame(WebhookEventType::class, $unsupportedResultForMethod->getParameters()[0]->getType()?->getName());
@@ -929,7 +928,7 @@ final class WebhookPublicContractTest extends TestCase
     private function methodNames(ReflectionClass $reflection, ?int $filter = null): array
     {
         $methods = array_map(
-            static fn (ReflectionMethod $method): string => $method->getName(),
+            static fn(ReflectionMethod $method): string => $method->getName(),
             $filter === null ? $reflection->getMethods() : $reflection->getMethods($filter),
         );
 

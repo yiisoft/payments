@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use function is_array;
+
 /**
  * Decodes JSON webhook payloads without throwing on malformed input.
  */

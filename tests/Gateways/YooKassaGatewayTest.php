@@ -29,18 +29,8 @@ class YooKassaGatewayTest extends TestCase
             $this->httpClient,
             $this->psr17Factory,
             $this->psr17Factory,
-            new NullLogger()
+            new NullLogger(),
         );
-    }
-
-    private function withResponse(array $response): void
-    {
-        $this->httpClient->setNextResponse($response);
-    }
-
-    private function getLastRequest(): array
-    {
-        return $this->httpClient->lastRequest;
     }
 
     public function testCreateCustomer(): void
@@ -75,7 +65,7 @@ class YooKassaGatewayTest extends TestCase
             false,
             false,
             'test@example.com',
-            'TEST'
+            'TEST',
         );
 
         $this->withResponse([
@@ -189,21 +179,31 @@ class YooKassaGatewayTest extends TestCase
             "created_at" => "2025-11-19T04:51:31.067Z",
             "amount" => [
                 "value" => "100.00",
-                "currency" => "RUB"
+                "currency" => "RUB",
             ],
             "refund_authorization_details" => [
-                "rrn" => "325981525210676"
-            ]
+                "rrn" => "325981525210676",
+            ],
         ]);
 
         $result = $this->gateway->createRefund('30af50eb-000f-5001-8000-1533ca71a452', [
             'amount' => 1000,
-            'currency' => 'rub'
+            'currency' => 'rub',
         ]);
 
         $this->assertSame("30af6093-0015-5001-8000-196e1cbaceef", $result['id']);
         $this->assertSame(10000, $result['amount']);
         $this->assertSame('rub', $result['currency']);
         $this->assertSame('succeeded', $result['status']);
+    }
+
+    private function withResponse(array $response): void
+    {
+        $this->httpClient->setNextResponse($response);
+    }
+
+    private function getLastRequest(): array
+    {
+        return $this->httpClient->lastRequest;
     }
 }

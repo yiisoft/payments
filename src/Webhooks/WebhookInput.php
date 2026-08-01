@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use function is_string;
+
 /**
  * Immutable input object created from an incoming webhook request.
  */
@@ -22,8 +24,7 @@ final readonly class WebhookInput
         public array $queryParams = [],
         public array $bodyParams = [],
         public ?string $providerId = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Returns the original header map without normalizing header names or values.

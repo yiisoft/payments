@@ -13,6 +13,8 @@ use Yiisoft\Payments\Gateways\PayPalGateway;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Tests\Support\IntegrationConfig;
 
+use function is_array;
+
 final class PayPalGatewayIntegrationTest extends TestCase
 {
     private array $config;
@@ -48,7 +50,7 @@ final class PayPalGatewayIntegrationTest extends TestCase
                 'cancel_url' => (string) ($this->config['cancel_url'] ?? 'https://example.com/cancel'),
                 'order_id' => 'integration-test',
             ],
-            captureMethod: false
+            captureMethod: false,
         );
 
         $created = $gateway->createPaymentIntent($paymentIntent);
@@ -72,7 +74,7 @@ final class PayPalGatewayIntegrationTest extends TestCase
         if (!empty($this->config['capture_id_for_refund'])) {
             $refund = $gateway->createRefund(
                 paymentIntentId: (string) $this->config['capture_id_for_refund'],
-                amount: 100
+                amount: 100,
             );
 
             $this->assertNotEmpty($refund['id'] ?? null);
@@ -105,7 +107,7 @@ final class PayPalGatewayIntegrationTest extends TestCase
                 'return_url' => (string) ($this->config['return_url'] ?? 'https://example.com/return'),
                 'cancel_url' => (string) ($this->config['cancel_url'] ?? 'https://example.com/cancel'),
             ],
-            captureMethod: false
+            captureMethod: false,
         );
 
         $created = $gateway->createPaymentIntent($paymentIntent);

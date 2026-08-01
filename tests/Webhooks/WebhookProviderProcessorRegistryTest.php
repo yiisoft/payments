@@ -135,8 +135,7 @@ final class WebhookProviderProcessorRegistryTest extends TestCase
         return new class ($providerId) implements WebhookProviderProcessorInterface {
             public function __construct(
                 private readonly string $providerId,
-            ) {
-            }
+            ) {}
 
             public function getProviderId(): string
             {

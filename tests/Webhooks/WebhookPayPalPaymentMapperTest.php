@@ -13,6 +13,8 @@ use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
+use function sprintf;
+
 final class WebhookPayPalPaymentMapperTest extends TestCase
 {
     public function testImplementsWebhookPaymentMapperInterface(): void
@@ -47,7 +49,6 @@ final class WebhookPayPalPaymentMapperTest extends TestCase
         $this->assertNull($result->reason);
         $this->assertSame($rawData, $result->rawData);
     }
-
 
     #[DataProvider('processedPayPalNonSuccessPaymentOutcomeProvider')]
     public function testProcessesPayPalNonSuccessPaymentOutcomes(

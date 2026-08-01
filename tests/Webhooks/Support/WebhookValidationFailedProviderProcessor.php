@@ -21,8 +21,7 @@ final class WebhookValidationFailedProviderProcessor implements WebhookProviderP
         private readonly string $providerId = 'test-provider',
         private readonly ?string $providerEventType = 'test.validation_failed',
         private readonly mixed $payload = null,
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

@@ -13,6 +13,8 @@ use Yiisoft\Payments\Gateways\RobokassaGateway;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Tests\Support\IntegrationConfig;
 
+use function is_array;
+
 final class RobokassaGatewayIntegrationTest extends TestCase
 {
     private array $config;
@@ -49,7 +51,7 @@ final class RobokassaGatewayIntegrationTest extends TestCase
                 'InvoiceType' => 'OneTime',
                 'Culture' => 'ru',
             ],
-            captureMethod: false
+            captureMethod: false,
         );
 
         $created = $gateway->createPaymentIntent($intent);
@@ -71,7 +73,7 @@ final class RobokassaGatewayIntegrationTest extends TestCase
         if (!empty($this->config['paid_op_key'])) {
             $refund = $gateway->createRefund(
                 paymentIntentId: (string) ($this->config['paid_invoice_id'] ?? $created->id),
-                amount: 100
+                amount: 100,
             );
 
             $this->assertTrue((bool) ($refund['success'] ?? false));

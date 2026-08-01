@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Gateways;
 
-use Exception;
 use Yiisoft\Payments\Models\Customer;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Models\PaymentMethod;
@@ -22,6 +21,11 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
+use function array_key_exists;
+use function in_array;
+use function is_int;
+use function is_string;
+
 class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProviderInterface
 {
     public function __construct(
@@ -31,25 +35,9 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null,
-        private ?YooKassaEndpoints $endpoints = new YooKassaEndpoints()
+        private ?YooKassaEndpoints $endpoints = new YooKassaEndpoints(),
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-    }
-
-    protected function getBaseUri(): string
-    {
-        return $this->endpoints->baseUri;
-    }
-
-    protected function createRequest(string $method, string $endpoint, array $data = [])
-    {
-        $request = parent::createRequest($method, $endpoint, $data);
-
-        $request = $request
-            ->withHeader('Authorization', $this->createAuthorizationHeader())
-            ->withHeader('Idempotence-Key', $this->createIdempotenceKey());
-
-        return $request;
     }
 
     /**
@@ -119,7 +107,7 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
             'capture' => false,
             'confirmation' => [
                 'type' => 'redirect',
-                'return_url' => $intent->metadata['return_url'] ?? ''
+                'return_url' => $intent->metadata['return_url'] ?? '',
             ],
             'description' => $intent->description,
             'metadata' => $intent->metadata,
@@ -154,7 +142,7 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
      */
     public function confirmPaymentIntent(string $intentId, array $params = []): PaymentIntent
     {
-        return $this->capturePaymentIntent($intentId,  $params);
+        return $this->capturePaymentIntent($intentId, $params);
     }
 
     /**
@@ -211,14 +199,14 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
             'status' => $response['status'],
             'created_at' => $response['created_at'],
             'amount' => $amount['value'],
-            'currency' => $amount['currency']
+            'currency' => $amount['currency'],
         ];
     }
 
     public function getWebhookCapabilities(): WebhookCapabilities
     {
         return new WebhookCapabilities(...array_map(
-            fn (WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
+            fn(WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
                 $eventType,
                 WebhookEntityKind::Payment,
                 in_array($eventType, self::supportedR1PaymentOutcomes(), true)
@@ -232,18 +220,20 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
         ));
     }
 
-    /**
-     * Returns R1 payment outcomes that YooKassa can actually recognize and process.
-     *
-     * @return list<WebhookEventType>
-     */
-    private static function supportedR1PaymentOutcomes(): array
+    protected function getBaseUri(): string
     {
-        return [
-            WebhookEventType::PaymentRequiresCapture,
-            WebhookEventType::PaymentSucceeded,
-            WebhookEventType::PaymentCanceled,
-        ];
+        return $this->endpoints->baseUri;
+    }
+
+    protected function createRequest(string $method, string $endpoint, array $data = [])
+    {
+        $request = parent::createRequest($method, $endpoint, $data);
+
+        $request = $request
+            ->withHeader('Authorization', $this->createAuthorizationHeader())
+            ->withHeader('Idempotence-Key', $this->createIdempotenceKey());
+
+        return $request;
     }
 
     protected function createIdempotenceKey()
@@ -285,8 +275,22 @@ class YooKassaGateway extends AbstractGateway implements WebhookCapabilitiesProv
             description: $response['description'] ?? null,
             createdAt: strtotime($response['created_at']),
             metadata: [
-                'confirmation_url' => $response['confirmation']['confirmation_url'] ?? null
-            ]
+                'confirmation_url' => $response['confirmation']['confirmation_url'] ?? null,
+            ],
         );
+    }
+
+    /**
+     * Returns R1 payment outcomes that YooKassa can actually recognize and process.
+     *
+     * @return list<WebhookEventType>
+     */
+    private static function supportedR1PaymentOutcomes(): array
+    {
+        return [
+            WebhookEventType::PaymentRequiresCapture,
+            WebhookEventType::PaymentSucceeded,
+            WebhookEventType::PaymentCanceled,
+        ];
     }
 }

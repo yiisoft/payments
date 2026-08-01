@@ -19,6 +19,5 @@ final readonly class WebhookContext
         public ?WebhookReason $unknownEventReason = null,
         public ?WebhookInput $rawInput = null,
         public ?WebhookRawData $rawData = null,
-    ) {
-    }
+    ) {}
 }

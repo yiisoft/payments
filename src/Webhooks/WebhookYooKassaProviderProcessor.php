@@ -13,8 +13,7 @@ final readonly class WebhookYooKassaProviderProcessor implements WebhookProvider
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookYooKassaEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookYooKassaPayloadParser(),
         private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookYooKassaPaymentMapper(),
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

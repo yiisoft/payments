@@ -9,6 +9,8 @@ use Countable;
 use IteratorAggregate;
 use Traversable;
 
+use function count;
+
 /**
  * Immutable collection of normalized webhook capabilities declared by a gateway.
  *

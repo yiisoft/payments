@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use function in_array;
+
 /**
  * Defines R1-normalized payment outcome boundaries for recognized webhook events.
  */

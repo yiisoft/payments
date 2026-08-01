@@ -150,5 +150,4 @@ final class WebhookRobokassaEventRecognizerTest extends TestCase
 
         $this->assertNull($recognizer->recognizeEventType('unsupported_callback'));
     }
-
 }

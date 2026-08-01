@@ -9,6 +9,8 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Gateways\RobokassaGateway;
 use Yiisoft\Payments\Models\PaymentIntent;
 use Yiisoft\Payments\Tests\Support\TestHttpClient;
+use Yiisoft\Payments\Exceptions\InvalidRequestException;
+use Yiisoft\Payments\Exceptions\PaymentException;
 
 final class RobokassaGatewayTest extends TestCase
 {
@@ -45,7 +47,7 @@ final class RobokassaGatewayTest extends TestCase
             amount: 2500,
             currency: 'RUB',
             metadata: ['InvId' => 123, 'Description' => 'Test invoice'],
-            captureMethod: false
+            captureMethod: false,
         );
 
         $result = $this->gateway->createPaymentIntent($intent);
@@ -68,7 +70,6 @@ final class RobokassaGatewayTest extends TestCase
         $this->assertCount(3, explode('.', trim($lastRequest['body'], '"')));
     }
 
-
     public function testCreatePaymentIntentIncludesApiErrorDetailsInException(): void
     {
         $this->httpClient->queueJsonResponse([
@@ -80,22 +81,21 @@ final class RobokassaGatewayTest extends TestCase
             id: null,
             amount: 2500,
             currency: 'RUB',
-            description: 'Test payment'
+            description: 'Test payment',
         );
 
-        $this->expectException(\Yiisoft\Payments\Exceptions\InvalidRequestException::class);
+        $this->expectException(InvalidRequestException::class);
         $this->expectExceptionMessage('Invalid signature.');
 
         try {
             $this->gateway->createPaymentIntent($intent);
-        } catch (\Yiisoft\Payments\Exceptions\InvalidRequestException $e) {
+        } catch (InvalidRequestException $e) {
             $this->assertSame('INVALID_SIGNATURE', $e->errorCode);
             $this->assertIsArray($e->details);
             $this->assertSame('Invalid signature.', $e->details['response']['Error'] ?? null);
             throw $e;
         }
     }
-
 
     public function testCreatePaymentIntentUsesProblemDetailsTitleAsErrorMessage(): void
     {
@@ -110,15 +110,15 @@ final class RobokassaGatewayTest extends TestCase
             id: null,
             amount: 2500,
             currency: 'RUB',
-            description: 'Test payment'
+            description: 'Test payment',
         );
 
-        $this->expectException(\Yiisoft\Payments\Exceptions\PaymentException::class);
+        $this->expectException(PaymentException::class);
         $this->expectExceptionMessage('Unsupported Media Type');
 
         try {
             $this->gateway->createPaymentIntent($intent);
-        } catch (\Yiisoft\Payments\Exceptions\PaymentException $e) {
+        } catch (PaymentException $e) {
             $this->assertSame('https://tools.ietf.org/html/rfc9110#section-15.5.16', $e->errorType);
             $this->assertIsArray($e->details);
             $this->assertSame('Unsupported Media Type', $e->details['response']['title'] ?? null);
@@ -173,7 +173,7 @@ XML;
             params: [
                 'amount' => 1000,
                 'op_key' => 'OP-123',
-            ]
+            ],
         );
 
         $this->assertTrue($result['success']);

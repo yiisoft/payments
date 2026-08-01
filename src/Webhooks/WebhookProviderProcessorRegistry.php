@@ -6,6 +6,8 @@ namespace Yiisoft\Payments\Webhooks;
 
 use InvalidArgumentException;
 
+use function sprintf;
+
 /**
  * Registry and resolver for provider-specific webhook processors.
  */

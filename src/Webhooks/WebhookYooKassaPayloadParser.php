@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use function is_array;
+use function is_string;
+
 /**
  * Parses YooKassa JSON webhook payloads into an intermediate provider-processing payload.
  */
@@ -11,8 +14,7 @@ final readonly class WebhookYooKassaPayloadParser implements WebhookPayloadParse
 {
     public function __construct(
         private WebhookJsonPayloadDecoder $decoder = new WebhookJsonPayloadDecoder(),
-    ) {
-    }
+    ) {}
 
     public function parsePayload(
         WebhookInput $input,

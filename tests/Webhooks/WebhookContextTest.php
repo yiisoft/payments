@@ -102,7 +102,7 @@ final class WebhookContextTest extends TestCase
                 'rawData',
             ],
             array_map(
-                static fn ($property): string => $property->getName(),
+                static fn($property): string => $property->getName(),
                 $reflection->getProperties(),
             ),
         );

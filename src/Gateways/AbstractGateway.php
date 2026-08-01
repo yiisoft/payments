@@ -7,13 +7,20 @@ namespace Yiisoft\Payments\Gateways;
 use Yiisoft\Payments\Exceptions\InvalidRequestException;
 use Yiisoft\Payments\Exceptions\PaymentException;
 use Yiisoft\Payments\PaymentGatewayInterface;
-use Yiisoft\Payments\Models\Customer;
-use Yiisoft\Payments\Models\PaymentIntent;
-use Yiisoft\Payments\Models\PaymentMethod;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Http\Message\RequestInterface;
+use JsonException;
+use RuntimeException;
+use Throwable;
+
+use function array_key_exists;
+use function is_array;
+use function is_scalar;
+
+use const JSON_THROW_ON_ERROR;
 
 abstract class AbstractGateway implements PaymentGatewayInterface
 {
@@ -23,9 +30,8 @@ abstract class AbstractGateway implements PaymentGatewayInterface
         protected ClientInterface $httpClient,
         protected RequestFactoryInterface $requestFactory,
         protected StreamFactoryInterface $streamFactory,
-        protected ?LoggerInterface $logger = null
-    ) {
-    }
+        protected ?LoggerInterface $logger = null,
+    ) {}
 
     abstract protected function getBaseUri(): string;
 
@@ -37,7 +43,7 @@ abstract class AbstractGateway implements PaymentGatewayInterface
     }
 
     /**
-     * @return \Psr\Http\Message\RequestInterface
+     * @return RequestInterface
      */
     protected function createRequest(string $method, string $endpoint, array $data = [])
     {
@@ -68,10 +74,10 @@ abstract class AbstractGateway implements PaymentGatewayInterface
             }
 
             return $data;
-        } catch (\JsonException $e) {
+        } catch (JsonException $e) {
             $this->log('error', 'Failed to decode JSON response', ['error' => $e->getMessage()]);
-            throw new \RuntimeException('Failed to decode payment gateway response', 0, $e);
-        } catch (\Throwable $e) {
+            throw new RuntimeException('Failed to decode payment gateway response', 0, $e);
+        } catch (Throwable $e) {
             $this->log('error', 'Payment gateway request failed', ['error' => $e->getMessage()]);
             throw $e;
         }
@@ -104,7 +110,7 @@ abstract class AbstractGateway implements PaymentGatewayInterface
                     $declineCode,
                     $param,
                     $details,
-                    $statusCode
+                    $statusCode,
                 );
             default:
                 throw new PaymentException(
@@ -114,7 +120,7 @@ abstract class AbstractGateway implements PaymentGatewayInterface
                     $declineCode,
                     $param,
                     $details,
-                    $statusCode
+                    $statusCode,
                 );
         }
     }
@@ -123,7 +129,7 @@ abstract class AbstractGateway implements PaymentGatewayInterface
     {
         $message = $this->extractErrorField(
             $payload,
-            ['message', 'Message', 'description', 'Description', 'detail', 'Detail', 'title', 'Title', 'error_description', 'error_message', 'Error']
+            ['message', 'Message', 'description', 'Description', 'detail', 'Detail', 'title', 'Title', 'error_description', 'error_message', 'Error'],
         );
 
         if ($message !== null && $message !== '') {

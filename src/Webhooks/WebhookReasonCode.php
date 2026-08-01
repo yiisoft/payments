@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Yiisoft\Payments\Webhooks;
 
 use InvalidArgumentException;
+use Stringable;
 
 /**
  * Machine-readable reason code for a webhook processing outcome.
  */
-final readonly class WebhookReasonCode implements \Stringable
+final readonly class WebhookReasonCode implements Stringable
 {
     public function __construct(
         public string $value,

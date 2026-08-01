@@ -12,6 +12,8 @@ use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaValidator;
 
+use function sprintf;
+
 final class WebhookRobokassaValidatorTest extends TestCase
 {
     public function testImplementsProviderValidatorContract(): void

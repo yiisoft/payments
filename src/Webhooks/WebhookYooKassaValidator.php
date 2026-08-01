@@ -7,6 +7,11 @@ namespace Yiisoft\Payments\Webhooks;
 use InvalidArgumentException;
 use JsonException;
 
+use function is_array;
+use function is_string;
+
+use const JSON_THROW_ON_ERROR;
+
 /**
  * Provider-specific validator for YooKassa webhook requests.
  *

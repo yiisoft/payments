@@ -27,8 +27,7 @@ final readonly class WebhookRawData
         public ?string $providerEventType = null,
         public array $queryParams = [],
         public array $bodyParams = [],
-    ) {
-    }
+    ) {}
 
     /**
      * Returns the original header map without normalizing header names or values.

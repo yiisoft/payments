@@ -10,6 +10,9 @@ use Yiisoft\Payments\Webhooks\WebhookEventRecognizerInterface;
 use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 
+use function is_array;
+use function is_string;
+
 final class WebhookEventRecognizerInterfaceTest extends TestCase
 {
     public function testRecognizeProviderEventTypeAcceptsWebhookInputAndReturnsNullableString(): void
@@ -109,7 +112,7 @@ final class WebhookEventRecognizerInterfaceTest extends TestCase
 
         $this->assertSame(
             WebhookEventType::PaymentSucceeded,
-            $recognizer->recognizeEventType('payment_intent.succeeded')
+            $recognizer->recognizeEventType('payment_intent.succeeded'),
         );
     }
 

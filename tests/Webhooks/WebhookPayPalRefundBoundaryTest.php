@@ -15,6 +15,8 @@ use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
+use function sprintf;
+
 final class WebhookPayPalRefundBoundaryTest extends TestCase
 {
     #[DataProvider('refundLikePayPalCaptureEventProvider')]

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Models;
 
+use function in_array;
+
 /**
  * Contains constants representing different types of payment methods.
  */

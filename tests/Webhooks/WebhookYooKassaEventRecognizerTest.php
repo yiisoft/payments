@@ -11,6 +11,8 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaEventRecognizer;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookYooKassaEventRecognizerTest extends TestCase
 {
     public function testImplementsEventRecognizerContract(): void

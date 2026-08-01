@@ -11,6 +11,8 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalEventRecognizer;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookPayPalEventRecognizerTest extends TestCase
 {
     public function testImplementsEventRecognizerContract(): void
@@ -46,7 +48,6 @@ final class WebhookPayPalEventRecognizerTest extends TestCase
 
         $this->assertSame($expectedEventType, $recognizer->recognizeEventType($providerEventType));
     }
-
 
     #[DataProvider('basicPaymentEventTypesProvider')]
     public function testRecognizesProviderAndNormalizedEventTypeFromPayPalPayload(

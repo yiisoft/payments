@@ -12,6 +12,9 @@ use Yiisoft\Payments\Webhooks\WebhookPayload;
 use Yiisoft\Payments\Webhooks\WebhookPayloadParserInterface;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 
+use function is_array;
+use function is_string;
+
 final class WebhookPayloadParserInterfaceTest extends TestCase
 {
     public function testParsePayloadAcceptsWebhookInputEventTypeAndOptionalProviderEventType(): void

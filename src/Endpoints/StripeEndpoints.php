@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Endpoints;
 
+use InvalidArgumentException;
+
 /**
  * Stripe API endpoints configuration.
  */
-final class StripeEndpoints
+final readonly class StripeEndpoints
 {
     public function __construct(
-        public readonly string $baseUri = 'https://api.stripe.com/v1',
+        public string $baseUri = 'https://api.stripe.com/v1',
     ) {
         self::assertHttpsUri($this->baseUri);
     }
@@ -18,7 +20,7 @@ final class StripeEndpoints
     private static function assertHttpsUri(string $uri): void
     {
         if ($uri === '' || !str_starts_with($uri, 'https://')) {
-            throw new \InvalidArgumentException('Endpoint URI must be a non-empty HTTPS URL.');
+            throw new InvalidArgumentException('Endpoint URI must be a non-empty HTTPS URL.');
         }
     }
 }

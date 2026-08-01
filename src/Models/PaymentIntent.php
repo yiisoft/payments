@@ -6,24 +6,14 @@ namespace Yiisoft\Payments\Models;
 
 use Yiisoft\Payments\Exceptions\InvalidArgumentException;
 
+use function is_string;
+use function sprintf;
+
 /**
  * Represents a payment intent in the payment gateway system.
  */
 readonly class PaymentIntent
 {
-    private const ISO4217_CURRENCY_PATTERN = '/^[A-Za-z]{3}$/';
-
-    private function validateCurrency(string $currency): string
-    {
-        if (!preg_match(self::ISO4217_CURRENCY_PATTERN, $currency)) {
-            throw new InvalidArgumentException(sprintf(
-                'Currency must be a valid ISO 4217 currency code, "%s" given.',
-                $currency
-            ));
-        }
-        return strtoupper($currency);
-    }
-
     public const STATUS_REQUIRES_PAYMENT_METHOD = 'requires_payment_method';
     public const STATUS_REQUIRES_CONFIRMATION = 'requires_confirmation';
     public const STATUS_REQUIRES_ACTION = 'requires_action';
@@ -31,6 +21,7 @@ readonly class PaymentIntent
     public const STATUS_REQUIRES_CAPTURE = 'requires_capture';
     public const STATUS_CANCELED = 'canceled';
     public const STATUS_SUCCEEDED = 'succeeded';
+    private const ISO4217_CURRENCY_PATTERN = '/^[A-Za-z]{3}$/';
 
     /**
      * @param string|null $id The unique identifier for the payment intent.
@@ -51,7 +42,7 @@ readonly class PaymentIntent
      * @param string|null $statementDescriptor A string to be displayed on the customer's statement.
      * @param int|null $createdAt The time at which the payment intent was created.
      */
-    public string|null $currency;
+    public ?string $currency;
 
     public function __construct(
         public ?string $id = null,
@@ -76,8 +67,6 @@ readonly class PaymentIntent
             $this->currency = $this->validateCurrency($currency);
         }
     }
-
-
 
     public function toArray(): array
     {
@@ -143,5 +132,16 @@ readonly class PaymentIntent
             statementDescriptor: $data['statement_descriptor'] ?? $data['statementDescriptor'] ?? null,
             createdAt: $data['created_at'] ?? $data['createdAt'] ?? null,
         );
+    }
+
+    private function validateCurrency(string $currency): string
+    {
+        if (!preg_match(self::ISO4217_CURRENCY_PATTERN, $currency)) {
+            throw new InvalidArgumentException(sprintf(
+                'Currency must be a valid ISO 4217 currency code, "%s" given.',
+                $currency,
+            ));
+        }
+        return strtoupper($currency);
     }
 }

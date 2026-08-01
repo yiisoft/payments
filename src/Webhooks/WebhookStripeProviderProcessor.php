@@ -13,8 +13,7 @@ final readonly class WebhookStripeProviderProcessor implements WebhookProviderPr
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookStripeEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookStripePayloadParser(),
         private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookStripePaymentMapper(),
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

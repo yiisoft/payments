@@ -9,6 +9,8 @@ use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
+use const JSON_THROW_ON_ERROR;
+
 /**
  * A tiny PSR-18 HTTP client for unit tests.
  *
@@ -19,15 +21,12 @@ use Psr\Http\Message\ResponseInterface;
  */
 final class TestHttpClient implements ClientInterface
 {
+    /** @var array{method:string,uri:string,headers:array<string,array<int,string>>,body:string}|array{} */
+    public array $lastRequest = [];
     /** @var array<int,array{status:int,headers:array<string,array<int,string>>,body:string}> */
     private array $queue = [];
 
-    /** @var array{method:string,uri:string,headers:array<string,array<int,string>>,body:string}|array{} */
-    public array $lastRequest = [];
-
-    public function __construct(private Psr17Factory $factory)
-    {
-    }
+    public function __construct(private Psr17Factory $factory) {}
 
     /**
      * Backward-compatible helper: queues a single JSON response with 200 status.
@@ -50,7 +49,7 @@ final class TestHttpClient implements ClientInterface
         $this->queueRawResponse(
             $body,
             $statusCode,
-            $headers + ['Content-Type' => ['application/json']]
+            $headers + ['Content-Type' => ['application/json']],
         );
     }
 
