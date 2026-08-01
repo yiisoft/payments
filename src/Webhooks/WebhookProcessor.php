@@ -9,13 +9,12 @@ use LogicException;
 /**
  * Common webhook processing service that owns provider processor resolution flow.
  */
-final class WebhookProcessor implements WebhookProcessorInterface
+final readonly class WebhookProcessor implements WebhookProcessorInterface
 {
     public function __construct(
-        private readonly WebhookProviderProcessorRegistry $providerProcessorRegistry,
-        private readonly ?WebhookProviderValidatorRegistry $providerValidatorRegistry = null,
-    ) {
-    }
+        private WebhookProviderProcessorRegistry $providerProcessorRegistry,
+        private ?WebhookProviderValidatorRegistry $providerValidatorRegistry = null,
+    ) {}
 
     public function process(WebhookInput $input): WebhookContext
     {

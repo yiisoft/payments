@@ -23,6 +23,8 @@ use Yiisoft\Payments\Webhooks\WebhookRobokassaPaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaPaymentMapper;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookR1FinalCodeReadinessTest extends TestCase
 {
     public function testPayPalGatewayProvidesDefaultR1WebhookValidationSetup(): void

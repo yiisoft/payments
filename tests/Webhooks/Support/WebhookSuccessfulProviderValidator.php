@@ -18,8 +18,7 @@ final class WebhookSuccessfulProviderValidator implements WebhookProviderValidat
 
     public function __construct(
         private readonly string $providerId = 'test-provider',
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

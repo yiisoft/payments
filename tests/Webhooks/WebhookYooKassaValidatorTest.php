@@ -11,6 +11,8 @@ use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookProviderValidatorInterface;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookYooKassaValidatorTest extends TestCase
 {
     public function testImplementsProviderValidatorContract(): void

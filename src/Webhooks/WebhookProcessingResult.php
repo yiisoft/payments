@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use function sprintf;
+
 /**
  * Normalized provider webhook processing outcome.
  *
@@ -18,8 +20,7 @@ final readonly class WebhookProcessingResult
         public ?WebhookReason $reason = null,
         public ?WebhookRawData $rawData = null,
         public ?string $paymentStatus = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Creates a result for a webhook payload that was mapped successfully.
@@ -28,8 +29,7 @@ final readonly class WebhookProcessingResult
         WebhookEventType $eventType,
         ?WebhookRawData $rawData = null,
         ?string $paymentStatus = null,
-    ): self
-    {
+    ): self {
         return new self(
             status: WebhookProcessingStatus::Processed,
             eventType: $eventType,
@@ -96,8 +96,7 @@ final readonly class WebhookProcessingResult
         WebhookEventType $eventType,
         ?string $providerEventType = null,
         ?WebhookRawData $rawData = null,
-    ): self
-    {
+    ): self {
         return new self(
             status: WebhookProcessingStatus::UnsupportedEvent,
             eventType: $eventType,

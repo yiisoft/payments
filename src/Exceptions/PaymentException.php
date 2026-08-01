@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Exceptions;
 
-class PaymentException extends \RuntimeException
+use RuntimeException;
+use Throwable;
+
+class PaymentException extends RuntimeException
 {
     /**
      * @param array<string,mixed>|null $details
@@ -17,7 +20,7 @@ class PaymentException extends \RuntimeException
         public readonly ?string $param = null,
         public readonly ?array $details = null,
         int $code = 0,
-        ?\Throwable $previous = null
+        ?Throwable $previous = null,
     ) {
         parent::__construct($message, $code, $previous);
     }

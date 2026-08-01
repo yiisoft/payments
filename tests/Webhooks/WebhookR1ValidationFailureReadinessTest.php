@@ -21,6 +21,7 @@ use Yiisoft\Payments\Webhooks\WebhookStripeValidator;
 use Yiisoft\Payments\Webhooks\WebhookValidationResult;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
+use LogicException;
 
 final class WebhookR1ValidationFailureReadinessTest extends TestCase
 {
@@ -137,7 +138,7 @@ final class WebhookR1ValidationFailureReadinessTest extends TestCase
         $verifier = new class implements WebhookPayPalSignatureVerifierInterface {
             public function verify(WebhookInput $input, string $webhookId): WebhookValidationResult
             {
-                throw new \LogicException('PayPal signature verifier must not be called when authenticity markers are missing.');
+                throw new LogicException('PayPal signature verifier must not be called when authenticity markers are missing.');
             }
         };
         $processor = new WebhookProcessor(

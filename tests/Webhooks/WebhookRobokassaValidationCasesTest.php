@@ -10,6 +10,8 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaValidator;
 
+use function sprintf;
+
 final class WebhookRobokassaValidationCasesTest extends TestCase
 {
     #[DataProvider('validSignatureProvider')]

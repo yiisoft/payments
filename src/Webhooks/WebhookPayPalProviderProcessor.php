@@ -13,8 +13,7 @@ final readonly class WebhookPayPalProviderProcessor implements WebhookProviderPr
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookPayPalEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookPayPalPayloadParser(),
         private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookPayPalPaymentMapper(),
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

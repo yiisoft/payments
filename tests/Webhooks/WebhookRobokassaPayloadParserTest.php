@@ -226,5 +226,4 @@ final class WebhookRobokassaPayloadParserTest extends TestCase
         $this->assertSame(['sku-1', 'sku-2'], $payload->data['Shp_items']);
         $this->assertSame($payload->data, $payload->rawData?->payload);
     }
-
 }

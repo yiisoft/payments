@@ -71,8 +71,7 @@ final class WebhookProcessorInterfaceTest extends TestCase
         $processor = new class ($reason) implements WebhookProcessorInterface {
             public function __construct(
                 private readonly WebhookReason $reason,
-            ) {
-            }
+            ) {}
 
             public function process(WebhookInput $input): WebhookContext
             {
@@ -104,8 +103,7 @@ final class WebhookProcessorInterfaceTest extends TestCase
         $processor = new class ($reason) implements WebhookProcessorInterface {
             public function __construct(
                 private readonly WebhookReason $reason,
-            ) {
-            }
+            ) {}
 
             public function process(WebhookInput $input): WebhookContext
             {
@@ -146,8 +144,7 @@ final class WebhookProcessorInterfaceTest extends TestCase
             public function __construct(
                 private readonly WebhookRawData $rawData,
                 private readonly WebhookReason $reason,
-            ) {
-            }
+            ) {}
 
             public function process(WebhookInput $input): WebhookContext
             {

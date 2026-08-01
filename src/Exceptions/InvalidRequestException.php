@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Exceptions;
 
+use Throwable;
+
 class InvalidRequestException extends PaymentException
 {
     /**
@@ -17,7 +19,7 @@ class InvalidRequestException extends PaymentException
         ?string $param = null,
         ?array $details = null,
         int $code = 400,
-        ?\Throwable $previous = null
+        ?Throwable $previous = null,
     ) {
         parent::__construct($message, $errorCode, $errorType, $declineCode, $param, $details, $code, $previous);
     }

@@ -12,6 +12,8 @@ use Yiisoft\Payments\Tests\Support\TestHttpClient;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookPayPalSignatureVerifierTest extends TestCase
 {
     public function testReturnsSuccessForSuccessfulPayPalVerificationResponse(): void
@@ -106,7 +108,6 @@ final class WebhookPayPalSignatureVerifierTest extends TestCase
             $httpClient->lastRequest['uri'],
         );
     }
-
 
     #[DataProvider('malformedVerificationResponseProvider')]
     public function testReturnsFailureForMalformedPayPalVerificationResponse(
@@ -240,7 +241,6 @@ final class WebhookPayPalSignatureVerifierTest extends TestCase
             $result->reason->message,
         );
     }
-
 
     private function createVerifier(Psr17Factory $factory, TestHttpClient $httpClient): WebhookPayPalSignatureVerifier
     {

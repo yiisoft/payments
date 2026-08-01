@@ -11,6 +11,8 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 
+use function in_array;
+
 final class WebhookPartiallyRecognizedScenarioTest extends TestCase
 {
     public function testPartiallyRecognizedProviderEventTypeScenarioReturnsUnsupportedEventResult(): void

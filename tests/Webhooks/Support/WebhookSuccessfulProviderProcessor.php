@@ -25,8 +25,7 @@ final class WebhookSuccessfulProviderProcessor implements WebhookProviderProcess
         private readonly ?string $providerEventType = 'test.payment_succeeded',
         private readonly mixed $payload = null,
         private readonly ?string $paymentStatus = null,
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

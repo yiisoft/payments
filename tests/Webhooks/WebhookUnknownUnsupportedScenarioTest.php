@@ -16,6 +16,9 @@ use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
+use function array_key_exists;
+use function in_array;
+
 final class WebhookUnknownUnsupportedScenarioTest extends TestCase
 {
     public function testUnknownProviderEventTypeScenarioReturnsUnknownEventResult(): void

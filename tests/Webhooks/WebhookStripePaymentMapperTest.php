@@ -13,6 +13,8 @@ use Yiisoft\Payments\Webhooks\WebhookProcessingStatus;
 use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookStripePaymentMapper;
 
+use function sprintf;
+
 final class WebhookStripePaymentMapperTest extends TestCase
 {
     public function testImplementsWebhookPaymentMapperInterface(): void

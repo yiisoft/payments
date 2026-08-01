@@ -15,6 +15,8 @@ use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 use Yiisoft\Payments\Webhooks\WebhookValidationResult;
 
+use function sprintf;
+
 final class WebhookPayPalValidatorTest extends TestCase
 {
     public function testImplementsProviderValidatorContract(): void
@@ -121,12 +123,10 @@ final class WebhookPayPalValidatorTest extends TestCase
         string $expectedMessage,
         ?string $expectedProviderEventType,
     ): void {
-        $verifier = new class($verifierFailure) implements WebhookPayPalSignatureVerifierInterface {
+        $verifier = new class ($verifierFailure) implements WebhookPayPalSignatureVerifierInterface {
             public bool $called = false;
 
-            public function __construct(private WebhookValidationResult $result)
-            {
-            }
+            public function __construct(private WebhookValidationResult $result) {}
 
             public function verify(WebhookInput $input, string $webhookId): WebhookValidationResult
             {

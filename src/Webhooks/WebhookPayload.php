@@ -24,6 +24,5 @@ final readonly class WebhookPayload
         public array $data = [],
         public ?string $paymentStatus = null,
         public ?WebhookRawData $rawData = null,
-    ) {
-    }
+    ) {}
 }

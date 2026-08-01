@@ -20,6 +20,14 @@ use Yiisoft\Payments\Webhooks\WebhookEntityKind;
 use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookRobokassaCallbackFormat;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
+use SimpleXMLElement;
+
+use function array_key_exists;
+use function is_array;
+use function is_scalar;
+
+use const JSON_THROW_ON_ERROR;
+use const LIBXML_NONET;
 
 /**
  * Robokassa gateway implementation.
@@ -66,19 +74,10 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null,
-        ?RobokassaEndpoints $endpoints = null
+        ?RobokassaEndpoints $endpoints = null,
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
         $this->endpoints = $endpoints ?? new RobokassaEndpoints();
-    }
-
-    /**
-     * Robokassa invoice/refund APIs are absolute-URI based, so base URI is unused.
-     * It is kept for compatibility with AbstractGateway, but should not be relied upon.
-     */
-    protected function getBaseUri(): string
-    {
-        return $this->endpoints->invoiceApiBaseUri;
     }
 
     // ---------------------------------------------------------------------
@@ -193,7 +192,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
      * Additional Robokassa-specific invoice fields can be provided via metadata:
      * - InvoiceType, ExpirationDate, Culture, Email, SuccessUrl, FailUrl, ResultUrl, Receipt, etc.
      * All metadata is passed to Robokassa as-is (except reserved keys shown above).
-     * 
+     *
      * @sandbox-support implemented
      */
     public function createPaymentIntent(PaymentIntent $paymentIntent): PaymentIntent
@@ -217,7 +216,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
         $response = $this->sendRawJsonRequest(
             'POST',
             $this->endpoints->invoiceApiBaseUri . '/CreateInvoice',
-            $jwt
+            $jwt,
         );
 
         $invoiceId = (string) ($response['InvoiceID'] ?? $response['InvId'] ?? $response['invoiceId'] ?? $response['invoice_id'] ?? '');
@@ -257,7 +256,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
      * Returns:
      * - status: Robokassa state code (string) in metadata and mapped high-level status in PaymentIntent::status
      * - metadata.robokassa_op_key: operation key for refunds (when available)
-     * 
+     *
      * @sandbox-support implemented
      */
     public function retrievePaymentIntent(string $paymentIntentId): PaymentIntent
@@ -279,7 +278,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                 null,
                 null,
                 null,
-                400
+                400,
             );
         }
 
@@ -300,7 +299,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
     /**
      * For Robokassa, payer action happens on a hosted payment page.
      * This method simply re-fetches invoice state.
-     * 
+     *
      * @sandbox-support partial
      * @sandbox-reason Robokassa payment confirmation is performed by the payer on the hosted payment page. The public API does not expose a separate generic confirm endpoint compatible with this interface.
      */
@@ -312,7 +311,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
     /**
      * Robokassa does not support "capture" in the same way as card processors (it is invoice-based).
      * This method re-fetches invoice state.
-     * 
+     *
      * @sandbox-support partial
      * @sandbox-reason Robokassa invoice flow does not expose a separate capture endpoint compatible with this interface; payment is completed on the hosted invoice/payment page.
      */
@@ -325,7 +324,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
      * Attempts to deactivate an invoice via Invoice API.
      *
      * If the Invoice API call is not available/authorized, returns a best-effort local status.
-     * 
+     *
      * @sandbox-support partial
      * @sandbox-reason Robokassa invoice deactivation is not equivalent to a guaranteed generic cancel operation for this interface, so cancellation can only be provided on a best-effort basis.
      */
@@ -346,7 +345,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
             $response = $this->sendRawJsonRequest(
                 'POST',
                 $this->endpoints->invoiceApiBaseUri . '/DeactivateInvoice',
-                $jwt
+                $jwt,
             );
 
             return PaymentIntent::fromArray([
@@ -371,7 +370,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                         [
                             'cancel_confirmed' => false,
                             'robokassa_cancel_error' => $e->getMessage(),
-                        ]
+                        ],
                     ),
                 ]);
             } catch (PaymentException) {
@@ -396,7 +395,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
      * If it is not provided, the gateway will call OpStateExt to obtain it.
      *
      * @return array<string,mixed>
-     * 
+     *
      * @sandbox-support implemented
      */
     public function createRefund(string $paymentIntentId, array $params = []): array
@@ -409,7 +408,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                 null,
                 null,
                 null,
-                500
+                500,
             );
         }
 
@@ -427,7 +426,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                 null,
                 null,
                 null,
-                400
+                400,
             );
         }
 
@@ -451,8 +450,39 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
         return $this->sendRawJsonRequest(
             'POST',
             $this->endpoints->refundApiBaseUri . '/Create',
-            $jwt
+            $jwt,
         );
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        $capabilities = [];
+
+        foreach (
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ] as $eventType
+        ) {
+            $capabilities[] = new WebhookCapability(
+                $eventType,
+                WebhookEntityKind::Payment,
+                WebhookRobokassaCallbackFormat::supportsR1PaymentOutcome($eventType)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
+            );
+        }
+
+        return new WebhookCapabilities(...$capabilities);
+    }
+
+    /**
+     * Robokassa invoice/refund APIs are absolute-URI based, so base URI is unused.
+     * It is kept for compatibility with AbstractGateway, but should not be relied upon.
+     */
+    protected function getBaseUri(): string
+    {
+        return $this->endpoints->invoiceApiBaseUri;
     }
 
     // ---------------------------------------------------------------------
@@ -494,7 +524,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                     'status' => $response->getStatusCode(),
                     'response_body' => $body,
                 ],
-                $response->getStatusCode()
+                $response->getStatusCode(),
             );
         }
 
@@ -530,33 +560,11 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                     'status' => $response->getStatusCode(),
                     'response' => $data,
                 ],
-                $response->getStatusCode()
+                $response->getStatusCode(),
             );
         }
 
         return $data;
-    }
-
-    public function getWebhookCapabilities(): WebhookCapabilities
-    {
-        $capabilities = [];
-
-        foreach (
-            [
-                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
-                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
-            ] as $eventType
-        ) {
-            $capabilities[] = new WebhookCapability(
-                $eventType,
-                WebhookEntityKind::Payment,
-                WebhookRobokassaCallbackFormat::supportsR1PaymentOutcome($eventType)
-                    ? WebhookSupportStatus::Supported
-                    : WebhookSupportStatus::Unsupported,
-            );
-        }
-
-        return new WebhookCapabilities(...$capabilities);
     }
 
     private function extractRobokassaErrorMessage(array $data): ?string
@@ -608,7 +616,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
      *
      * @param array<string,string> $fields
      */
-    private function sendXmlRequest(string $method, string $url, array $fields): \SimpleXMLElement
+    private function sendXmlRequest(string $method, string $url, array $fields): SimpleXMLElement
     {
         $body = http_build_query($fields);
 
@@ -649,7 +657,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
                 null,
                 null,
                 null,
-                $response->getStatusCode()
+                $response->getStatusCode(),
             );
         }
 
@@ -679,7 +687,7 @@ final class RobokassaGateway extends AbstractGateway implements WebhookCapabilit
         return self::STATUS_UNKNOWN;
     }
 
-    private function xmlToArray(\SimpleXMLElement $xml): array
+    private function xmlToArray(SimpleXMLElement $xml): array
     {
         return json_decode(json_encode($xml, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR);
     }

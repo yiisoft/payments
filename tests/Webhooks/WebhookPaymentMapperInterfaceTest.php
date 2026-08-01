@@ -27,7 +27,7 @@ final class WebhookPaymentMapperInterfaceTest extends TestCase
                 'extractPaymentStatus',
             ],
             array_map(
-                static fn (ReflectionMethod $method): string => $method->getName(),
+                static fn(ReflectionMethod $method): string => $method->getName(),
                 $reflection->getMethods(),
             ),
         );

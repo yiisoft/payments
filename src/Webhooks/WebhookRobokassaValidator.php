@@ -6,6 +6,12 @@ namespace Yiisoft\Payments\Webhooks;
 
 use InvalidArgumentException;
 
+use function array_key_exists;
+use function is_string;
+use function sprintf;
+
+use const SORT_STRING;
+
 /**
  * Provider-specific validator for Robokassa ResultURL callbacks.
  *

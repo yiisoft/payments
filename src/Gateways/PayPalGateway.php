@@ -22,6 +22,14 @@ use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
+use Psr\Http\Message\RequestInterface;
+
+use function chr;
+use function in_array;
+use function is_array;
+use function is_string;
+use function ord;
+use function sprintf;
 
 /**
  * PayPal gateway implementation based on PayPal REST API:
@@ -54,14 +62,9 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
         RequestFactoryInterface $requestFactory,
         StreamFactoryInterface $streamFactory,
         ?LoggerInterface $logger = null,
-        private ?PayPalEndpoints $endpoints = new PayPalEndpoints()
+        private ?PayPalEndpoints $endpoints = new PayPalEndpoints(),
     ) {
         parent::__construct($httpClient, $requestFactory, $streamFactory, $logger);
-    }
-
-    protected function getBaseUri(): string
-    {
-        return $this->endpoints->getBaseUri($this->sandbox);
     }
 
     /**
@@ -69,7 +72,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      *
      * This method returns the given model with an assigned ID if it doesn't have one. No API call is made.
      * The returned ID is stable only within the calling application (store it yourself if needed).
-     * 
+     *
      * @sandbox-support not_implemented
      * @sandbox-reason PayPal public API does not expose a standalone customer resource or customer CRUD endpoints compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
@@ -122,7 +125,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      * PayPal does not expose a generic "Customer" resource compatible with this library's interface.
      *
      * This method is a no-op.
-     * 
+     *
      * @sandbox-support not_implemented
      * @sandbox-reason PayPal public API does not expose a standalone customer resource or customer deletion endpoint compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
@@ -142,7 +145,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      * Optional metadata keys used by this gateway:
      * - return_url: URL where PayPal will redirect the payer after approval (web flow)
      * - cancel_url: URL where PayPal will redirect the payer if they cancel (web flow)
-     * 
+     *
      * @sandbox-support implemented
      */
     public function createPaymentIntent(PaymentIntent $paymentIntent): PaymentIntent
@@ -187,7 +190,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
         }
 
         $response = $this->sendRequest(
-            $this->createRequest('POST', '/v2/checkout/orders', $data)
+            $this->createRequest('POST', '/v2/checkout/orders', $data),
         );
 
         return $this->mapOrderToPaymentIntent($response, $paymentIntent);
@@ -195,13 +198,13 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
 
     /**
      * Retrieves PayPal Order data.
-     * 
+     *
      * @sandbox-support implemented
      */
     public function retrievePaymentIntent(string $paymentIntentId): PaymentIntent
     {
         $order = $this->sendRequest(
-            $this->createRequest('GET', "/v2/checkout/orders/{$paymentIntentId}")
+            $this->createRequest('GET', "/v2/checkout/orders/{$paymentIntentId}"),
         );
 
         return $this->mapOrderToPaymentIntent($order, null);
@@ -212,7 +215,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      *
      * For PayPal web flows, payer approval happens outside of the API (via approval link).
      * This method simply re-fetches the current order state.
-     * 
+     *
      * @sandbox-support partial
      * @sandbox-reason PayPal order approval is performed by the payer on PayPal-hosted pages. The public API does not expose a separate generic confirm endpoint compatible with this interface.
      */
@@ -229,10 +232,10 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      *
      * If you already have an authorization ID and want to capture it explicitly, pass it as:
      *   $this->capturePaymentIntent($orderId, ['authorization_id' => '...'])
-     * 
+     *
      * @sandbox-support implemented
      */
-        public function capturePaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
+    public function capturePaymentIntent(string $paymentIntentId, array $params = []): PaymentIntent
     {
         // Optional: confirm payment source (used for advanced card payments flows).
         //
@@ -252,14 +255,14 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
                     null,
                     'payment_source',
                     null,
-                    400
+                    400,
                 );
             }
 
             $this->sendRequest(
                 $this->createRequest('POST', "/v2/checkout/orders/{$paymentIntentId}/confirm-payment-source", [
                     'payment_source' => $paymentSource,
-                ])
+                ]),
             );
         }
 
@@ -267,7 +270,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             $authId = (string) $params['authorization_id'];
 
             $capture = $this->sendRequest(
-                $this->createRequest('POST', "/v2/payments/authorizations/{$authId}/capture", $params['capture'] ?? [])
+                $this->createRequest('POST', "/v2/payments/authorizations/{$authId}/capture", $params['capture'] ?? []),
             );
 
             // In this mode we don't have order context; return a PaymentIntent-like object with useful metadata.
@@ -283,14 +286,14 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
         }
 
         $order = $this->sendRequest(
-            $this->createRequest('GET', "/v2/checkout/orders/{$paymentIntentId}")
+            $this->createRequest('GET', "/v2/checkout/orders/{$paymentIntentId}"),
         );
 
         $intent = $order['intent'] ?? null;
 
         if ($intent === 'AUTHORIZE') {
             $auth = $this->sendRequest(
-                $this->createRequest('POST', "/v2/checkout/orders/{$paymentIntentId}/authorize")
+                $this->createRequest('POST', "/v2/checkout/orders/{$paymentIntentId}/authorize"),
             );
 
             $authorizationId = $this->extractAuthorizationId($auth);
@@ -306,7 +309,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
         }
 
         $capture = $this->sendRequest(
-            $this->createRequest('POST', "/v2/checkout/orders/{$paymentIntentId}/capture")
+            $this->createRequest('POST', "/v2/checkout/orders/{$paymentIntentId}/capture"),
         );
 
         $captureId = $this->extractCaptureId($capture);
@@ -328,7 +331,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
     {
         try {
             $order = $this->sendRequest(
-                $this->createRequest('GET', "/v2/checkout/orders/{$paymentIntentId}")
+                $this->createRequest('GET', "/v2/checkout/orders/{$paymentIntentId}"),
             );
         } catch (PaymentException) {
             return PaymentIntent::fromArray(['id' => $paymentIntentId, 'status' => 'VOIDED']);
@@ -342,7 +345,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      * PayPal does not expose a generic "PaymentMethod" resource compatible with this library's interface.
      *
      * This method returns the given model with an assigned ID if it doesn't have one. No API call is made.
-     * 
+     *
      * @sandbox-support not_implemented
      * @sandbox-reason PayPal public API does not expose a standalone generic payment-method resource compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
@@ -396,7 +399,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      * PayPal does not expose a generic "PaymentMethod" attachment API compatible with this library's interface.
      *
      * This method returns the payment method unchanged.
-     * 
+     *
      * @sandbox-support not_implemented
      * @sandbox-reason PayPal public API does not expose a generic payment-method attachment endpoint compatible with this interface. This operation cannot be implemented against the public PayPal API.
      */
@@ -412,7 +415,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
      * To use this method you must pass a capture ID either:
      * - as $paymentIntentId directly; OR
      * - as ['capture_id' => '...'] in $params
-     * 
+     *
      * @sandbox-support implemented
      */
     public function createRefund(string $paymentIntentId, array $params = []): array
@@ -434,14 +437,54 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
         }
 
         return $this->sendRequest(
-            $this->createRequest('POST', "/v2/payments/captures/{$captureId}/refund", $data)
+            $this->createRequest('POST', "/v2/payments/captures/{$captureId}/refund", $data),
         );
+    }
+
+    public function createWebhookValidator(string $webhookId): WebhookPayPalValidator
+    {
+        return new WebhookPayPalValidator($this->createWebhookSignatureVerifier(), $webhookId);
+    }
+
+    public function createWebhookSignatureVerifier(): WebhookPayPalSignatureVerifier
+    {
+        return new WebhookPayPalSignatureVerifier(
+            clientId: $this->clientId,
+            clientSecret: $this->clientSecret,
+            sandbox: $this->sandbox,
+            httpClient: $this->httpClient,
+            requestFactory: $this->requestFactory,
+            streamFactory: $this->streamFactory,
+            endpoints: $this->endpoints ?? new PayPalEndpoints(),
+        );
+    }
+
+    public function getWebhookCapabilities(): WebhookCapabilities
+    {
+        return new WebhookCapabilities(...array_map(
+            fn(WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
+                $eventType,
+                WebhookEntityKind::Payment,
+                in_array($eventType, self::supportedR1PaymentOutcomes(), true)
+                    ? WebhookSupportStatus::Supported
+                    : WebhookSupportStatus::Unsupported,
+            ),
+            [
+                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
+                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
+            ],
+        ));
+    }
+
+    protected function getBaseUri(): string
+    {
+        return $this->endpoints->getBaseUri($this->sandbox);
     }
 
     /**
      * Adds authorization and request id headers.
      */
-    protected function createRequest(string $method, string $endpoint, array $data = []): \Psr\Http\Message\RequestInterface
+    protected function createRequest(string $method, string $endpoint, array $data = []): RequestInterface
     {
         $request = parent::createRequest($method, $endpoint, $data);
         $uri = (string) $request->getUri();
@@ -485,7 +528,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             null,
             $param,
             null,
-            $statusCode
+            $statusCode,
         );
     }
 
@@ -502,7 +545,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             ->withHeader('Content-Type', 'application/x-www-form-urlencoded');
 
         $request = $request->withBody(
-            $this->streamFactory->createStream('grant_type=client_credentials')
+            $this->streamFactory->createStream('grant_type=client_credentials'),
         );
 
         $response = $this->httpClient->sendRequest($request);
@@ -516,7 +559,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
                 null,
                 null,
                 null,
-                $response->getStatusCode()
+                $response->getStatusCode(),
             );
         }
 
@@ -588,41 +631,6 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
         return null;
     }
 
-    public function createWebhookValidator(string $webhookId): WebhookPayPalValidator
-    {
-        return new WebhookPayPalValidator($this->createWebhookSignatureVerifier(), $webhookId);
-    }
-
-    public function createWebhookSignatureVerifier(): WebhookPayPalSignatureVerifier
-    {
-        return new WebhookPayPalSignatureVerifier(
-            clientId: $this->clientId,
-            clientSecret: $this->clientSecret,
-            sandbox: $this->sandbox,
-            httpClient: $this->httpClient,
-            requestFactory: $this->requestFactory,
-            streamFactory: $this->streamFactory,
-            endpoints: $this->endpoints ?? new PayPalEndpoints(),
-        );
-    }
-
-    public function getWebhookCapabilities(): WebhookCapabilities
-    {
-        return new WebhookCapabilities(...array_map(
-            fn (WebhookEventType $eventType): WebhookCapability => new WebhookCapability(
-                $eventType,
-                WebhookEntityKind::Payment,
-                in_array($eventType, self::supportedR1PaymentOutcomes(), true)
-                    ? WebhookSupportStatus::Supported
-                    : WebhookSupportStatus::Unsupported,
-            ),
-            [
-                ...WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
-                ...WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
-            ],
-        ));
-    }
-
     /**
      * Returns R1 payment outcomes that PayPal can actually recognize and process.
      *
@@ -664,7 +672,7 @@ final class PayPalGateway extends AbstractGateway implements WebhookCapabilities
             substr($hex, 8, 4),
             substr($hex, 12, 4),
             substr($hex, 16, 4),
-            substr($hex, 20)
+            substr($hex, 20),
         );
     }
 

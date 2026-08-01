@@ -99,7 +99,6 @@ final class WebhookCapabilitiesTest extends TestCase
         $this->assertSame('charge.refunded', $result->reason->providerEventType);
     }
 
-
     public function testUnsupportedCapabilityPassesRawDataToUnsupportedProcessingResult(): void
     {
         $capabilities = new WebhookCapabilities(new WebhookCapability(

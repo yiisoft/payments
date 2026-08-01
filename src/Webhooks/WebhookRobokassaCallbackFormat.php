@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use function in_array;
+
 /**
  * Supported Robokassa callback format for Webhooks R1.
  *
@@ -40,9 +42,7 @@ final class WebhookRobokassaCallbackFormat
         self::SIGNATURE_PARAMETER,
     ];
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 
     /**
      * @return list<string>

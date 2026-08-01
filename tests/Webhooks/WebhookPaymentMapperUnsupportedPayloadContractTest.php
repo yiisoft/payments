@@ -14,6 +14,8 @@ use Yiisoft\Payments\Webhooks\WebhookRawData;
 use Yiisoft\Payments\Webhooks\WebhookReason;
 use Yiisoft\Payments\Webhooks\WebhookReasonCode;
 
+use function in_array;
+
 final class WebhookPaymentMapperUnsupportedPayloadContractTest extends TestCase
 {
     public function testMappingContractReturnsUnsupportedEventForRecognizedButUnsupportedPaymentPayload(): void
@@ -117,8 +119,7 @@ final class WebhookPaymentMapperUnsupportedPayloadContractTest extends TestCase
              */
             public function __construct(
                 private readonly array $nonPaymentProviderEvents,
-            ) {
-            }
+            ) {}
 
             public function mapPaymentWebhook(WebhookPayload $payload): WebhookProcessingResult
             {

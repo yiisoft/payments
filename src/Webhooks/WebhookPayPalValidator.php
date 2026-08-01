@@ -6,6 +6,8 @@ namespace Yiisoft\Payments\Webhooks;
 
 use InvalidArgumentException;
 
+use function sprintf;
+
 /**
  * Provider-specific validator for PayPal webhook requests.
  *

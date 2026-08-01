@@ -11,6 +11,14 @@ use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Throwable;
 use Yiisoft\Payments\Endpoints\PayPalEndpoints;
+use RuntimeException;
+
+use function is_array;
+use function is_int;
+use function is_string;
+use function sprintf;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Default PayPal webhook signature verifier based on PayPal's verify-webhook-signature API.
@@ -127,7 +135,7 @@ final class WebhookPayPalSignatureVerifier implements WebhookPayPalSignatureVeri
         $responseBody = (string) $response->getBody();
 
         if ($response->getStatusCode() >= 400) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'PayPal API returned HTTP %d during webhook signature verification.',
                 $response->getStatusCode(),
             ));
@@ -135,7 +143,7 @@ final class WebhookPayPalSignatureVerifier implements WebhookPayPalSignatureVeri
 
         $data = json_decode($responseBody, true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($data)) {
-            throw new \RuntimeException('PayPal API returned a non-object JSON response.');
+            throw new RuntimeException('PayPal API returned a non-object JSON response.');
         }
 
         return $data;
@@ -159,7 +167,7 @@ final class WebhookPayPalSignatureVerifier implements WebhookPayPalSignatureVeri
         $responseBody = (string) $response->getBody();
 
         if ($response->getStatusCode() >= 400) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 'PayPal API returned HTTP %d while requesting an access token.',
                 $response->getStatusCode(),
             ));
@@ -167,7 +175,7 @@ final class WebhookPayPalSignatureVerifier implements WebhookPayPalSignatureVeri
 
         $data = json_decode($responseBody, true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($data) || !isset($data['access_token']) || !is_string($data['access_token']) || $data['access_token'] === '') {
-            throw new \RuntimeException('PayPal access token response does not contain a non-empty access token.');
+            throw new RuntimeException('PayPal access token response does not contain a non-empty access token.');
         }
 
         $expiresIn = isset($data['expires_in']) && is_int($data['expires_in']) ? $data['expires_in'] : 3600;

@@ -9,6 +9,8 @@ use PHPUnit\Framework\TestCase;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookYooKassaValidationCasesTest extends TestCase
 {
     #[DataProvider('validStructuralPayloadProvider')]
@@ -169,7 +171,6 @@ final class WebhookYooKassaValidationCasesTest extends TestCase
             'payment.succeeded',
         ];
     }
-
 
     /**
      * @return array<string, list<string>>

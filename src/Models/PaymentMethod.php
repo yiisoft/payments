@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Models;
 
+use InvalidArgumentException;
 
+use function sprintf;
 
 /**
  * Represents a payment method in the payment gateway system.
@@ -35,10 +37,10 @@ readonly class PaymentMethod
         public ?array $metadata = null,
     ) {
         if ($type !== null && !PaymentMethodType::isValid($type)) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 'Invalid payment method type "%s". Must be one of: %s',
                 $type,
-                implode(', ', array_values(PaymentMethodType::all()))
+                implode(', ', array_values(PaymentMethodType::all())),
             ));
         }
     }

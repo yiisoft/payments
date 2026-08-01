@@ -11,6 +11,8 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookInput;
 use Yiisoft\Payments\Webhooks\WebhookStripeEventRecognizer;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookStripeEventRecognizerTest extends TestCase
 {
     public function testImplementsEventRecognizerContract(): void

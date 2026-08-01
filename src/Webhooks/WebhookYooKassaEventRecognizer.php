@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Yiisoft\Payments\Webhooks;
 
+use function is_array;
+use function is_string;
+
 /**
  * Provider-specific recognizer for YooKassa payment webhook events.
  */

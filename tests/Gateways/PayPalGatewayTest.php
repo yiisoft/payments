@@ -15,6 +15,8 @@ use Yiisoft\Payments\Webhooks\WebhookPayPalSignatureVerifier;
 use Yiisoft\Payments\Webhooks\WebhookPayPalValidator;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
+use const JSON_THROW_ON_ERROR;
+
 final class PayPalGatewayTest extends TestCase
 {
     private PayPalGateway $gateway;
@@ -31,7 +33,7 @@ final class PayPalGatewayTest extends TestCase
             sandbox: true,
             httpClient: $this->httpClient,
             requestFactory: $factory,
-            streamFactory: $factory
+            streamFactory: $factory,
         );
     }
 
@@ -112,7 +114,7 @@ final class PayPalGatewayTest extends TestCase
             paymentMethodId: 'paypal',
             metadata: ['order_id' => '12345', 'return_url' => 'https://example.com/ok', 'cancel_url' => 'https://example.com/cancel'],
             receiptEmail: 'test@example.com',
-            captureMethod: false
+            captureMethod: false,
         );
 
         $result = $this->gateway->createPaymentIntent($paymentIntent);
@@ -163,7 +165,7 @@ final class PayPalGatewayTest extends TestCase
 
         $result = $this->gateway->createRefund(
             paymentIntentId: 'CAPTURE-123',
-            params: ['amount' => 1000]
+            params: ['amount' => 1000],
         );
 
         $this->assertSame('RFD-123', $result['id']);

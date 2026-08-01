@@ -24,6 +24,8 @@ use Yiisoft\Payments\Webhooks\WebhookValidationResult;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaProviderProcessor;
 use Yiisoft\Payments\Webhooks\WebhookYooKassaValidator;
 
+use const JSON_THROW_ON_ERROR;
+
 final class WebhookR1PaymentStatusReadinessTest extends TestCase
 {
     #[DataProvider('processedPaymentStatusProvider')]

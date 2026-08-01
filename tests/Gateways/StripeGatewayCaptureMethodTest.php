@@ -26,7 +26,7 @@ final class StripeGatewayCaptureMethodTest extends TestCase
             httpClient: $this->httpClient,
             requestFactory: $factory,
             streamFactory: $factory,
-            logger: new NullLogger()
+            logger: new NullLogger(),
         );
     }
 
@@ -45,7 +45,7 @@ final class StripeGatewayCaptureMethodTest extends TestCase
             id: null,
             amount: 1500,
             currency: 'USD',
-            captureMethod: false
+            captureMethod: false,
         );
 
         $result = $this->gateway->createPaymentIntent($intent);

@@ -13,8 +13,7 @@ final readonly class WebhookRobokassaProviderProcessor implements WebhookProvide
         private WebhookEventRecognizerInterface $eventRecognizer = new WebhookRobokassaEventRecognizer(),
         private WebhookPayloadParserInterface $payloadParser = new WebhookRobokassaPayloadParser(),
         private WebhookPaymentMapperInterface $paymentWebhookMapper = new WebhookRobokassaPaymentMapper(),
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

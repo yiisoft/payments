@@ -23,8 +23,7 @@ final class WebhookUnsupportedProviderProcessor implements WebhookProviderProces
         private readonly WebhookEventType $eventType = WebhookEventType::PaymentRefunded,
         private readonly ?string $providerEventType = 'test.payment_refunded',
         private readonly mixed $payload = null,
-    ) {
-    }
+    ) {}
 
     public function getProviderId(): string
     {

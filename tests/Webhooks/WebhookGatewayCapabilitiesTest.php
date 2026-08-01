@@ -19,6 +19,8 @@ use Yiisoft\Payments\Webhooks\WebhookEventType;
 use Yiisoft\Payments\Webhooks\WebhookPaymentOutcomeRules;
 use Yiisoft\Payments\Webhooks\WebhookSupportStatus;
 
+use const SORT_REGULAR;
+
 final class WebhookGatewayCapabilitiesTest extends TestCase
 {
     public function testAllGatewaysDeclareWebhookCapabilities(): void
@@ -39,7 +41,7 @@ final class WebhookGatewayCapabilitiesTest extends TestCase
             $capabilities = $gateway->getWebhookCapabilities()->all();
 
             $this->assertSame($this->expectedR1PaymentEventTypes(), array_map(
-                static fn (WebhookCapability $capability): WebhookEventType => $capability->eventType,
+                static fn(WebhookCapability $capability): WebhookEventType => $capability->eventType,
                 $capabilities,
             ));
 
@@ -131,7 +133,7 @@ final class WebhookGatewayCapabilitiesTest extends TestCase
         foreach ($this->createGateways() as $gateway) {
             $capabilities = $gateway->getWebhookCapabilities()->all();
             $actualEventTypes = array_map(
-                static fn (WebhookCapability $capability): WebhookEventType => $capability->eventType,
+                static fn(WebhookCapability $capability): WebhookEventType => $capability->eventType,
                 $capabilities,
             );
 
@@ -147,11 +149,11 @@ final class WebhookGatewayCapabilitiesTest extends TestCase
     public function testSupportedGatewayCapabilitiesStayWithinR1ProcessedPaymentOutcomeScope(): void
     {
         $processedOutcomeValues = array_map(
-            static fn (WebhookEventType $eventType): string => $eventType->value,
+            static fn(WebhookEventType $eventType): string => $eventType->value,
             WebhookPaymentOutcomeRules::processedPaymentOutcomes(),
         );
         $unsupportedOutcomeValues = array_map(
-            static fn (WebhookEventType $eventType): string => $eventType->value,
+            static fn(WebhookEventType $eventType): string => $eventType->value,
             WebhookPaymentOutcomeRules::unsupportedPaymentOutcomes(),
         );
 
@@ -174,7 +176,7 @@ final class WebhookGatewayCapabilitiesTest extends TestCase
         foreach ($this->createGateways() as $gateway) {
             $refundCapabilities = array_values(array_filter(
                 $gateway->getWebhookCapabilities()->all(),
-                static fn (WebhookCapability $capability): bool => $capability->eventType === WebhookEventType::PaymentRefunded,
+                static fn(WebhookCapability $capability): bool => $capability->eventType === WebhookEventType::PaymentRefunded,
             ));
 
             $this->assertCount(1, $refundCapabilities);

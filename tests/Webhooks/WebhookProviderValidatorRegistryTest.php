@@ -76,10 +76,10 @@ final class WebhookProviderValidatorRegistryTest extends TestCase
     {
         $methods = array_filter(
             $reflection->getMethods(ReflectionMethod::IS_PUBLIC),
-            static fn (ReflectionMethod $method): bool => $method->class === $reflection->getName(),
+            static fn(ReflectionMethod $method): bool => $method->class === $reflection->getName(),
         );
 
-        return array_values(array_map(static fn (ReflectionMethod $method): string => $method->getName(), $methods));
+        return array_values(array_map(static fn(ReflectionMethod $method): string => $method->getName(), $methods));
     }
 
     /**
@@ -87,6 +87,6 @@ final class WebhookProviderValidatorRegistryTest extends TestCase
      */
     private function parameterNames(ReflectionMethod $method): array
     {
-        return array_map(static fn ($parameter): string => $parameter->getName(), $method->getParameters());
+        return array_map(static fn($parameter): string => $parameter->getName(), $method->getParameters());
     }
 }

@@ -26,8 +26,7 @@ readonly class Customer
         public ?array $address = null,
         public ?array $metadata = null,
         public ?string $description = null,
-    ) {
-    }
+    ) {}
 
     /**
      * Converts the customer object to an array.

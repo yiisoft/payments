@@ -13,6 +13,5 @@ final readonly class WebhookCapability
         public WebhookEventType $eventType,
         public WebhookEntityKind $entityKind,
         public WebhookSupportStatus $supportStatus,
-    ) {
-    }
+    ) {}
 }
